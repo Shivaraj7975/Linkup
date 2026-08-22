@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Link2, LayoutDashboard, User } from 'lucide-react';
+import { Link2, LayoutDashboard, User, Compass, PlusCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Navbar = () => {
@@ -17,6 +17,14 @@ export const Navbar = () => {
       </Link>
 
       <nav className="nav-actions">
+        <Link
+          to="/discover"
+          className={`btn btn-ghost btn-sm ${location.pathname === '/discover' ? 'active-nav-link' : ''}`}
+        >
+          <Compass size={15} />
+          <span>Discover</span>
+        </Link>
+
         {isAuthenticated ? (
           <>
             <Link
@@ -25,6 +33,14 @@ export const Navbar = () => {
             >
               <LayoutDashboard size={15} />
               <span>Dashboard</span>
+            </Link>
+
+            <Link
+              to="/create-linkup"
+              className={`btn btn-ghost btn-sm ${location.pathname === '/create-linkup' ? 'active-nav-link' : ''}`}
+            >
+              <PlusCircle size={15} />
+              <span>Create Linkup</span>
             </Link>
 
             <Link

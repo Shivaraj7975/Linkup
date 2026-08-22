@@ -197,3 +197,152 @@ export const searchUniversities = async (queryStr) => {
     return [];
   }
 };
+
+/* ==========================================================================
+   LINKUP MODULE API ENDPOINTS (PERSON 2)
+   ========================================================================== */
+
+/**
+ * POST /api/linkups - Create a new Linkup project request
+ */
+export const createLinkup = async (linkupData) => {
+  const response = await fetch(`${API_BASE_URL}/linkups`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(linkupData),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to create Linkup.');
+  return data;
+};
+
+/**
+ * GET /api/linkups - Discover / Filter Linkups
+ */
+export const getLinkups = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.category) queryParams.append('category', params.category);
+  if (params.skill) queryParams.append('skill', params.skill);
+  if (params.status) queryParams.append('status', params.status);
+  if (params.search) queryParams.append('search', params.search);
+  if (params.college) queryParams.append('college', params.college);
+  if (params.availability) queryParams.append('availability', params.availability);
+
+  const queryString = queryParams.toString();
+  const url = `${API_BASE_URL}/linkups${queryString ? `?${queryString}` : ''}`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch Linkups.');
+  return data;
+};
+
+/**
+ * GET /api/linkups/:id - Get single Linkup details
+ */
+export const getLinkupById = async (id) => {
+  const response = await fetch(`${API_BASE_URL}/linkups/${id}`, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch Linkup details.');
+  return data.linkup;
+};
+
+/**
+ * PUT /api/linkups/:id - Update Linkup (Creator ONLY)
+ */
+export const updateLinkup = async (id, linkupData) => {
+  const response = await fetch(`${API_BASE_URL}/linkups/${id}`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(linkupData),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to update Linkup.');
+  return data;
+};
+
+/**
+ * DELETE /api/linkups/:id - Delete Linkup (Creator ONLY)
+ */
+export const deleteLinkup = async (id) => {
+  const response = await fetch(`${API_BASE_URL}/linkups/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to delete Linkup.');
+  return data;
+};
+
+/**
+ * POST /api/linkups/:linkupId/join - Submit Join Request
+ */
+export const sendJoinRequest = async (linkupId, message) => {
+  const response = await fetch(`${API_BASE_URL}/linkups/${linkupId}/join`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ message }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to submit join request.');
+  return data;
+};
+
+/**
+ * GET /api/linkups/:linkupId/requests - View Join Requests (Creator ONLY)
+ */
+export const getLinkupRequests = async (linkupId) => {
+  const response = await fetch(`${API_BASE_URL}/linkups/${linkupId}/requests`, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch join requests.');
+  return data.requests || [];
+};
+
+/**
+ * POST /api/join-requests/:requestId/accept - Accept Join Request (Creator ONLY)
+ */
+export const acceptJoinRequest = async (requestId) => {
+  const response = await fetch(`${API_BASE_URL}/join-requests/${requestId}/accept`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to accept candidate.');
+  return data;
+};
+
+/**
+ * POST /api/join-requests/:requestId/reject - Reject Join Request (Creator ONLY)
+ */
+export const rejectJoinRequest = async (requestId) => {
+  const response = await fetch(`${API_BASE_URL}/join-requests/${requestId}/reject`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to reject join request.');
+  return data;
+};
+
+/**
+ * DELETE /api/linkups/:linkupId/members/:userId - Remove Team Member (Creator ONLY)
+ */
+export const removeTeamMember = async (linkupId, userId) => {
+  const response = await fetch(`${API_BASE_URL}/linkups/${linkupId}/members/${userId}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to remove team member.');
+  return data;
+};
+

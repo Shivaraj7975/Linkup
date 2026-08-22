@@ -179,9 +179,16 @@ export const DashboardPage = () => {
               </div>
 
               <div className="dash-card matching-teaser">
-                <h3>🚀 AI Teammate Matching</h3>
-                <p>Matching algorithm is using your skills and interests to find complementary collaborators.</p>
-                <span className="teaser-pill">Phase 2 Enabled</span>
+                <h3>🚀 Linkup & Team Formation</h3>
+                <p>Form project teams, post skill requirements, and find complementary collaborators.</p>
+                <div className="flex-stack gap-xs margin-top-sm">
+                  <a href="/discover" className="btn btn-primary btn-sm full-width flex-center gap-xs">
+                    <span>Discover Projects</span>
+                  </a>
+                  <a href="/create-linkup" className="btn btn-ghost btn-sm full-width flex-center gap-xs">
+                    <span>Create a Linkup</span>
+                  </a>
+                </div>
               </div>
             </div>
           </div>

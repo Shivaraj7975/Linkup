@@ -8,6 +8,10 @@ import { LoginPage } from './pages/LoginPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { DiscoverLinkupsPage } from './pages/DiscoverLinkupsPage';
+import { CreateLinkupPage } from './pages/CreateLinkupPage';
+import { LinkupDetailsPage } from './pages/LinkupDetailsPage';
+import { ManageLinkupPage } from './pages/ManageLinkupPage';
 
 function App() {
   return (
@@ -17,6 +21,8 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/discover" element={<DiscoverLinkupsPage />} />
+          <Route path="/linkups/:id" element={<LinkupDetailsPage />} />
           <Route
             path="/onboarding"
             element={
@@ -38,6 +44,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create-linkup"
+            element={
+              <ProtectedRoute>
+                <CreateLinkupPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/linkups/:id/manage"
+            element={
+              <ProtectedRoute>
+                <ManageLinkupPage />
               </ProtectedRoute>
             }
           />

@@ -3,6 +3,7 @@ const cors = require('cors');
 const healthRoutes = require('./routes/healthRoutes');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const linkupRoutes = require('./routes/linkupRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -27,6 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api', profileRoutes);
+app.use('/api', linkupRoutes);
 
 // Root route welcome message
 app.get('/', (req, res) => {

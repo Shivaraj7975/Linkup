@@ -2,6 +2,10 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Drop existing tables if re-initializing (in reverse dependency order)
+DROP TABLE IF EXISTS join_requests CASCADE;
+DROP TABLE IF EXISTS linkup_members CASCADE;
+DROP TABLE IF EXISTS linkup_skills CASCADE;
+DROP TABLE IF EXISTS linkups CASCADE;
 DROP TABLE IF EXISTS student_verifications CASCADE;
 DROP TABLE IF EXISTS user_interests CASCADE;
 DROP TABLE IF EXISTS interests CASCADE;
@@ -85,6 +89,51 @@ CREATE TABLE student_verifications (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 8. LINKUPS Table
+CREATE TABLE linkups (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    category VARCHAR(100) NOT NULL,
+    max_members INT NOT NULL DEFAULT 4 CHECK (max_members >= 2),
+    current_status VARCHAR(20) NOT NULL DEFAULT 'OPEN' CHECK (current_status IN ('OPEN', 'FULL', 'CLOSED')),
+    commitment_level VARCHAR(100) NOT NULL,
+    project_duration VARCHAR(100) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 9. LINKUP_SKILLS Table (Many-to-Many join table)
+CREATE TABLE linkup_skills (
+    linkup_id UUID NOT NULL REFERENCES linkups(id) ON DELETE CASCADE,
+    skill_id INT NOT NULL REFERENCES skills(id) ON DELETE CASCADE,
+    PRIMARY KEY (linkup_id, skill_id)
+);
+
+-- 10. LINKUP_MEMBERS Table
+CREATE TABLE linkup_members (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    linkup_id UUID NOT NULL REFERENCES linkups(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(100) NOT NULL DEFAULT 'Member',
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_linkup_member UNIQUE (linkup_id, user_id)
+);
+
+-- 11. JOIN_REQUESTS Table
+CREATE TABLE join_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    linkup_id UUID NOT NULL REFERENCES linkups(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'ACCEPTED', 'REJECTED')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_user_join_request UNIQUE (linkup_id, user_id)
+);
+
 -- Performance Indexes
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_student_profiles_user_id ON student_profiles(user_id);
@@ -100,6 +149,17 @@ CREATE INDEX idx_user_interests_interest_id ON user_interests(interest_id);
 CREATE INDEX idx_student_verifications_user_id ON student_verifications(user_id);
 CREATE INDEX idx_student_verifications_status ON student_verifications(status);
 
+CREATE INDEX idx_linkups_creator_id ON linkups(creator_id);
+CREATE INDEX idx_linkups_category ON linkups(category);
+CREATE INDEX idx_linkups_status ON linkups(current_status);
+CREATE INDEX idx_linkup_skills_linkup_id ON linkup_skills(linkup_id);
+CREATE INDEX idx_linkup_skills_skill_id ON linkup_skills(skill_id);
+CREATE INDEX idx_linkup_members_linkup_id ON linkup_members(linkup_id);
+CREATE INDEX idx_linkup_members_user_id ON linkup_members(user_id);
+CREATE INDEX idx_join_requests_linkup_id ON join_requests(linkup_id);
+CREATE INDEX idx_join_requests_user_id ON join_requests(user_id);
+CREATE INDEX idx_join_requests_status ON join_requests(status);
+
 -- Function and Triggers for automatic updated_at timestamp updates
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -112,3 +172,5 @@ $$ language 'plpgsql';
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_student_profiles_updated_at BEFORE UPDATE ON student_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_student_verifications_updated_at BEFORE UPDATE ON student_verifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_linkups_updated_at BEFORE UPDATE ON linkups FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_join_requests_updated_at BEFORE UPDATE ON join_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
