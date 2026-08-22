@@ -1,0 +1,130 @@
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { Link2, Eye, EyeOff, Loader2 } from 'lucide-react';
+
+export const LoginPage = () => {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const validate = () => {
+    const errs = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!form.email || !emailRegex.test(form.email)) {
+      errs.email = 'Please enter a valid email address.';
+    }
+    if (!form.password) {
+      errs.password = 'Password is required.';
+    }
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+    if (apiError) setApiError('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    setLoading(true);
+    setApiError('');
+
+    try {
+      const user = await login({
+        email: form.email.trim(),
+        password: form.password,
+      });
+
+      if (user.isProfileComplete) {
+        navigate('/dashboard', { replace: true });
+      } else {
+        navigate('/onboarding', { replace: true });
+      }
+    } catch (err) {
+      setApiError(err.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="ambient-glow-1"></div>
+      <div className="ambient-glow-2"></div>
+
+      <div className="auth-page">
+        <div className="auth-card">
+          <Link to="/" className="auth-brand">
+            <div className="brand-icon">
+              <Link2 size={22} />
+            </div>
+            <span>Linkup</span>
+          </Link>
+
+          <h1 className="auth-title">Welcome back</h1>
+          <p className="auth-subtitle">Log in to continue building with your team.</p>
+
+          {apiError && <div className="alert alert-error">{apiError}</div>}
+
+          <form onSubmit={handleSubmit} className="auth-form" noValidate>
+            <div className="form-group">
+              <label htmlFor="login-email">Personal Email</label>
+              <input
+                id="login-email"
+                type="email"
+                name="email"
+                placeholder="you@gmail.com"
+                value={form.email}
+                onChange={handleChange}
+                className={errors.email ? 'input-error' : ''}
+                autoComplete="email"
+              />
+              {errors.email && <span className="field-error">{errors.email}</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="login-password">Password</label>
+              <div className="input-wrapper">
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  placeholder="Enter your password"
+                  value={form.password}
+                  onChange={handleChange}
+                  className={errors.password ? 'input-error' : ''}
+                  autoComplete="current-password"
+                />
+                <button type="button" className="input-icon-btn" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {errors.password && <span className="field-error">{errors.password}</span>}
+            </div>
+
+            <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
+              {loading ? <><Loader2 size={18} className="spin" /> Logging in...</> : 'Log In'}
+            </button>
+          </form>
+
+          <p className="auth-footer-text">
+            Don&apos;t have an account? <Link to="/register" className="auth-link">Sign up</Link>
+          </p>
+        </div>
+      </div>
+    </>
+  );
+};
