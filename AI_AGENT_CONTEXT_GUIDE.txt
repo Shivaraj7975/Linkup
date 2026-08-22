@@ -1,0 +1,142 @@
+================================================================================
+          LINKUP PROJECT — FULL CONTEXT & INSTRUCTIONS FOR AI AGENT
+================================================================================
+
+PROJECT OVERVIEW:
+Linkup is a full-stack platform built for university students to find compatible
+project collaborators, build teams, and showcase academic & technical skills.
+
+REPOSITORY URL: https://github.com/Shivaraj7975/Linkup.git
+
+--------------------------------------------------------------------------------
+1. TECHNOLOGY STACK & PORTS
+--------------------------------------------------------------------------------
+- Backend Framework: Node.js with Express.js (Runs on http://localhost:5000)
+- Frontend Framework: React with Vite (Runs on http://localhost:5173)
+- Database: PostgreSQL (Runs on port 5432, DB Name: linkup_db)
+- Database Host: MUST be 127.0.0.1 in .env (to prevent Node 17+ IPv6 loopback issues)
+- Authentication: JWT (JSON Web Tokens) + bcryptjs password hashing
+- Styling: Vanilla CSS with design tokens & glassmorphism (client/src/index.css)
+- Icons: Lucide Icons (lucide-react)
+- External API: Research Organization Registry (ROR v2) API for college search
+  URL: https://api.ror.org/v2/organizations?query={name}
+
+--------------------------------------------------------------------------------
+2. PROJECT DIRECTORY STRUCTURE
+--------------------------------------------------------------------------------
+Linkup/
+├── README.md
+├── .gitignore
+├── AI_AGENT_CONTEXT_GUIDE.txt   <-- (This Context File)
+├── client/                      <-- React Vite Frontend
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── index.html
+│   └── src/
+│       ├── index.css            <-- Global CSS tokens, pills, modals, inputs
+│       ├── App.jsx              <-- Main router (/register, /login, /onboarding, /dashboard, /profile)
+│       ├── main.jsx
+│       ├── components/          <-- Navbar, ProtectedRoute
+│       ├── context/             <-- AuthContext (user state, token management)
+│       ├── pages/               <-- LandingPage, RegisterPage, LoginPage, OnboardingPage, DashboardPage, ProfilePage
+│       └── services/            <-- api.js (Backend & ROR v2 API client)
+└── server/                      <-- Express.js Backend
+    ├── package.json
+    ├── .env.example             <-- Environment variables template
+    └── src/
+        ├── app.js               <-- Express setup, CORS, route handlers
+        ├── server.js            <-- HTTP server startup
+        ├── config/              <-- db.js (PostgreSQL Pool)
+        ├── middleware/          <-- auth.js (JWT validation), errorHandler.js
+        ├── routes/              <-- authRoutes.js, profileRoutes.js, healthRoutes.js
+        ├── controllers/         <-- authController.js, profileController.js
+        ├── services/            <-- authService.js, profileService.js
+        └── db/                  <-- schema.sql, seed.sql, initDb.js, test scripts
+
+--------------------------------------------------------------------------------
+3. STEP-BY-STEP SETUP INSTRUCTIONS FOR DEVELOPERS
+--------------------------------------------------------------------------------
+Step 3.1: Clone Repository
+  git clone https://github.com/Shivaraj7975/Linkup.git
+  cd Linkup
+
+Step 3.2: Install Server & Client Dependencies
+  # Install server packages
+  cd server
+  npm install
+
+  # Install client packages
+  cd ../client
+  npm install
+
+Step 3.3: Configure Server Environment (.env)
+  In server/ directory, copy .env.example to .env:
+  - Windows PowerShell: Copy-Item .env.example .env
+  - Mac / Linux: cp .env.example .env
+
+  Update server/.env with your local PostgreSQL password:
+  --------------------------------------------------
+  PORT=5000
+  NODE_ENV=development
+  CLIENT_ORIGIN=http://localhost:5173
+  DB_HOST=127.0.0.1
+  DB_PORT=5432
+  DB_NAME=linkup_db
+  DB_USER=postgres
+  DB_PASSWORD=YOUR_LOCAL_POSTGRES_PASSWORD
+  JWT_SECRET=linkup_jwt_super_secret_key_2026_dev
+  JWT_EXPIRES_IN=7d
+  --------------------------------------------------
+
+Step 3.4: Initialize Database
+  Make sure PostgreSQL is running on your machine, then run:
+  cd server
+  npm run db:init
+
+  Output verification:
+  📊 Current Skills Count: 260
+  📊 Current Interests Count: 58
+  🎉 Database "linkup_db" initialization complete!
+
+Step 3.5: Start Development Servers
+  - Terminal 1 (Backend): cd server && npm run dev  (Runs on http://localhost:5000)
+  - Terminal 2 (Frontend): cd client && npm run dev (Runs on http://localhost:5173)
+
+--------------------------------------------------------------------------------
+4. KEY FEATURES & IMPLEMENTED MODULES
+--------------------------------------------------------------------------------
+1. JWT Student Authentication:
+   - Registration (POST /api/auth/register)
+   - Login (POST /api/auth/login)
+   - Current User Check (GET /api/auth/me)
+
+2. Multi-Step Onboarding System (/onboarding):
+   - Step 1 (Academics): ROR v2 API autocomplete search with auto-filling read-only City, State, Country.
+   - Step 2 (Skills): 260+ searchable real-world skills with inline "+10 More" expansion button.
+   - Step 3 (Interests): 58 searchable domain interests with inline "+10 More" expansion button.
+   - Step 4 (Bio & Availability): Short bio and weekly availability selector.
+   - Step 5 (Links): GitHub & LinkedIn profile links.
+
+3. Student Profile Page (/profile):
+   - Header banner with Name, Verification Badge, College, Location, Degree, Year, and Links.
+   - Edit Profile Modal for real-time profile updates with ROR v2 autocomplete and skill/interest selectors.
+
+4. Public Student Profile API Endpoint (GET /api/users/:userId):
+   - Sanitized public data for Linkup Discovery, AI Teammate Matching, and Team Management.
+   - Exposes: id, name, college, city, state, country, degree, yearOfStudy, bio, skills, interests, availability, githubUrl, linkedinUrl, verificationStatus.
+   - Privacy Enforcement: NEVER exposes email, college_email, password, password_hash, or JWT tokens.
+
+--------------------------------------------------------------------------------
+5. CODE CONVENTIONS FOR AI AGENTS
+--------------------------------------------------------------------------------
+- Keep styling consistent with client/src/index.css (design tokens, glassmorphism).
+- Preserve icon-text input padding: .input-wrapper .input-left-icon ~ input { padding-left: 2.85rem !important; }
+- Always write SQL queries in server/src/services/ using parameterized queries ($1, $2).
+- When creating new features (e.g. Project Creation, AI Teammate Matching, Team Management, Chat), follow the layered structure:
+  * Database Schema -> server/src/db/schema.sql
+  * Service Layer -> server/src/services/
+  * Controller Layer -> server/src/controllers/
+  * Express Route -> server/src/routes/
+  * Frontend API Client -> client/src/services/api.js
+  * React Page / Component -> client/src/pages/ or client/src/components/
+================================================================================
