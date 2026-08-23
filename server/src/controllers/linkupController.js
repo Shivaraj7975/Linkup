@@ -228,6 +228,8 @@ const rejectRequest = async (req, res, next) => {
     }
     next(error);
   }
+};
+
 /**
  * DELETE /api/linkups/:linkupId/members/:userId
  * Remove Team Member (Creator ONLY)
