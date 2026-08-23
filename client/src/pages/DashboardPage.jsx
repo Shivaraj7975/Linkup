@@ -1,52 +1,61 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
-import { getProfile } from '../services/api';
+import { getLinkups } from '../services/api';
+import { MatchResultsModal } from '../components/MatchResultsModal';
 import {
-  GraduationCap,
-  Code2,
+  Rocket,
+  Users,
+  Plus,
   Sparkles,
-  UserCheck,
+  ArrowRight,
+  Clock,
+  Layers,
+  Settings,
+  FolderGit2,
   CheckCircle2,
   AlertCircle,
-  Github,
-  Linkedin,
-  Clock,
-  BookOpen,
+  Code2,
+  Loader2,
+  ExternalLink,
 } from 'lucide-react';
 
 export const DashboardPage = () => {
   const { user } = useAuth();
-  const [profileData, setProfileData] = useState(null);
+  const navigate = useNavigate();
+
+  const [activeTab, setActiveTab] = useState('joined'); // 'joined' | 'created'
+  const [createdLinkups, setCreatedLinkups] = useState([]);
+  const [joinedLinkups, setJoinedLinkups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [matchingLinkup, setMatchingLinkup] = useState(null);
 
   useEffect(() => {
-    const fetchFullProfile = async () => {
-      try {
-        const data = await getProfile();
-        setProfileData(data);
-      } catch (err) {
-        console.error('Failed to load profile for dashboard:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchFullProfile();
-  }, []);
+    if (!user?.id) return;
+    fetchMyLinkups();
+  }, [user?.id]);
 
-  if (loading) {
-    return (
-      <div className="page-loader">
-        <div className="loader-spinner" />
-        <p>Loading your dashboard...</p>
-      </div>
-    );
-  }
+  const fetchMyLinkups = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      // Fetch both created and joined linkups in parallel
+      const [createdRes, joinedRes] = await Promise.all([
+        getLinkups({ creatorId: user.id }),
+        getLinkups({ memberUserId: user.id }),
+      ]);
 
-  const p = profileData?.profile || {};
-  const skills = profileData?.skills || [];
-  const interests = profileData?.interests || [];
-  const verification = profileData?.verification || {};
+      setCreatedLinkups(createdRes.linkups || []);
+      setJoinedLinkups(joinedRes.linkups || []);
+    } catch (err) {
+      console.error('Failed to load My Linkups:', err);
+      setError(err.message || 'Failed to fetch your Linkups.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
@@ -58,142 +67,274 @@ export const DashboardPage = () => {
 
         <main className="dashboard-layout">
           {/* Header Banner */}
-          <div className="dashboard-banner">
-            <div className="user-avatar-large">
-              {user?.name?.charAt(0)?.toUpperCase() || 'S'}
+          <div
+            className="dash-card page-header-hero"
+            style={{
+              marginBottom: '1.75rem',
+              padding: '2rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '1.25rem',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
+                <FolderGit2 size={24} color="#6366f1" />
+                <h1 style={{ fontSize: '1.85rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                  My Linkups
+                </h1>
+              </div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0 }}>
+                Manage student project linkups you have joined as a member or created as a lead.
+              </p>
             </div>
 
-            <div className="user-header-info">
-              <div className="user-title-row">
-                <h1>{user?.name}</h1>
-                <span className={`verification-badge ${verification.status?.toLowerCase()}`}>
-                  {verification.status === 'VERIFIED' ? (
-                    <><CheckCircle2 size={14} /> Verified Student</>
-                  ) : (
-                    <><AlertCircle size={14} /> Unverified Student</>
-                  )}
-                </span>
-              </div>
+            <Link to="/create-linkup" className="btn btn-primary btn-md">
+              <Plus size={16} />
+              <span>Create a Linkup</span>
+            </Link>
+          </div>
 
-              <p className="user-subtitle-line">
-                <GraduationCap size={16} />
-                <span>{p.degree || 'Student'}</span>
-                <span className="dot-divider">•</span>
-                <span>{p.college || 'University'}</span>
-                {(p.city || p.state || p.country) && (
-                  <>
-                    <span className="dot-divider">•</span>
-                    <span>
-                      📍 {[p.city, p.state, p.country].filter(Boolean).join(', ')}
-                    </span>
-                  </>
-                )}
-                {p.year_of_study && (
-                  <>
-                    <span className="dot-divider">•</span>
-                    <span>{p.year_of_study}</span>
-                  </>
-                )}
-              </p>
+          {/* Segmented Options / Tabs */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '0.75rem',
+              marginBottom: '2rem',
+              background: 'rgba(15, 22, 41, 0.6)',
+              padding: '0.4rem',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--glass-border)',
+              width: 'fit-content',
+              maxWidth: '100%',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveTab('joined')}
+              className={`btn btn-sm ${activeTab === 'joined' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                borderRadius: 'var(--radius-sm)',
+                padding: '0.6rem 1.25rem',
+                gap: '0.5rem',
+                fontSize: '0.9rem',
+              }}
+            >
+              <Users size={16} />
+              <span>Joined Linkups</span>
+              <span
+                style={{
+                  background: activeTab === 'joined' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+                  padding: '0.1rem 0.5rem',
+                  borderRadius: '999px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                }}
+              >
+                {joinedLinkups.length}
+              </span>
+            </button>
 
-              {(p.github_url || p.linkedin_url) && (
-                <div className="social-links-row">
-                  {p.github_url && (
-                    <a href={p.github_url} target="_blank" rel="noreferrer" className="social-link">
-                      <Github size={16} /> GitHub
-                    </a>
-                  )}
-                  {p.linkedin_url && (
-                    <a href={p.linkedin_url} target="_blank" rel="noreferrer" className="social-link">
-                      <Linkedin size={16} /> LinkedIn
-                    </a>
-                  )}
+            <button
+              type="button"
+              onClick={() => setActiveTab('created')}
+              className={`btn btn-sm ${activeTab === 'created' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                borderRadius: 'var(--radius-sm)',
+                padding: '0.6rem 1.25rem',
+                gap: '0.5rem',
+                fontSize: '0.9rem',
+              }}
+            >
+              <Rocket size={16} />
+              <span>Created Linkups</span>
+              <span
+                style={{
+                  background: activeTab === 'created' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+                  padding: '0.1rem 0.5rem',
+                  borderRadius: '999px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                }}
+              >
+                {createdLinkups.length}
+              </span>
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          {loading ? (
+            <div className="page-loader" style={{ padding: '4rem 0', minHeight: 'auto' }}>
+              <Loader2 size={36} className="spin" color="#6366f1" style={{ margin: '0 auto 1rem auto' }} />
+              <p style={{ color: 'var(--text-secondary)' }}>Loading your Linkups...</p>
+            </div>
+          ) : error ? (
+            <div className="alert alert-error" style={{ margin: '1rem 0' }}>
+              <AlertCircle size={20} />
+              <span>{error}</span>
+            </div>
+          ) : activeTab === 'joined' ? (
+            /* JOINED LINKUPS TAB */
+            <div>
+              {joinedLinkups.length === 0 ? (
+                <div className="dash-card text-center" style={{ padding: '3.5rem 1.5rem' }}>
+                  <Users size={48} color="#64748b" style={{ marginBottom: '1rem' }} />
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#fff' }}>
+                    No Joined Linkups Yet
+                  </h3>
+                  <p style={{ color: 'var(--text-secondary)', maxWidth: '460px', margin: '0 auto 1.5rem', lineHeight: 1.5 }}>
+                    You haven't joined any project teams yet. Discover open student Linkups and submit join requests to collaborate!
+                  </p>
+                  <Link to="/discover" className="btn btn-primary btn-sm">
+                    <ArrowRight size={16} />
+                    <span>Discover Open Linkups</span>
+                  </Link>
+                </div>
+              ) : (
+                <div className="linkups-grid">
+                  {joinedLinkups.map((l) => (
+                    <div key={l.id} className="card glass-card linkup-card interactive-card">
+                      <div className="card-top-row">
+                        <span className="badge badge-category">{l.category}</span>
+                        <span className={`badge badge-status ${l.current_status?.toLowerCase() === 'open' ? 'status-open' : 'status-full'}`}>
+                          {l.current_status || 'OPEN'}
+                        </span>
+                      </div>
+
+                      <h3 className="linkup-card-title">{l.title}</h3>
+                      <p className="linkup-card-desc">
+                        {l.description?.length > 110 ? `${l.description.substring(0, 110)}...` : l.description}
+                      </p>
+
+                      {l.requiredSkills && l.requiredSkills.length > 0 && (
+                        <div className="skills-row margin-bottom-md">
+                          {l.requiredSkills.map((sk, idx) => (
+                            <span key={idx} className="tag-pill active pill-sm">
+                              {typeof sk === 'object' ? sk.name : sk}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="linkup-card-footer" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '0.85rem', marginTop: 'auto' }}>
+                        <div className="creator-snippet">
+                          <div className="creator-avatar">
+                            {l.creator_name?.charAt(0)?.toUpperCase() || 'C'}
+                          </div>
+                          <div className="creator-details">
+                            <div className="creator-name-row">
+                              <span className="creator-name">{l.creator_name || 'Project Lead'}</span>
+                            </div>
+                            <span className="creator-college">{l.creator_college || 'University'}</span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/linkups/${l.id}`)}
+                          className="btn btn-ghost btn-sm"
+                          style={{ gap: '0.35rem' }}
+                        >
+                          <span>View Details</span>
+                          <ExternalLink size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Grid Layout */}
-          <div className="dashboard-grid">
-            {/* Left Main Column */}
-            <div className="dashboard-main-col">
-              {/* Bio Card */}
-              <div className="dash-card">
-                <div className="dash-card-header">
-                  <BookOpen size={18} color="#6366f1" />
-                  <h2>About</h2>
-                </div>
-                <p className="bio-text">{p.bio || 'No bio provided yet.'}</p>
-              </div>
-
-              {/* Skills Card */}
-              <div className="dash-card">
-                <div className="dash-card-header">
-                  <Code2 size={18} color="#a855f7" />
-                  <h2>Skills ({skills.length})</h2>
-                </div>
-                <div className="pill-tags">
-                  {skills.length === 0 ? (
-                    <p className="no-pills-text">No skills added yet.</p>
-                  ) : (
-                    skills.map((sk) => (
-                      <span key={sk.id} className="tag-pill active">
-                        {sk.name}
-                      </span>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Interests Card */}
-              <div className="dash-card">
-                <div className="dash-card-header">
-                  <Sparkles size={18} color="#06b6d4" />
-                  <h2>Areas of Interest ({interests.length})</h2>
-                </div>
-                <div className="pill-tags">
-                  {interests.length === 0 ? (
-                    <p className="no-pills-text">No interests selected yet.</p>
-                  ) : (
-                    interests.map((it) => (
-                      <span key={it.id} className="tag-pill cyan">
-                        {it.name}
-                      </span>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Side Column */}
-            <div className="dashboard-side-col">
-              <div className="dash-card">
-                <div className="dash-card-header">
-                  <Clock size={18} color="#10b981" />
-                  <h2>Availability</h2>
-                </div>
-                <div className="availability-status">
-                  <span className="avail-dot" />
-                  <span>{p.availability || 'Flexible'}</span>
-                </div>
-              </div>
-
-              <div className="dash-card matching-teaser">
-                <h3>🚀 Linkup & Team Formation</h3>
-                <p>Form project teams, post skill requirements, and find complementary collaborators.</p>
-                <div className="flex-stack gap-xs margin-top-sm">
-                  <a href="/discover" className="btn btn-primary btn-sm full-width flex-center gap-xs">
-                    <span>Discover Projects</span>
-                  </a>
-                  <a href="/create-linkup" className="btn btn-ghost btn-sm full-width flex-center gap-xs">
+          ) : (
+            /* CREATED LINKUPS TAB */
+            <div>
+              {createdLinkups.length === 0 ? (
+                <div className="dash-card text-center" style={{ padding: '3.5rem 1.5rem' }}>
+                  <Rocket size={48} color="#64748b" style={{ marginBottom: '1rem' }} />
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#fff' }}>
+                    No Created Linkups Yet
+                  </h3>
+                  <p style={{ color: 'var(--text-secondary)', maxWidth: '460px', margin: '0 auto 1.5rem', lineHeight: 1.5 }}>
+                    You haven't posted any project Linkups. Post a project request to find AI-matched student teammates!
+                  </p>
+                  <Link to="/create-linkup" className="btn btn-primary btn-sm">
+                    <Plus size={16} />
                     <span>Create a Linkup</span>
-                  </a>
+                  </Link>
                 </div>
-              </div>
+              ) : (
+                <div className="linkups-grid">
+                  {createdLinkups.map((l) => (
+                    <div key={l.id} className="card glass-card linkup-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div className="card-top-row">
+                        <span className="badge badge-category">{l.category}</span>
+                        <span className={`badge badge-status ${l.current_status?.toLowerCase() === 'open' ? 'status-open' : 'status-full'}`}>
+                          {l.current_status || 'OPEN'}
+                        </span>
+                      </div>
+
+                      <h3 className="linkup-card-title">{l.title}</h3>
+                      <p className="linkup-card-desc">
+                        {l.description?.length > 110 ? `${l.description.substring(0, 110)}...` : l.description}
+                      </p>
+
+                      {l.requiredSkills && l.requiredSkills.length > 0 && (
+                        <div className="skills-row margin-bottom-md">
+                          {l.requiredSkills.map((sk, idx) => (
+                            <span key={idx} className="tag-pill active pill-sm">
+                              {typeof sk === 'object' ? sk.name : sk}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Created Linkup Action Buttons */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.6rem',
+                          marginTop: 'auto',
+                          paddingTop: '0.85rem',
+                          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          style={{ width: '100%', justifyContent: 'center', gap: '0.4rem' }}
+                          onClick={() => setMatchingLinkup({ ...l, isCreator: true })}
+                        >
+                          <Sparkles size={15} />
+                          <span>Find My Team</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          style={{ width: '100%', justifyContent: 'center', gap: '0.4rem' }}
+                          onClick={() => navigate(`/linkups/${l.id}/manage`)}
+                        >
+                          <Settings size={15} />
+                          <span>Manage Linkup</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </main>
       </div>
+
+      {matchingLinkup && (
+        <MatchResultsModal
+          linkup={matchingLinkup}
+          onClose={() => setMatchingLinkup(null)}
+        />
+      )}
     </>
   );
 };

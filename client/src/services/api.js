@@ -227,6 +227,8 @@ export const getLinkups = async (params = {}) => {
   if (params.search) queryParams.append('search', params.search);
   if (params.college) queryParams.append('college', params.college);
   if (params.availability) queryParams.append('availability', params.availability);
+  if (params.creatorId) queryParams.append('creatorId', params.creatorId);
+  if (params.memberUserId) queryParams.append('memberUserId', params.memberUserId);
 
   const queryString = queryParams.toString();
   const url = `${API_BASE_URL}/linkups${queryString ? `?${queryString}` : ''}`;
@@ -343,6 +345,37 @@ export const removeTeamMember = async (linkupId, userId) => {
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Failed to remove team member.');
+  return data;
+};
+
+/* ==========================================================================
+   AI MATCHING ENGINE API ENDPOINTS (PERSON 3)
+   ========================================================================== */
+
+/**
+ * GET /api/linkups/:linkupId/matches - Fetch Ranked AI Teammate Matches
+ */
+export const getLinkupMatches = async (linkupId, refresh = false) => {
+  const url = `${API_BASE_URL}/linkups/${linkupId}/matches${refresh ? '?refresh=true' : ''}`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch AI matches.');
+  return data;
+};
+
+/**
+ * GET /api/users/:userId - Fetch Public Student Profile
+ */
+export const getPublicUserProfile = async (userId) => {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch student profile.');
   return data;
 };
 

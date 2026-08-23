@@ -1,69 +1,127 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Link2, LayoutDashboard, User, Compass, PlusCircle } from 'lucide-react';
+import {
+  Link2,
+  FolderGit2,
+  User,
+  Compass,
+  PlusCircle,
+  LogOut,
+  LogIn,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
 
+  const navItems = [
+    { label: 'Discover', path: '/discover', icon: Compass },
+    { label: 'My Linkups', path: '/dashboard', icon: FolderGit2 },
+    { label: 'Create', path: '/create-linkup', icon: PlusCircle },
+    { label: 'Profile', path: '/profile', icon: User },
+  ];
+
   return (
-    <header className="navbar">
-      <Link to="/" className="brand-logo">
-        <div className="brand-icon">
-          <Link2 size={22} />
+    <>
+      {/* Top Header Navbar */}
+      <header className="navbar-container">
+        <div className="navbar">
+          {/* Brand Logo */}
+          <Link to="/" className="brand-logo">
+            <div className="brand-icon">
+              <Link2 size={22} />
+            </div>
+            <span>Linkup</span>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="nav-actions desktop-nav">
+            <Link
+              to="/discover"
+              className={`btn btn-ghost btn-sm ${location.pathname === '/discover' ? 'active-nav-link' : ''}`}
+            >
+              <Compass size={15} />
+              <span>Discover</span>
+            </Link>
+
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  className={`btn btn-ghost btn-sm ${location.pathname === '/dashboard' ? 'active-nav-link' : ''}`}
+                >
+                  <FolderGit2 size={15} />
+                  <span>My Linkups</span>
+                </Link>
+
+                <Link
+                  to="/create-linkup"
+                  className={`btn btn-ghost btn-sm ${location.pathname === '/create-linkup' ? 'active-nav-link' : ''}`}
+                >
+                  <PlusCircle size={15} />
+                  <span>Create Linkup</span>
+                </Link>
+
+                <Link
+                  to="/profile"
+                  className={`btn btn-ghost btn-sm ${location.pathname === '/profile' ? 'active-nav-link' : ''}`}
+                >
+                  <User size={15} />
+                  <span>Profile</span>
+                </Link>
+
+                <span className="nav-greeting">Hi, {user?.name?.split(' ')[0]}</span>
+
+                <button onClick={logout} className="btn btn-ghost btn-sm">
+                  <LogOut size={14} />
+                  <span>Logout</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="btn btn-ghost btn-sm">Login</Link>
+                <Link to="/register" className="btn btn-primary btn-sm">Get Started</Link>
+              </>
+            )}
+          </nav>
+
+          {/* Mobile Top Actions (User Greeting / Logout or Login) */}
+          <div className="mobile-top-actions">
+            {isAuthenticated ? (
+              <button onClick={logout} className="btn btn-ghost btn-sm" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', gap: '0.3rem' }}>
+                <LogOut size={14} />
+                <span>Logout</span>
+              </button>
+            ) : (
+              <Link to="/login" className="btn btn-primary btn-sm" style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}>
+                <LogIn size={14} />
+                <span>Login</span>
+              </Link>
+            )}
+          </div>
         </div>
-        <span>Linkup</span>
-      </Link>
+      </header>
 
-      <nav className="nav-actions">
-        <Link
-          to="/discover"
-          className={`btn btn-ghost btn-sm ${location.pathname === '/discover' ? 'active-nav-link' : ''}`}
-        >
-          <Compass size={15} />
-          <span>Discover</span>
-        </Link>
-
-        {isAuthenticated ? (
-          <>
+      {/* Mobile Fixed Bottom Navigation Bar */}
+      <nav className="mobile-bottom-nav">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = location.pathname === item.path;
+          return (
             <Link
-              to="/dashboard"
-              className={`btn btn-ghost btn-sm ${location.pathname === '/dashboard' ? 'active-nav-link' : ''}`}
+              key={item.path}
+              to={item.path}
+              className={`mobile-bottom-nav-item ${isActive ? 'active' : ''}`}
             >
-              <LayoutDashboard size={15} />
-              <span>Dashboard</span>
+              <div className="nav-icon-wrapper">
+                <Icon size={20} />
+              </div>
+              <span className="nav-label">{item.label}</span>
             </Link>
-
-            <Link
-              to="/create-linkup"
-              className={`btn btn-ghost btn-sm ${location.pathname === '/create-linkup' ? 'active-nav-link' : ''}`}
-            >
-              <PlusCircle size={15} />
-              <span>Create Linkup</span>
-            </Link>
-
-            <Link
-              to="/profile"
-              className={`btn btn-ghost btn-sm ${location.pathname === '/profile' ? 'active-nav-link' : ''}`}
-            >
-              <User size={15} />
-              <span>Profile</span>
-            </Link>
-
-            <span className="nav-greeting">Hi, {user?.name?.split(' ')[0]}</span>
-            
-            <button onClick={logout} className="btn btn-ghost btn-sm">
-              Logout
-            </button>
-          </>
-        ) : (
-          <>
-            <Link to="/login" className="btn btn-ghost btn-sm">Login</Link>
-            <Link to="/register" className="btn btn-primary btn-sm">Get Started</Link>
-          </>
-        )}
+          );
+        })}
       </nav>
-    </header>
+    </>
   );
 };

@@ -34,4 +34,7 @@ router.post('/join-requests/:requestId/reject', authenticateToken, linkupControl
 // Remove Team Member (Auth required, Creator ONLY)
 router.delete('/linkups/:linkupId/members/:userId', authenticateToken, linkupController.removeMember);
 
+// Get Ranked AI Candidate Matches for a Linkup (Auth required)
+router.get('/linkups/:linkupId/matches', authenticateToken, linkupController.getLinkupMatches);
+
 module.exports = router;

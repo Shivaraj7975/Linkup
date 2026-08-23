@@ -10,6 +10,8 @@
  * - Profile/Bio Relevance: 10%
  */
 
+const { query } = require('../config/db');
+
 // Weight constants for deterministic scoring
 const WEIGHTS = {
   skill: 0.50,
@@ -365,6 +367,295 @@ function calculateMatch(target = {}, candidate = {}) {
   };
 }
 
+/**
+ * Generates human-readable match reasons array for a candidate
+ * 
+ * @param {Object} matchResult Result from calculateMatch
+ * @param {Object} target Linkup target requirement
+ * @param {Object} candidate Candidate profile
+ * @returns {Array<string>} Array of concise reason strings
+ */
+function generateMatchReasons(matchResult, target, candidate) {
+  const reasons = [];
+  const details = matchResult.details || {};
+  const matchedSkills = details.matchedSkills || [];
+  const reqSkills = normalizeStringArray(target?.requiredSkills || target?.skills);
+
+  if (reqSkills.length > 0) {
+    if (matchedSkills.length > 0) {
+      const formattedSkills = matchedSkills
+        .slice(0, 3)
+        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+        .join(', ');
+      reasons.push(`Has ${matchedSkills.length} of ${reqSkills.length} required skills (${formattedSkills})`);
+    } else {
+      reasons.push('Missing primary required skills');
+    }
+  }
+
+  const matchedInterests = details.matchedInterests || [];
+  if (matchedInterests.length > 0) {
+    const formattedInterests = matchedInterests
+      .slice(0, 2)
+      .map((i) => i.charAt(0).toUpperCase() + i.slice(1))
+      .join(' & ');
+    reasons.push(`Interested in ${formattedInterests}`);
+  } else if (target?.category) {
+    reasons.push(`Category alignment with ${target.category}`);
+  }
+
+  if (matchResult.breakdown?.availabilityMatch >= 80) {
+    reasons.push('Availability matches the project commitment level');
+  }
+
+  if (matchResult.breakdown?.profileMatch >= 50) {
+    reasons.push('Bio description shows relevant background for project goals');
+  }
+
+  return reasons;
+}
+
+/**
+ * PHASE 3: Candidate Filtering using PostgreSQL
+ * 
+ * Queries PostgreSQL to find relevant students for a Linkup using SQL priority filtering.
+ * Never sends entire user database to AI models.
+ * 
+ * Filtering Priority:
+ * 1. Students with matching required skills
+ * 2. Students with matching interests
+ * 3. Students with compatible availability
+ * 4. Exclude Linkup creator
+ * 5. Exclude students already in the team
+ * 6. Exclude duplicate or invalid candidates
+ * 
+ * @param {string|Object} linkupOrId Linkup ID (UUID) or Linkup object
+ * @param {number} [limit=20] Maximum candidate profiles to return (default: 20)
+ * @returns {Promise<Array<Object>>} Filtered and ranked candidate student profiles with match scores
+ */
+const filterCandidateStudents = async (linkupOrId, limit = 20) => {
+  let linkupId = null;
+  let linkupObj = null;
+
+  if (typeof linkupOrId === 'string') {
+    linkupId = linkupOrId;
+  } else if (linkupOrId && typeof linkupOrId === 'object') {
+    linkupId = linkupOrId.id || linkupOrId.linkupId;
+    linkupObj = linkupOrId;
+  }
+
+  if (!linkupId) {
+    throw new Error('Invalid Linkup ID provided for candidate filtering.');
+  }
+
+  // 1. Fetch Linkup details if not provided
+  if (!linkupObj || !linkupObj.creatorId) {
+    const lRes = await query(
+      `SELECT id, creator_id, title, description, category, commitment_level, project_duration, max_members, current_status
+       FROM linkups WHERE id = $1`,
+      [linkupId]
+    );
+    if (lRes.rows.length === 0) {
+      throw new Error(`Linkup not found with ID: ${linkupId}`);
+    }
+    const row = lRes.rows[0];
+    linkupObj = {
+      id: row.id,
+      creatorId: row.creator_id,
+      title: row.title,
+      description: row.description,
+      category: row.category,
+      commitmentLevel: row.commitment_level,
+      projectDuration: row.project_duration,
+      maxMembers: row.max_members,
+      currentStatus: row.current_status,
+    };
+  }
+
+  // Fetch required skills for Linkup if not attached
+  if (!linkupObj.requiredSkills) {
+    const sRes = await query(
+      `SELECT s.id, s.name 
+       FROM linkup_skills ls 
+       JOIN skills s ON ls.skill_id = s.id 
+       WHERE ls.linkup_id = $1`,
+      [linkupId]
+    );
+    linkupObj.requiredSkills = sRes.rows;
+  }
+
+  // 2. Fetch excluded user IDs (Linkup creator + existing team members)
+  const memberRes = await query(
+    `SELECT DISTINCT user_id FROM linkup_members WHERE linkup_id = $1`,
+    [linkupId]
+  );
+  const excludedUserIds = new Set(memberRes.rows.map((r) => r.user_id));
+  if (linkupObj.creatorId) {
+    excludedUserIds.add(linkupObj.creatorId);
+  }
+  const excludedArray = Array.from(excludedUserIds);
+
+  // 3. Extract required skill IDs & names
+  const reqSkillIds = [];
+  if (Array.isArray(linkupObj.requiredSkills)) {
+    for (const sk of linkupObj.requiredSkills) {
+      if (typeof sk === 'object' && sk.id) {
+        const parsedId = parseInt(sk.id, 10);
+        if (!isNaN(parsedId)) reqSkillIds.push(parsedId);
+      }
+    }
+  }
+
+  const categoryStr = (linkupObj.category || '').trim();
+  const maxLimit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 50);
+
+  // 4. Execute SQL priority candidate query
+  const filterQueryText = `
+    SELECT 
+      u.id, u.name,
+      sp.college, sp.degree, sp.year_of_study, sp.bio, sp.availability,
+      sp.github_url, sp.linkedin_url,
+      COALESCE(sv.status, 'UNVERIFIED') as verification_status,
+      (
+        CASE 
+          WHEN $2::int[] IS NOT NULL AND CARDINALITY($2::int[]) > 0 THEN
+            (SELECT COUNT(*)::int FROM user_skills us WHERE us.user_id = u.id AND us.skill_id = ANY($2::int[]))
+          ELSE 0
+        END
+      ) as skill_match_count,
+      (
+        CASE 
+          WHEN $3::text IS NOT NULL AND $3::text <> '' THEN
+            (SELECT COUNT(*)::int FROM user_interests ui JOIN interests i ON ui.interest_id = i.id WHERE ui.user_id = u.id AND i.name ILIKE '%' || $3 || '%')
+          ELSE 0
+        END
+      ) as interest_match_count
+    FROM users u
+    JOIN student_profiles sp ON u.id = sp.user_id
+    LEFT JOIN student_verifications sv ON u.id = sv.user_id
+    WHERE ($1::uuid[] IS NULL OR CARDINALITY($1::uuid[]) = 0 OR NOT (u.id = ANY($1::uuid[])))
+    ORDER BY skill_match_count DESC, interest_match_count DESC, u.created_at DESC
+    LIMIT $4
+  `;
+
+  const candidatesRes = await query(filterQueryText, [
+    excludedArray,
+    reqSkillIds,
+    categoryStr,
+    maxLimit,
+  ]);
+
+  if (candidatesRes.rows.length === 0) {
+    return [];
+  }
+
+  const candidateUserIds = candidatesRes.rows.map((row) => row.id);
+
+  // 5. Fetch candidate skills
+  const csRes = await query(
+    `SELECT us.user_id, s.name 
+     FROM user_skills us 
+     JOIN skills s ON us.skill_id = s.id 
+     WHERE us.user_id = ANY($1::uuid[]) 
+     ORDER BY s.name ASC`,
+    [candidateUserIds]
+  );
+  const candidateSkillsMap = {};
+  for (const row of csRes.rows) {
+    if (!candidateSkillsMap[row.user_id]) candidateSkillsMap[row.user_id] = [];
+    candidateSkillsMap[row.user_id].push(row.name);
+  }
+
+  // 6. Fetch candidate interests
+  const ciRes = await query(
+    `SELECT ui.user_id, i.name 
+     FROM user_interests ui 
+     JOIN interests i ON ui.interest_id = i.id 
+     WHERE ui.user_id = ANY($1::uuid[]) 
+     ORDER BY i.name ASC`,
+    [candidateUserIds]
+  );
+  const candidateInterestsMap = {};
+  for (const row of ciRes.rows) {
+    if (!candidateInterestsMap[row.user_id]) candidateInterestsMap[row.user_id] = [];
+    candidateInterestsMap[row.user_id].push(row.name);
+  }
+
+  // 7. Format candidate profiles and calculate match scores
+  const formattedCandidates = candidatesRes.rows.map((row) => {
+    const candidateObj = {
+      id: row.id,
+      userId: row.id,
+      name: row.name,
+      college: row.college || '',
+      degree: row.degree || '',
+      yearOfStudy: row.year_of_study || '',
+      bio: row.bio || '',
+      availability: row.availability || 'Flexible',
+      githubUrl: row.github_url || '',
+      linkedinUrl: row.linkedin_url || '',
+      verificationStatus: row.verification_status,
+      skills: candidateSkillsMap[row.id] || [],
+      interests: candidateInterestsMap[row.id] || [],
+    };
+
+    const matchResult = calculateMatch(linkupObj, candidateObj);
+    return {
+      userId: candidateObj.id,
+      name: candidateObj.name,
+      college: candidateObj.college,
+      degree: candidateObj.degree,
+      yearOfStudy: candidateObj.yearOfStudy,
+      verificationStatus: candidateObj.verificationStatus,
+      matchPercentage: Math.round(matchResult.score),
+      breakdown: matchResult.breakdown,
+      reasons: generateMatchReasons(matchResult, linkupObj, candidateObj),
+      candidate: candidateObj,
+    };
+  });
+
+  // Sort descending by matchPercentage
+  formattedCandidates.sort((a, b) => b.matchPercentage - a.matchPercentage);
+
+  return formattedCandidates.slice(0, maxLimit);
+};
+
+/**
+ * Emergency Fallback Deterministic Matcher (Used ONLY when AI calls completely fail)
+ */
+const getFallbackDeterministicMatches = (linkup, candidates) => {
+  const formattedMatches = candidates.map((item) => {
+    const candidateObj = item.candidate || item;
+    const matchResult = calculateMatch(linkup, candidateObj);
+
+    const matchedSkills = matchResult.details?.matchedSkills || [];
+    const missingSkills = matchResult.details?.missingSkills || [];
+
+    return {
+      userId: String(candidateObj.id || candidateObj.userId),
+      name: candidateObj.name || 'Student Candidate',
+      college: candidateObj.college || 'University Student',
+      degree: candidateObj.degree || '',
+      yearOfStudy: candidateObj.yearOfStudy || candidateObj.year_of_study || '',
+      verificationStatus: candidateObj.verificationStatus || candidateObj.verification_status || 'UNVERIFIED',
+      matchPercentage: Math.round(matchResult.score),
+      reasons: generateMatchReasons(matchResult, linkup, candidateObj),
+      strengths: matchedSkills.map((s) => `Matched skill: ${s}`),
+      concerns: missingSkills.map((s) => `Missing skill: ${s}`),
+      generatedBy: 'FALLBACK',
+      candidate: candidateObj,
+    };
+  });
+
+  formattedMatches.sort((a, b) => b.matchPercentage - a.matchPercentage);
+
+  return {
+    success: true,
+    generatedBy: 'FALLBACK',
+    matches: formattedMatches,
+  };
+};
+
 module.exports = {
   calculateSkillMatch,
   calculateInterestMatch,
@@ -373,4 +664,7 @@ module.exports = {
   calculateFinalScore,
   calculateMatch,
   parseHoursPerWeek,
+  generateMatchReasons,
+  filterCandidateStudents,
+  getFallbackDeterministicMatches,
 };

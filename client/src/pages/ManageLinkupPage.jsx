@@ -17,6 +17,7 @@ import {
   Calendar,
   Sparkles,
   Trash2,
+  User,
 } from 'lucide-react';
 
 export const ManageLinkupPage = () => {
@@ -256,6 +257,15 @@ export const ManageLinkupPage = () => {
                       {/* Action Buttons */}
                       <div className="request-actions">
                         <button
+                          type="button"
+                          onClick={() => navigate(`/users/${app.userId || req.userId || app.id}`)}
+                          className="btn btn-ghost btn-sm"
+                          title="View candidate full profile"
+                        >
+                          <User size={15} />
+                          <span>View Profile</span>
+                        </button>
+                        <button
                           onClick={() => handleAccept(req.id)}
                           disabled={processingId === req.id || linkup.currentMemberCount >= linkup.maxMembers}
                           className="btn btn-success btn-sm"
@@ -291,7 +301,7 @@ export const ManageLinkupPage = () => {
                           <span className="extra-label">Skills:</span>
                           <div className="pills-container">
                             {app.skills.map((sk) => (
-                              <span key={sk} className="pill pill-sm">
+                              <span key={sk} className="pill pill-primary pill-xs">
                                 {sk}
                               </span>
                             ))}
@@ -315,7 +325,7 @@ export const ManageLinkupPage = () => {
                       {app.availability && (
                         <div className="extra-group">
                           <span className="extra-label">Availability:</span>
-                          <span className="availability-text">{app.availability}</span>
+                          <span className="availability-text">⏱ {app.availability}</span>
                         </div>
                       )}
                     </div>
@@ -336,12 +346,23 @@ export const ManageLinkupPage = () => {
             {linkup.members.map((m) => (
               <div key={m.id || m.userId} className="member-manage-card card flex-center-between">
                 <div className="flex-center gap-md">
-                  <div className="member-avatar-lg">
+                  <div
+                    className="member-avatar-lg"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => navigate(`/users/${m.userId || m.id}`)}
+                    title={`View ${m.name}'s profile`}
+                  >
                     {m.name ? m.name.charAt(0).toUpperCase() : 'M'}
                   </div>
                   <div className="member-manage-details">
                     <div className="member-name-row">
-                      <h4 className="member-name">{m.name}</h4>
+                      <h4
+                        className="member-name"
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => navigate(`/users/${m.userId || m.id}`)}
+                      >
+                        {m.name}
+                      </h4>
                       {m.verificationStatus === 'VERIFIED' && (
                         <BadgeCheck size={16} className="verified-icon" title="Verified Student" />
                       )}
@@ -361,16 +382,28 @@ export const ManageLinkupPage = () => {
                   </div>
                 </div>
 
-                {m.userId !== linkup.creatorId && (
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                   <button
-                    onClick={() => handleRemoveMember(m.userId, m.name)}
-                    className="btn btn-danger btn-ghost btn-sm"
-                    title={`Remove ${m.name} from team`}
+                    type="button"
+                    onClick={() => navigate(`/users/${m.userId || m.id}`)}
+                    className="btn btn-ghost btn-sm"
+                    title={`View ${m.name}'s full profile page`}
                   >
-                    <Trash2 size={15} />
-                    <span>Remove</span>
+                    <User size={15} />
+                    <span>View Profile</span>
                   </button>
-                )}
+
+                  {m.userId !== linkup.creatorId && (
+                    <button
+                      onClick={() => handleRemoveMember(m.userId, m.name)}
+                      className="btn btn-danger btn-ghost btn-sm"
+                      title={`Remove ${m.name} from team`}
+                    >
+                      <Trash2 size={15} />
+                      <span>Remove</span>
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

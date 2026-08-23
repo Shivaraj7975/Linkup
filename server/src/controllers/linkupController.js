@@ -41,8 +41,8 @@ const createLinkup = async (req, res, next) => {
  */
 const getLinkups = async (req, res, next) => {
   try {
-    const { category, skill, status, search, college, availability } = req.query;
-    const linkups = await linkupService.getLinkups({ category, skill, status, search, college, availability });
+    const { category, skill, status, search, college, availability, creatorId, memberUserId } = req.query;
+    const linkups = await linkupService.getLinkups({ category, skill, status, search, college, availability, creatorId, memberUserId });
     return res.json({
       success: true,
       count: linkups.length,
@@ -254,6 +254,30 @@ const removeMember = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/linkups/:linkupId/matches
+ * Get ranked AI candidate matches for a Linkup
+ */
+const getLinkupMatches = async (req, res, next) => {
+  try {
+    const { linkupId } = req.params;
+    const currentUserId = req.user ? req.user.id : null;
+    const forceRefresh = req.query.refresh === 'true' || req.query.force === 'true';
+
+    const matchResults = await linkupService.getMatchesForLinkup(linkupId, currentUserId, forceRefresh);
+
+    return res.status(200).json({
+      success: true,
+      ...matchResults,
+    });
+  } catch (error) {
+    if (error.message.includes('not found')) {
+      return res.status(404).json({ success: false, message: error.message });
+    }
+    next(error);
+  }
+};
+
 module.exports = {
   createLinkup,
   getLinkups,
@@ -265,4 +289,5 @@ module.exports = {
   acceptRequest,
   rejectRequest,
   removeMember,
+  getLinkupMatches,
 };

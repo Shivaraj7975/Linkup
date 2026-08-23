@@ -2,6 +2,7 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Drop existing tables if re-initializing (in reverse dependency order)
+DROP TABLE IF EXISTS matches CASCADE;
 DROP TABLE IF EXISTS join_requests CASCADE;
 DROP TABLE IF EXISTS linkup_members CASCADE;
 DROP TABLE IF EXISTS linkup_skills CASCADE;
@@ -134,6 +135,18 @@ CREATE TABLE join_requests (
     CONSTRAINT unique_user_join_request UNIQUE (linkup_id, user_id)
 );
 
+-- 12. MATCHES Table (Phase 7 AI Match Results Persistence & Caching)
+CREATE TABLE matches (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    linkup_id UUID NOT NULL REFERENCES linkups(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    match_percentage INT NOT NULL CHECK (match_percentage >= 0 AND match_percentage <= 100),
+    match_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    generated_by VARCHAR(50) NOT NULL DEFAULT 'AI' CHECK (generated_by IN ('AI', 'FALLBACK')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_linkup_user_match UNIQUE (linkup_id, user_id)
+);
+
 -- Performance Indexes
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_student_profiles_user_id ON student_profiles(user_id);
@@ -159,6 +172,10 @@ CREATE INDEX idx_linkup_members_user_id ON linkup_members(user_id);
 CREATE INDEX idx_join_requests_linkup_id ON join_requests(linkup_id);
 CREATE INDEX idx_join_requests_user_id ON join_requests(user_id);
 CREATE INDEX idx_join_requests_status ON join_requests(status);
+
+CREATE INDEX idx_matches_linkup_id ON matches(linkup_id);
+CREATE INDEX idx_matches_user_id ON matches(user_id);
+CREATE INDEX idx_matches_percentage ON matches(match_percentage);
 
 -- Function and Triggers for automatic updated_at timestamp updates
 CREATE OR REPLACE FUNCTION update_updated_at_column()

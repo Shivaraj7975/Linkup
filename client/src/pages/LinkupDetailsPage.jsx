@@ -3,8 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { getLinkupById, sendJoinRequest, deleteLinkup } from '../services/api';
+import { MatchResultsModal } from '../components/MatchResultsModal';
 import {
   Users,
+  User,
   BadgeCheck,
   Clock,
   Calendar,
@@ -19,12 +21,14 @@ import {
   Clock3,
   ShieldCheck,
   MessageSquare,
+  Sparkles,
 } from 'lucide-react';
 
 export const LinkupDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const [showMatchModal, setShowMatchModal] = useState(false);
 
   // Data & Loading State
   const [linkup, setLinkup] = useState(null);
@@ -230,8 +234,16 @@ export const LinkupDetailsPage = () => {
               {/* ACTION CONTAINER */}
               <div className="details-action-bar margin-top-lg">
                 {isCreator ? (
-                  <div className="flex-gap-md flex-wrap">
-                    <Link to={`/linkups/${id}/manage`} className="btn btn-primary">
+                  <div className="flex-gap-md flex-wrap" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => setShowMatchModal(true)}
+                    >
+                      <Sparkles size={18} />
+                      <span>Find My Team</span>
+                    </button>
+                    <Link to={`/linkups/${id}/manage`} className="btn btn-ghost">
                       <Settings size={18} />
                       <span>Manage Join Requests</span>
                     </Link>
@@ -285,7 +297,13 @@ export const LinkupDetailsPage = () => {
               </h3>
               <div className="members-grid">
                 {members.map((m) => (
-                  <div key={m.id || m.userId} className="member-card">
+                  <div
+                    key={m.id || m.userId}
+                    className="member-card interactive-card"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => navigate(`/users/${m.userId || m.id}`)}
+                    title={`Click to view ${m.name}'s profile`}
+                  >
                     <div className="member-avatar">
                       {m.name ? m.name.charAt(0).toUpperCase() : 'M'}
                     </div>
@@ -307,6 +325,18 @@ export const LinkupDetailsPage = () => {
                           ))}
                         </div>
                       )}
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', marginTop: '0.4rem', gap: '0.25rem', width: 'fit-content' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/users/${m.userId || m.id}`);
+                        }}
+                      >
+                        <User size={12} />
+                        <span>View Profile</span>
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -319,21 +349,40 @@ export const LinkupDetailsPage = () => {
             <div className="card glass-card creator-card">
               <div className="creator-card-header">
                 <span className="card-badge">Project Creator</span>
-                <div className="creator-large-avatar">
-                  {creator.name ? creator.name.charAt(0).toUpperCase() : 'C'}
+                <div
+                  className="creator-large-avatar"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => navigate(`/users/${creator?.userId || creator?.id || linkup?.creatorId}`)}
+                  title={`Click to view ${creator?.name}'s profile`}
+                >
+                  {creator?.name ? creator.name.charAt(0).toUpperCase() : 'C'}
                 </div>
-                <h3 className="creator-full-name flex-center gap-xs">
-                  <span>{creator.name}</span>
-                  {creator.verificationStatus === 'VERIFIED' && (
+                <h3
+                  className="creator-full-name flex-center gap-xs"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => navigate(`/users/${creator?.userId || creator?.id || linkup?.creatorId}`)}
+                >
+                  <span>{creator?.name}</span>
+                  {creator?.verificationStatus === 'VERIFIED' && (
                     <BadgeCheck size={18} className="verified-icon" title="Verified Student" />
                   )}
                 </h3>
-                <span className="creator-college-text">{creator.college}</span>
-                {creator.degree && (
+                <span className="creator-college-text">{creator?.college}</span>
+                {creator?.degree && (
                   <span className="creator-degree-text">
                     {creator.degree} ({creator.yearOfStudy})
                   </span>
                 )}
+
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  style={{ marginTop: '0.75rem', width: '100%', fontSize: '0.82rem', gap: '0.35rem' }}
+                  onClick={() => navigate(`/users/${creator?.userId || creator?.id || linkup?.creatorId}`)}
+                >
+                  <User size={14} />
+                  <span>View Creator Profile</span>
+                </button>
               </div>
 
               {creator.bio && (
@@ -427,6 +476,13 @@ export const LinkupDetailsPage = () => {
             )}
           </div>
         </div>
+      )}
+
+      {showMatchModal && (
+        <MatchResultsModal
+          linkup={{ ...linkup, isCreator }}
+          onClose={() => setShowMatchModal(false)}
+        />
       )}
     </div>
   );

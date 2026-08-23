@@ -1,5 +1,10 @@
 const { pool, query } = require('../config/db');
 const { getPublicStudentProfileByUserId } = require('./profileService');
+const { filterCandidateStudents, getFallbackDeterministicMatches } = require('./matchingService');
+const { matchCandidates, buildCompactPayload } = require('./ai/aiMatchingService');
+const crypto = require('crypto');
+
+const inFlightLocks = new Map();
 
 /**
  * Helper to fetch skills associated with a set of Linkup IDs
@@ -119,10 +124,20 @@ const createLinkup = async (creatorId, data) => {
  * Get Linkups list with optional filtering and search
  */
 const getLinkups = async (filters = {}) => {
-  const { category, skill, status, search, college, availability } = filters;
+  const { category, skill, status, search, college, availability, creatorId, memberUserId } = filters;
   const whereClauses = [];
   const params = [];
   let paramIdx = 1;
+
+  if (creatorId && creatorId.trim()) {
+    whereClauses.push(`l.creator_id = $${paramIdx++}`);
+    params.push(creatorId.trim());
+  }
+
+  if (memberUserId && memberUserId.trim()) {
+    whereClauses.push(`l.id IN (SELECT linkup_id FROM linkup_members WHERE user_id = $${paramIdx++}) AND l.creator_id != $${paramIdx++}`);
+    params.push(memberUserId.trim(), memberUserId.trim());
+  }
 
   if (category && category.trim()) {
     whereClauses.push(`l.category = $${paramIdx++}`);
@@ -661,6 +676,186 @@ const removeTeamMember = async (linkupId, memberUserId, creatorId) => {
   return { success: true, removedUserId: memberUserId };
 };
 
+/**
+ * GET /api/linkups/:linkupId/matches implementation (Phase 7 with DB Caching & Persistence)
+ * 
+ * Caching Rules:
+ * 1. Checks `matches` table for saved match results.
+ * 2. Invalidates cache if:
+ *    - Force refresh is requested (forceRefresh === true)
+ *    - Linkup requirements or skills updated (`linkup.updated_at` > `matches.created_at`)
+ *    - Any candidate profile updated (`student_profiles.updated_at` > `matches.created_at`)
+ *    - Active team members joined/changed after `matches.created_at`
+ * 3. Saves newly generated matches to PostgreSQL `matches` table.
+ */
+const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh = false) => {
+  const totalStartTime = Date.now();
+
+  // 1. Retrieve Linkup details
+  const linkup = await getLinkupById(linkupId, currentUserId);
+  if (!linkup) {
+    throw new Error('Linkup not found.');
+  }
+
+  // 2. Filter relevant candidates using PostgreSQL (10-20 candidates max)
+  const candDbStartTime = Date.now();
+  const candidateResults = await filterCandidateStudents(linkup, 20);
+  const candDbDuration = Date.now() - candDbStartTime;
+  console.log(`[AI MATCH] Candidate DB query: ${candDbDuration}ms (${candidateResults.length} candidates retrieved)`);
+
+  if (!candidateResults || candidateResults.length === 0) {
+    return {
+      cached: false,
+      generatedBy: 'DETERMINISTIC',
+      matches: [],
+    };
+  }
+
+  // 3. Build compact AI payload & Generate input hash
+  const { compactPayload, candidateIdsSet, candidateLookupMap } = buildCompactPayload(linkup, candidateResults);
+  const inputHash = crypto.createHash('sha256').update(JSON.stringify(compactPayload)).digest('hex');
+
+  // Helper to fetch valid cache
+  const checkCache = async () => {
+    if (forceRefresh) return null;
+    const cachedMatchesRes = await query(
+      `SELECT m.id, m.linkup_id, m.user_id, m.match_percentage, m.match_data, m.generated_by, m.created_at,
+              u.name, sp.college, sp.degree, sp.year_of_study, COALESCE(sv.status, 'UNVERIFIED') as verification_status
+       FROM matches m
+       JOIN users u ON m.user_id = u.id
+       JOIN student_profiles sp ON u.id = sp.user_id
+       LEFT JOIN student_verifications sv ON u.id = sv.user_id
+       WHERE m.linkup_id = $1 AND m.match_data->>'inputHash' = $2
+       ORDER BY m.match_percentage DESC`,
+      [linkupId, inputHash]
+    );
+
+    if (cachedMatchesRes.rows.length > 0) {
+      const cachedMatches = cachedMatchesRes.rows.map((row) => {
+        const matchData = typeof row.match_data === 'string' ? JSON.parse(row.match_data) : (row.match_data || {});
+        return {
+          userId: row.user_id,
+          name: row.name,
+          college: row.college || '',
+          degree: row.degree || '',
+          yearOfStudy: row.year_of_study || '',
+          verificationStatus: row.verification_status,
+          matchPercentage: row.match_percentage,
+          reasons: matchData.reasons || [],
+          strengths: matchData.strengths || [],
+          concerns: matchData.concerns || [],
+        };
+      });
+      return {
+        cached: true,
+        generatedBy: cachedMatchesRes.rows[0].generated_by,
+        matches: cachedMatches,
+      };
+    }
+    return null;
+  };
+
+  // 4. Initial Cache Check
+  let cachedResult = await checkCache();
+  if (cachedResult) {
+    console.log(`[AI MATCH] Cache HIT for Linkup ${linkupId} (${cachedResult.matches.length} matches, total: ${Date.now() - totalStartTime}ms)`);
+    return cachedResult;
+  }
+
+  // 5. In-flight Request Locking
+  if (inFlightLocks.has(linkupId)) {
+    console.log(`[AI MATCH] Waiting for in-flight generation for Linkup ${linkupId}...`);
+    try {
+      await inFlightLocks.get(linkupId);
+    } catch (err) {
+      // Ignored, we just re-check cache or proceed
+    }
+    cachedResult = await checkCache();
+    if (cachedResult) {
+      console.log(`[AI MATCH] Cache HIT (after wait) for Linkup ${linkupId} (${cachedResult.matches.length} matches, total: ${Date.now() - totalStartTime}ms)`);
+      return cachedResult;
+    }
+  }
+
+  // 6. Generate Match (Wrapped in Lock)
+  const generatePromise = (async () => {
+    let aiAnalysis = null;
+    try {
+      aiAnalysis = await matchCandidates(compactPayload, candidateIdsSet, candidateLookupMap);
+    } catch (aiErr) {
+      console.warn(`⚠️ AI Pipeline failed (${aiErr.message}). Falling back to emergency deterministic matcher.`);
+      aiAnalysis = getFallbackDeterministicMatches(linkup, candidateResults);
+    }
+
+    // Clean match items (Direct AI matchPercentage output, NO JS re-scoring!)
+    const formattedMatches = (aiAnalysis.matches || []).map((m) => {
+      return {
+        userId: String(m.userId),
+        name: m.name || m.candidate?.name || 'Student Candidate',
+        college: m.college || m.candidate?.college || 'University Student',
+        degree: m.degree || m.candidate?.degree || '',
+        yearOfStudy: m.yearOfStudy || m.candidate?.yearOfStudy || m.candidate?.year_of_study || '',
+        verificationStatus: m.verificationStatus || m.candidate?.verificationStatus || 'UNVERIFIED',
+        matchPercentage: Math.min(Math.max(parseInt(m.matchPercentage, 10) || 0, 0), 100),
+        reasons: Array.isArray(m.reasons) ? m.reasons : [],
+        strengths: Array.isArray(m.strengths) ? m.strengths : [],
+        concerns: Array.isArray(m.concerns) ? m.concerns : [],
+      };
+    });
+
+    formattedMatches.sort((a, b) => b.matchPercentage - a.matchPercentage);
+    const generatedByTag = aiAnalysis.generatedBy || 'FALLBACK';
+
+    // Save to DB
+    try {
+      await query(`DELETE FROM matches WHERE linkup_id = $1`, [linkupId]);
+
+      for (const matchItem of formattedMatches) {
+        await query(
+          `INSERT INTO matches (linkup_id, user_id, match_percentage, match_data, generated_by)
+           VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (linkup_id, user_id) DO UPDATE SET
+             match_percentage = EXCLUDED.match_percentage,
+             match_data = EXCLUDED.match_data,
+             generated_by = EXCLUDED.generated_by,
+             created_at = CURRENT_TIMESTAMP`,
+          [
+            linkupId,
+            matchItem.userId,
+            matchItem.matchPercentage,
+            JSON.stringify({
+              inputHash,
+              reasons: matchItem.reasons,
+              strengths: matchItem.strengths,
+              concerns: matchItem.concerns,
+            }),
+            generatedByTag,
+          ]
+        );
+      }
+    } catch (dbErr) {
+      console.error(`[AI MATCH] Error saving matches to database:`, dbErr.message);
+    }
+
+    return {
+      cached: false,
+      generatedBy: generatedByTag,
+      matches: formattedMatches,
+    };
+  })();
+
+  inFlightLocks.set(linkupId, generatePromise);
+
+  try {
+    const result = await generatePromise;
+    const totalDuration = Date.now() - totalStartTime;
+    console.log(`[AI MATCH] Total getMatchesForLinkup Execution: ${totalDuration}ms`);
+    return result;
+  } finally {
+    inFlightLocks.delete(linkupId);
+  }
+};
+
 module.exports = {
   createLinkup,
   getLinkups,
@@ -672,4 +867,5 @@ module.exports = {
   acceptJoinRequest,
   rejectJoinRequest,
   removeTeamMember,
+  getMatchesForLinkup,
 };
