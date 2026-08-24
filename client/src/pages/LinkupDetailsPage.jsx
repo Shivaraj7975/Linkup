@@ -4,6 +4,7 @@ import { Navbar } from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { getLinkupById, sendJoinRequest, deleteLinkup } from '../services/api';
 import { MatchResultsModal } from '../components/MatchResultsModal';
+import { ConfirmModal } from '../components/ConfirmModal';
 import {
   Users,
   User,
@@ -29,6 +30,7 @@ export const LinkupDetailsPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [showMatchModal, setShowMatchModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Data & Loading State
   const [linkup, setLinkup] = useState(null);
@@ -92,11 +94,12 @@ export const LinkupDetailsPage = () => {
     }
   };
 
-  const handleDeleteLinkup = async () => {
-    if (!window.confirm('Are you sure you want to delete this Meld? This action cannot be undone.')) {
-      return;
-    }
+  const handleDeleteLinkup = () => {
+    setShowDeleteConfirm(true);
+  };
 
+  const executeDeleteLinkup = async () => {
+    setShowDeleteConfirm(false);
     setDeleting(true);
     try {
       await deleteLinkup(id);
@@ -484,6 +487,16 @@ export const LinkupDetailsPage = () => {
           onClose={() => setShowMatchModal(false)}
         />
       )}
+
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        title="Delete Meld"
+        message="Are you sure you want to delete this Meld? This action cannot be undone."
+        confirmText="Delete Meld"
+        onConfirm={executeDeleteLinkup}
+        onCancel={() => setShowDeleteConfirm(false)}
+        isDangerous={true}
+      />
     </div>
   );
 };

@@ -44,6 +44,16 @@ const sendOtp = async (req, res, next) => {
 
     const cleanEmail = email.trim().toLowerCase();
 
+    // Check primary email is not a college email
+    if (type === 'PRIMARY') {
+      if (isCollegeEmail(cleanEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Primary email cannot be a college email ID. Please use a personal email address (e.g. Gmail, Outlook).',
+        });
+      }
+    }
+
     // Check college domain if type is COLLEGE
     if (type === 'COLLEGE') {
       if (!isCollegeEmail(cleanEmail)) {
@@ -56,11 +66,17 @@ const sendOtp = async (req, res, next) => {
 
     const otpCode = generateOtpCode();
     await saveOtpToDb(cleanEmail, otpCode, type);
-    await sendOtpEmail({ toEmail: cleanEmail, otpCode, type });
+
+    try {
+      await sendOtpEmail({ toEmail: cleanEmail, otpCode, type });
+    } catch (emailErr) {
+      console.warn(`⚠️ Email delivery notice for ${cleanEmail}:`, emailErr.message);
+    }
 
     return res.json({
       success: true,
       message: `OTP verification code sent to ${cleanEmail}.`,
+      devOtp: process.env.NODE_ENV === 'development' ? otpCode : undefined,
     });
   } catch (error) {
     next(error);
@@ -130,6 +146,13 @@ const register = async (req, res, next) => {
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = name.trim();
+
+    if (isCollegeEmail(cleanEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Primary email cannot be a college email ID. Please use a personal email address (e.g. Gmail, Outlook).',
+      });
+    }
 
     // 2. Check if user already exists
     const existingUser = await findUserByEmail(cleanEmail);

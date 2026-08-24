@@ -4,7 +4,10 @@ const {
   getProfileByUserId,
   getPublicStudentProfileByUserId,
   updateStudentProfile,
+  linkCollegeEmail,
+  unlinkCollegeEmail,
 } = require('../services/profileService');
+const { isCollegeEmail, verifyOtpInDb } = require('../services/emailService');
 
 /**
  * GET /api/skills
@@ -99,10 +102,70 @@ const getPublicUserProfile = async (req, res, next) => {
   }
 };
 
+/**
+ * POST /api/profile/link-college-email
+ */
+const linkCollegeEmailController = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { collegeEmail, collegeOtp } = req.body;
+
+    if (!collegeEmail || !isCollegeEmail(collegeEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid institutional college email ending with .edu, .edu.in, .ac.in, etc.',
+      });
+    }
+
+    if (!collegeOtp) {
+      return res.status(400).json({
+        success: false,
+        message: '6-digit OTP verification code is required.',
+      });
+    }
+
+    const isValid = await verifyOtpInDb(collegeEmail, collegeOtp, 'COLLEGE');
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP code for college email.',
+      });
+    }
+
+    await linkCollegeEmail(userId, collegeEmail);
+
+    return res.status(200).json({
+      success: true,
+      message: 'College email linked and student status verified successfully!',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * DELETE /api/profile/unlink-college-email
+ */
+const unlinkCollegeEmailController = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    await unlinkCollegeEmail(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'College email unlinked successfully. Account status set to Unverified Student.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getSkills,
   getInterests,
   getProfile,
   updateProfile,
   getPublicUserProfile,
+  linkCollegeEmailController,
+  unlinkCollegeEmailController,
 };

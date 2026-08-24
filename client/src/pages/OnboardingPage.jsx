@@ -371,7 +371,7 @@ export const OnboardingPage = () => {
 
       if (isFinal) {
         await fetchCurrentUser();
-        navigate('/dashboard', { replace: true });
+        navigate('/discover', { replace: true });
       }
     } catch (err) {
       console.error('Failed to save onboarding step:', err);
@@ -508,7 +508,7 @@ export const OnboardingPage = () => {
                       <input
                         id="college-input"
                         type="text"
-                        placeholder="Type university name (e.g. Stanford, IIT Bombay, Oxford, MIT)..."
+                        placeholder="Type university name..."
                         value={form.college}
                         onChange={(e) => handleChange('college', e.target.value)}
                         onFocus={() => {
@@ -562,7 +562,7 @@ export const OnboardingPage = () => {
                         <span className="sub-field-label">City</span>
                         <input
                           type="text"
-                          placeholder="Auto-selected city"
+                          placeholder="City"
                           value={form.city}
                           readOnly
                           tabIndex={-1}
@@ -574,7 +574,7 @@ export const OnboardingPage = () => {
                         <span className="sub-field-label">State / Region</span>
                         <input
                           type="text"
-                          placeholder="Auto-selected state"
+                          placeholder="State"
                           value={form.state}
                           readOnly
                           tabIndex={-1}
@@ -586,7 +586,7 @@ export const OnboardingPage = () => {
                         <span className="sub-field-label">Country</span>
                         <input
                           type="text"
-                          placeholder="Auto-selected country"
+                          placeholder="Country"
                           value={form.country}
                           readOnly
                           tabIndex={-1}
@@ -603,7 +603,7 @@ export const OnboardingPage = () => {
                     <label>Degree / Major *</label>
                     <input
                       type="text"
-                      placeholder="e.g. B.S. Computer Science, B.E. Mechanical Engineering"
+                      placeholder="e.g. B.S. Computer Science"
                       value={form.degree}
                       onChange={(e) => handleChange('degree', e.target.value)}
                     />
@@ -682,7 +682,7 @@ export const OnboardingPage = () => {
                     <Search size={18} className="search-icon input-left-icon" />
                     <input
                       type="text"
-                      placeholder="Search across 260+ skills (e.g. Web Development, Front-End, Back-End, React, Python, DSA, AutoCAD)..."
+                      placeholder="Search skills..."
                       value={skillSearch}
                       onChange={(e) => setSkillSearch(e.target.value)}
                     />
@@ -797,7 +797,7 @@ export const OnboardingPage = () => {
                     <Search size={18} className="search-icon input-left-icon" />
                     <input
                       type="text"
-                      placeholder="Search across all project domains (e.g. AI, Web Development, MedTech, Startups, Finance)..."
+                      placeholder="Search domains..."
                       value={interestSearch}
                       onChange={(e) => setInterestSearch(e.target.value)}
                     />

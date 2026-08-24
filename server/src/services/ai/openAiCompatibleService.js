@@ -45,7 +45,7 @@ Respond with JSON adhering to this exact schema:
       { role: 'user', content: promptText },
     ],
     temperature: 0.1,
-    max_tokens: 1024,
+    max_tokens: 4096,
     response_format: { type: 'json_object' },
   };
 

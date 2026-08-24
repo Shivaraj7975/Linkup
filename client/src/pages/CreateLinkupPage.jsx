@@ -197,7 +197,7 @@ export const CreateLinkupPage = () => {
                   id="description"
                   className="textarea"
                   rows={4}
-                  placeholder="Describe your project vision, key features, goals, and who you are looking to collaborate with..."
+                  placeholder="Describe your project vision, key features, and goals..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   required
@@ -259,7 +259,7 @@ export const CreateLinkupPage = () => {
                   <input
                     type="text"
                     className="input"
-                    placeholder="Search or add skill (e.g. React, Python, Figma)..."
+                    placeholder="Search or add skill..."
                     value={skillSearch}
                     onChange={(e) => setSkillSearch(e.target.value)}
                     onKeyDown={handleAddCustomSkill}
@@ -361,7 +361,7 @@ export const CreateLinkupPage = () => {
             <div className="form-actions margin-top-lg">
               <button
                 type="button"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/my-melds')}
                 className="btn btn-ghost"
                 disabled={loading}
               >

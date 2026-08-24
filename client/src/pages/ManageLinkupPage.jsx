@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { getLinkupById, getLinkupRequests, acceptJoinRequest, rejectJoinRequest, removeTeamMember } from '../services/api';
 import {
   Users,
@@ -29,9 +30,8 @@ export const ManageLinkupPage = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  // Processing state for individual requests
   const [processingId, setProcessingId] = useState(null);
+  const [memberToRemove, setMemberToRemove] = useState(null);
   const [feedbackMsg, setFeedbackMsg] = useState({ type: '', text: '' });
 
   useEffect(() => {
@@ -94,10 +94,14 @@ export const ManageLinkupPage = () => {
     }
   };
 
-  const handleRemoveMember = async (memberUserId, memberName) => {
-    if (!window.confirm(`Are you sure you want to remove ${memberName} from the team?`)) {
-      return;
-    }
+  const handleRemoveMember = (memberUserId, memberName) => {
+    setMemberToRemove({ id: memberUserId, name: memberName });
+  };
+
+  const executeRemoveMember = async () => {
+    if (!memberToRemove) return;
+    const { id: memberUserId, name: memberName } = memberToRemove;
+    setMemberToRemove(null);
 
     setFeedbackMsg({ type: '', text: '' });
     try {
@@ -433,6 +437,16 @@ export const ManageLinkupPage = () => {
           </div>
         )}
       </main>
+
+      <ConfirmModal
+        isOpen={!!memberToRemove}
+        title="Remove Team Member"
+        message={`Are you sure you want to remove ${memberToRemove?.name} from the team?`}
+        confirmText="Remove Member"
+        onConfirm={executeRemoveMember}
+        onCancel={() => setMemberToRemove(null)}
+        isDangerous={true}
+      />
     </div>
   );
 };

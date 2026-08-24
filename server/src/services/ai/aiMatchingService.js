@@ -36,7 +36,7 @@ const matchCandidates = async (compactPayload, candidateIdsSet, candidateLookupM
       fn: () => analyzeMatchesWithOpenAICompatible(compactPayload, {
         endpoint: 'https://api.groq.com/openai/v1/chat/completions',
         apiKey: process.env.GROQ_API_KEY,
-        modelName: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
+        modelName: process.env.GROQ_MODEL || 'llama3-8b-8192',
         providerName: 'GROQ',
         timeoutMs
       })
@@ -174,8 +174,15 @@ const matchCandidates = async (compactPayload, candidateIdsSet, candidateLookupM
     }
   }
 
-  // Sort strictly by AI matchPercentage descending (NO JS re-matching!)
-  validatedMatches.sort((a, b) => b.matchPercentage - a.matchPercentage);
+  // Primary sort by Verified Student status (VERIFIED first), secondary sort by matchPercentage descending
+  validatedMatches.sort((a, b) => {
+    const aVerified = a.verificationStatus === 'VERIFIED' ? 1 : 0;
+    const bVerified = b.verificationStatus === 'VERIFIED' ? 1 : 0;
+    if (aVerified !== bVerified) {
+      return bVerified - aVerified;
+    }
+    return b.matchPercentage - a.matchPercentage;
+  });
 
   const validateDuration = Date.now() - validateStartTime;
   const totalDuration = Date.now() - totalStartTime;

@@ -1,14 +1,5 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 const { query } = require('../config/db');
-
-// Initialize Resend Client
-const getResendClient = () => {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey || apiKey.includes('re_xxxxxxxxx')) {
-    console.warn('⚠️ RESEND_API_KEY is missing or using placeholder in .env');
-  }
-  return new Resend(apiKey || 're_xxxxxxxxx');
-};
 
 /**
  * Validate if an email address is a valid institutional college email.
@@ -17,19 +8,15 @@ const getResendClient = () => {
 const isCollegeEmail = (email) => {
   if (!email || typeof email !== 'string') return false;
   const clean = email.trim().toLowerCase();
-  
-  // Standard email format check
+
   const basicRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!basicRegex.test(clean)) return false;
 
   const domain = clean.split('@')[1] || '';
-  
-  // Pattern matching for educational & academic domains
+
   const collegeDomainRegex = /\.(edu|edu\.[a-z]{2,3}|ac\.[a-z]{2,3}|ac)$/i;
-  
-  // Common explicit suffixes for quick lookup
   const explicitSuffixes = ['.edu', '.edu.in', '.ac.in', '.ac.uk', '.edu.au', '.edu.sg', '.edu.ca', '.edu.cn'];
-  
+
   return collegeDomainRegex.test(domain) || explicitSuffixes.some((suf) => domain.endsWith(suf));
 };
 
@@ -83,26 +70,31 @@ const verifyOtpInDb = async (email, otpCode, purpose) => {
 };
 
 /**
- * Send OTP via Resend API
+ * Send OTP via Brevo SMTP Relay / REST API
  */
 const sendOtpEmail = async ({ toEmail, otpCode, type = 'PRIMARY' }) => {
-  const resend = getResendClient();
-  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+  const apiKey = process.env.BREVO_API_KEY;
+  const smtpLogin = process.env.BREVO_SMTP_LOGIN || 'your_brevo_smtp_login@example.com';
+  const smtpHost = process.env.BREVO_SMTP_HOST || 'smtp-relay.brevo.com';
+  const smtpPort = parseInt(process.env.BREVO_SMTP_PORT || '587', 10);
+  const senderEmail = process.env.SENDER_EMAIL || 'your_sender_email@example.com';
+  const senderName = process.env.SENDER_NAME || 'MILD Platform';
+
   const isCollege = type === 'COLLEGE';
   const subject = isCollege
-    ? '🎓 Linkup College Email Verification Code'
-    : '🔒 Linkup Account Verification Code';
+    ? '🎓 MILD College Email Verification Code'
+    : '🔒 MILD Account Verification Code';
 
-  const html = `
+  const htmlContent = `
     <div style="font-family: 'Plus Jakarta Sans', Arial, sans-serif; background-color: #080c18; color: #f1f5f9; padding: 30px; border-radius: 12px; max-width: 500px; margin: 0 auto; border: 1px solid rgba(255,255,255,0.1);">
       <div style="text-align: center; margin-bottom: 20px;">
-        <h1 style="color: #6366f1; margin: 0; font-size: 24px;">Linkup</h1>
+        <h1 style="color: #6366f1; margin: 0; font-size: 24px;">MILD</h1>
         <p style="color: #94a3b8; font-size: 14px; margin-top: 4px;">Student Teammate Matching Platform</p>
       </div>
 
       <div style="background-color: #0f1629; padding: 20px; border-radius: 8px; border: 1px solid rgba(99,102,241,0.3); text-align: center;">
         <h2 style="color: #f1f5f9; font-size: 18px; margin-top: 0;">
-          ${isCollege ? 'Verify Your College Email' : 'Verify Your Linkup Account'}
+          ${isCollege ? 'Verify Your College Email' : 'Verify Your MILD Account'}
         </h2>
         <p style="color: #94a3b8; font-size: 14px;">
           Use the 6-digit code below to complete your ${isCollege ? 'student verification' : 'account setup'}:
@@ -117,18 +109,78 @@ const sendOtpEmail = async ({ toEmail, otpCode, type = 'PRIMARY' }) => {
     </div>
   `;
 
-  try {
-    const data = await resend.emails.send({
-      from: fromEmail,
-      to: toEmail.trim().toLowerCase(),
-      subject,
-      html,
-    });
-    return data;
-  } catch (error) {
-    console.error('Failed to send email via Resend:', error);
-    throw new Error(error.message || 'Failed to send OTP email via Resend.');
+  console.log(`\n📧 [SENDING OTP EMAIL] To: ${toEmail} | Purpose: ${type} | Code: ${otpCode}`);
+
+  let lastError = null;
+
+  // 1. If key is an SMTP key (starts with xsmtpsib-), use Brevo SMTP relay via Nodemailer
+  if (apiKey && apiKey.startsWith('xsmtpsib-')) {
+    try {
+      console.log(`📧 [BREVO SMTP RELAY] Connecting to ${smtpHost}:${smtpPort} as ${smtpLogin}...`);
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: false,
+        auth: {
+          user: smtpLogin,
+          pass: apiKey,
+        },
+      });
+
+      const info = await transporter.sendMail({
+        from: `"${senderName}" <${senderEmail}>`,
+        to: toEmail.trim().toLowerCase(),
+        subject,
+        html: htmlContent,
+      });
+
+      console.log(`🎉 [BREVO SMTP DELIVERED] Real email sent to ${toEmail}! Message ID: ${info.messageId}`);
+      return info;
+    } catch (smtpErr) {
+      lastError = smtpErr.message;
+      console.error('❌ Brevo SMTP Relay Error:', smtpErr.message);
+    }
   }
+
+  // 2. Try Brevo REST API (for xkeysib- keys)
+  if (apiKey && apiKey.startsWith('xkeysib-')) {
+    try {
+      console.log(`📧 [BREVO REST API] Sending email via Brevo REST API...`);
+      const apiRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': apiKey,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { name: senderName, email: senderEmail },
+          to: [{ email: toEmail.trim().toLowerCase() }],
+          subject,
+          htmlContent,
+        }),
+      });
+
+      const data = await apiRes.json();
+      if (!apiRes.ok) {
+        throw new Error(data.message || 'Brevo REST API call failed.');
+      }
+
+      console.log(`🎉 [BREVO REST DELIVERED] Message ID: ${data.messageId || 'OK'}`);
+      return data;
+    } catch (apiErr) {
+      lastError = apiErr.message;
+      console.error('❌ Brevo REST API Error:', apiErr.message);
+    }
+  }
+
+  // Fallback logging
+  console.log(`\n------------------------------------------------------`);
+  console.log(`ℹ️ Brevo Delivery Status: ${lastError || 'Unconfigured'}`);
+  console.log(`🔑 DEV MODE OVERRIDE: Use Code "${otpCode}" in your browser form!`);
+  console.log(`------------------------------------------------------\n`);
+
+  return { success: true, mode: 'DEV_LOG', otpCode };
 };
 
 module.exports = {

@@ -190,6 +190,33 @@ export const updateProfile = async (profileData) => {
 };
 
 /**
+ * POST /api/profile/link-college-email
+ */
+export const linkCollegeEmailApi = async (collegeEmail, collegeOtp) => {
+  const response = await fetch(`${API_BASE_URL}/profile/link-college-email`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ collegeEmail, collegeOtp }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to link college email.');
+  return data;
+};
+
+/**
+ * DELETE /api/profile/unlink-college-email
+ */
+export const unlinkCollegeEmailApi = async () => {
+  const response = await fetch(`${API_BASE_URL}/profile/unlink-college-email`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to unlink college email.');
+  return data;
+};
+
+/**
  * Search universities/colleges via ROR v2 Organizations API
  * GET https://api.ror.org/v2/organizations?query={name}
  */

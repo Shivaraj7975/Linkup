@@ -17,7 +17,7 @@ export const Navbar = () => {
 
   const navItems = [
     { label: 'Discover', path: '/discover', icon: Compass },
-    { label: 'My Melds', path: '/dashboard', icon: FolderGit2 },
+    { label: 'My Melds', path: '/my-melds', icon: FolderGit2 },
     { label: 'Create Meld', path: '/create-linkup', icon: PlusCircle },
     { label: 'Profile', path: '/profile', icon: User },
   ];
@@ -48,8 +48,8 @@ export const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <Link
-                  to="/dashboard"
-                  className={`btn btn-ghost btn-sm ${location.pathname === '/dashboard' ? 'active-nav-link' : ''}`}
+                  to="/my-melds"
+                  className={`btn btn-ghost btn-sm ${location.pathname === '/my-melds' ? 'active-nav-link' : ''}`}
                 >
                   <FolderGit2 size={15} />
                   <span>My Melds</span>

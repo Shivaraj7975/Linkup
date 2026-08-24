@@ -280,10 +280,73 @@ const getPublicStudentProfileByUserId = async (userId) => {
   };
 };
 
+const linkCollegeEmail = async (userId, collegeEmail) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Update college_email in student_profiles
+    await client.query(
+      `INSERT INTO student_profiles (user_id, college_email, college, degree, year_of_study)
+       VALUES ($1, $2, '', '', '')
+       ON CONFLICT (user_id) DO UPDATE SET college_email = EXCLUDED.college_email`,
+      [userId, collegeEmail.toLowerCase()]
+    );
+
+    // 2. Update student_verifications status to VERIFIED
+    await client.query(
+      `INSERT INTO student_verifications (user_id, status, method, verified_at)
+       VALUES ($1, 'VERIFIED', 'COLLEGE_EMAIL', NOW())
+       ON CONFLICT (user_id) DO UPDATE SET
+         status = 'VERIFIED',
+         method = 'COLLEGE_EMAIL',
+         verified_at = NOW()`,
+      [userId]
+    );
+
+    await client.query('COMMIT');
+    return { success: true };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
+const unlinkCollegeEmail = async (userId) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Clear college_email in student_profiles
+    await client.query(
+      `UPDATE student_profiles SET college_email = NULL WHERE user_id = $1`,
+      [userId]
+    );
+
+    // 2. Update student_verifications status to UNVERIFIED
+    await client.query(
+      `UPDATE student_verifications SET status = 'UNVERIFIED', method = NULL, verified_at = NULL WHERE user_id = $1`,
+      [userId]
+    );
+
+    await client.query('COMMIT');
+    return { success: true };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   getAllSkills,
   getAllInterests,
   getProfileByUserId,
   getPublicStudentProfileByUserId,
   updateStudentProfile,
+  linkCollegeEmail,
+  unlinkCollegeEmail,
 };

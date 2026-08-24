@@ -33,7 +33,7 @@ function App() {
             }
           />
           <Route
-            path="/dashboard"
+            path="/my-melds"
             element={
               <ProtectedRoute>
                 <DashboardPage />

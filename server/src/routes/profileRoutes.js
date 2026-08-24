@@ -6,6 +6,8 @@ const {
   getProfile,
   updateProfile,
   getPublicUserProfile,
+  linkCollegeEmailController,
+  unlinkCollegeEmailController,
 } = require('../controllers/profileController');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -19,5 +21,7 @@ router.get('/users/:userId', getPublicUserProfile);
 // Protected profile endpoints
 router.get('/profile', authenticateToken, getProfile);
 router.put('/profile', authenticateToken, updateProfile);
+router.post('/profile/link-college-email', authenticateToken, linkCollegeEmailController);
+router.delete('/profile/unlink-college-email', authenticateToken, unlinkCollegeEmailController);
 
 module.exports = router;

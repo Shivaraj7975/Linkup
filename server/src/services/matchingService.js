@@ -614,8 +614,15 @@ const filterCandidateStudents = async (linkupOrId, limit = 20) => {
     };
   });
 
-  // Sort descending by matchPercentage
-  formattedCandidates.sort((a, b) => b.matchPercentage - a.matchPercentage);
+  // Sort by Verified Student status first (VERIFIED comes first), then matchPercentage
+  formattedCandidates.sort((a, b) => {
+    const aVerified = (a.candidate?.verificationStatus || a.verificationStatus) === 'VERIFIED' ? 1 : 0;
+    const bVerified = (b.candidate?.verificationStatus || b.verificationStatus) === 'VERIFIED' ? 1 : 0;
+    if (aVerified !== bVerified) {
+      return bVerified - aVerified;
+    }
+    return b.matchPercentage - a.matchPercentage;
+  });
 
   return formattedCandidates.slice(0, maxLimit);
 };
@@ -647,7 +654,14 @@ const getFallbackDeterministicMatches = (linkup, candidates) => {
     };
   });
 
-  formattedMatches.sort((a, b) => b.matchPercentage - a.matchPercentage);
+  formattedMatches.sort((a, b) => {
+    const aVerified = a.verificationStatus === 'VERIFIED' ? 1 : 0;
+    const bVerified = b.verificationStatus === 'VERIFIED' ? 1 : 0;
+    if (aVerified !== bVerified) {
+      return bVerified - aVerified;
+    }
+    return b.matchPercentage - a.matchPercentage;
+  });
 
   return {
     success: true,

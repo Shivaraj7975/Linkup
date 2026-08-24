@@ -57,6 +57,8 @@ export const RegisterPage = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!form.email || !emailRegex.test(form.email)) {
       errs.email = 'Please enter a valid email address.';
+    } else if (isCollegeEmailValid(form.email)) {
+      errs.email = 'Primary email cannot be a college email ID. Please use a personal email address (e.g. Gmail, Outlook).';
     }
     if (!form.password || form.password.length < 6) {
       errs.password = 'Password must be at least 6 characters.';
@@ -158,7 +160,7 @@ export const RegisterPage = () => {
       });
 
       if (user.isProfileComplete) {
-        navigate('/dashboard', { replace: true });
+        navigate('/discover', { replace: true });
       } else {
         navigate('/onboarding', { replace: true });
       }
@@ -176,6 +178,11 @@ export const RegisterPage = () => {
 
       <div className="auth-page">
         <div className="auth-card" style={{ maxWidth: '520px' }}>
+          <div style={{ width: '100%', marginBottom: '1rem' }}>
+            <Link to="/" className="btn btn-ghost btn-sm" style={{ padding: '0.4rem 0.6rem', gap: '0.5rem', width: 'fit-content' }}>
+              <ArrowLeft size={16} /> Back
+            </Link>
+          </div>
           <Link to="/" className="auth-brand">
             <div className="brand-icon">
               <Link2 size={22} />

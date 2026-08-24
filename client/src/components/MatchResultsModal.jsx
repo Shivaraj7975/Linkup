@@ -174,9 +174,9 @@ export const MatchResultsModal = ({ linkup, onClose }) => {
 
                         <span className={`verification-badge ${(item.verificationStatus || 'UNVERIFIED').toLowerCase()}`}>
                           {item.verificationStatus === 'VERIFIED' ? (
-                            <><CheckCircle2 size={13} /> Verified</>
+                            <><CheckCircle2 size={13} /> Verified Student</>
                           ) : (
-                            <><AlertCircle size={13} /> Unverified</>
+                            <><AlertCircle size={13} /> Unverified Student</>
                           )}
                         </span>
                       </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Link2, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Link2, Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -49,7 +49,7 @@ export const LoginPage = () => {
       });
 
       if (user.isProfileComplete) {
-        navigate('/dashboard', { replace: true });
+        navigate('/discover', { replace: true });
       } else {
         navigate('/onboarding', { replace: true });
       }
@@ -67,6 +67,11 @@ export const LoginPage = () => {
 
       <div className="auth-page">
         <div className="auth-card">
+          <div style={{ width: '100%', marginBottom: '1rem' }}>
+            <Link to="/" className="btn btn-ghost btn-sm" style={{ padding: '0.4rem 0.6rem', gap: '0.5rem', width: 'fit-content' }}>
+              <ArrowLeft size={16} /> Back
+            </Link>
+          </div>
           <Link to="/" className="auth-brand">
             <div className="brand-icon">
               <Link2 size={22} />

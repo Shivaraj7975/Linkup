@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Navbar } from '../components/Navbar';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import {
   getProfile,
@@ -7,6 +8,9 @@ import {
   getSkills,
   getInterests,
   searchUniversities,
+  sendOtpApi,
+  linkCollegeEmailApi,
+  unlinkCollegeEmailApi,
 } from '../services/api';
 import {
   GraduationCap,
@@ -30,7 +34,22 @@ import {
   Save,
   Globe,
   Mail,
+  ShieldCheck,
+  Trash2,
 } from 'lucide-react';
+
+const isCollegeEmailValid = (email) => {
+  if (!email || typeof email !== 'string') return false;
+  const clean = email.trim().toLowerCase();
+  const basicRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!basicRegex.test(clean)) return false;
+
+  const domain = clean.split('@')[1] || '';
+  const collegeDomainRegex = /\.(edu|edu\.[a-z]{2,3}|ac\.[a-z]{2,3}|ac)$/i;
+  const explicitSuffixes = ['.edu', '.edu.in', '.ac.in', '.ac.uk', '.edu.au', '.edu.sg', '.edu.ca', '.edu.cn'];
+
+  return collegeDomainRegex.test(domain) || explicitSuffixes.some((suf) => domain.endsWith(suf));
+};
 
 const YEARS = [
   '1st Year',
@@ -146,6 +165,84 @@ export const ProfilePage = () => {
   const [featuredSkillLimit, setFeaturedSkillLimit] = useState(10);
   const [interestSearch, setInterestSearch] = useState('');
   const [featuredInterestLimit, setFeaturedInterestLimit] = useState(10);
+
+  // College Email Link/Unlink state
+  const [collegeInput, setCollegeInput] = useState('');
+  const [collegeOtpInput, setCollegeOtpInput] = useState('');
+  const [collegeStep, setCollegeStep] = useState(1);
+  const [sendingCollegeOtp, setSendingCollegeOtp] = useState(false);
+  const [linkingCollege, setLinkingCollege] = useState(false);
+  const [unlinkingCollege, setUnlinkingCollege] = useState(false);
+  const [collegeActionError, setCollegeActionError] = useState('');
+  const [collegeActionSuccess, setCollegeActionSuccess] = useState('');
+  const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false);
+
+  const handleSendCollegeOtp = async (e) => {
+    e.preventDefault();
+    setCollegeActionError('');
+    setCollegeActionSuccess('');
+
+    if (!collegeInput || !isCollegeEmailValid(collegeInput)) {
+      setCollegeActionError('Please enter a valid institutional college email address ending with .edu, .edu.in, .ac.in, etc.');
+      return;
+    }
+
+    setSendingCollegeOtp(true);
+    try {
+      await sendOtpApi(collegeInput.trim(), 'COLLEGE');
+      setCollegeStep(2);
+      setCollegeActionSuccess(`Verification OTP sent to ${collegeInput.trim()}.`);
+    } catch (err) {
+      setCollegeActionError(err.message || 'Failed to send verification OTP code.');
+    } finally {
+      setSendingCollegeOtp(false);
+    }
+  };
+
+  const handleVerifyAndLinkCollege = async (e) => {
+    e.preventDefault();
+    setCollegeActionError('');
+    setCollegeActionSuccess('');
+
+    if (!collegeOtpInput || collegeOtpInput.trim().length !== 6) {
+      setCollegeActionError('Please enter the 6-digit verification code.');
+      return;
+    }
+
+    setLinkingCollege(true);
+    try {
+      const res = await linkCollegeEmailApi(collegeInput.trim(), collegeOtpInput.trim());
+      setCollegeActionSuccess(res.message || 'College email linked successfully!');
+      setCollegeStep(1);
+      setCollegeInput('');
+      setCollegeOtpInput('');
+      fetchFullProfile();
+    } catch (err) {
+      setCollegeActionError(err.message || 'Failed to verify and link college email.');
+    } finally {
+      setLinkingCollege(false);
+    }
+  };
+
+  const handleUnlinkCollege = () => {
+    setShowUnlinkConfirm(true);
+  };
+
+  const executeUnlinkCollege = async () => {
+    setShowUnlinkConfirm(false);
+    setCollegeActionError('');
+    setCollegeActionSuccess('');
+    setUnlinkingCollege(true);
+    try {
+      const res = await unlinkCollegeEmailApi();
+      setCollegeActionSuccess(res.message || 'College email unlinked successfully.');
+      fetchFullProfile();
+    } catch (err) {
+      setCollegeActionError(err.message || 'Failed to unlink college email.');
+    } finally {
+      setUnlinkingCollege(false);
+    }
+  };
 
   // Fetch initial profile
   const fetchFullProfile = async () => {
@@ -447,8 +544,13 @@ export const ProfilePage = () => {
                 )}
               </p>
 
-              {(p.github_url || p.linkedin_url || p.college_email) && (
+              {(p.github_url || p.linkedin_url || p.college_email || user?.email) && (
                 <div className="social-links-row">
+                  {user?.email && (
+                    <span className="social-link" style={{ color: 'var(--text-secondary)' }} title="Primary Login Email">
+                      <Mail size={16} /> {user.email} (Primary)
+                    </span>
+                  )}
                   {p.github_url && (
                     <a href={p.github_url} target="_blank" rel="noreferrer" className="social-link">
                       <Github size={16} /> GitHub
@@ -460,8 +562,8 @@ export const ProfilePage = () => {
                     </a>
                   )}
                   {p.college_email && (
-                    <span className="social-link" style={{ color: 'var(--text-secondary)' }}>
-                      <Mail size={16} /> {p.college_email}
+                    <span className="social-link" style={{ color: 'var(--text-secondary)' }} title="Linked College Email">
+                      <GraduationCap size={16} /> {p.college_email}
                     </span>
                   )}
                 </div>
@@ -481,6 +583,108 @@ export const ProfilePage = () => {
           <div className="dashboard-grid">
             {/* Left Main Column */}
             <div className="dashboard-main-col">
+              {/* STUDENT VERIFICATION & COLLEGE EMAIL CARD */}
+              <div className="dash-card">
+                <div className="dash-card-header flex-center-between">
+                  <div className="flex-center gap-xs">
+                    <ShieldCheck size={18} color={verification.status === 'VERIFIED' ? '#22d3ee' : '#f59e0b'} />
+                    <h2>Student Verification</h2>
+                  </div>
+                  <span className={`verification-badge ${verification.status?.toLowerCase()}`}>
+                    {verification.status === 'VERIFIED' ? (
+                      <><CheckCircle2 size={14} /> Verified Student</>
+                    ) : (
+                      <><AlertCircle size={14} /> Unverified Student</>
+                    )}
+                  </span>
+                </div>
+
+                {collegeActionError && (
+                  <div className="alert alert-error margin-bottom-sm flex-center gap-2xs">
+                    <AlertCircle size={15} /> <span>{collegeActionError}</span>
+                  </div>
+                )}
+                {collegeActionSuccess && (
+                  <div className="alert alert-success margin-bottom-sm flex-center gap-2xs">
+                    <CheckCircle2 size={15} /> <span>{collegeActionSuccess}</span>
+                  </div>
+                )}
+
+                {p.college_email && verification.status === 'VERIFIED' ? (
+                  <div className="flex-center-between p-sm rounded-lg" style={{ background: 'rgba(34, 211, 238, 0.08)', border: '1px solid rgba(34, 211, 238, 0.2)', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div className="flex-center gap-sm">
+                      <GraduationCap size={20} className="text-cyan" />
+                      <div>
+                        <div className="font-semibold text-cyan">Linked College Email</div>
+                        <div className="text-sm text-muted">{p.college_email}</div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleUnlinkCollege}
+                      disabled={unlinkingCollege}
+                      className="btn btn-danger btn-ghost btn-sm flex-center gap-2xs"
+                      title="Remove linked college email"
+                    >
+                      <Trash2 size={14} />
+                      <span>{unlinkingCollege ? 'Unlinking...' : 'Unlink College ID'}</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-sm rounded-lg" style={{ background: 'rgba(99, 102, 241, 0.06)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                    <p className="text-sm text-muted margin-bottom-sm">
+                      Link your institutional email to verify your student status and receive top priority in AI candidate matching!
+                    </p>
+
+                    {collegeStep === 1 ? (
+                      <form onSubmit={handleSendCollegeOtp} className="flex-center gap-sm flex-wrap">
+                        <input
+                          type="email"
+                          placeholder="student@university.edu"
+                          value={collegeInput}
+                          onChange={(e) => setCollegeInput(e.target.value)}
+                          className="input-field"
+                          style={{ flex: 1, minWidth: '220px' }}
+                        />
+                        <button type="submit" className="btn btn-primary btn-sm flex-center gap-2xs" disabled={sendingCollegeOtp}>
+                          {sendingCollegeOtp ? (
+                            <><Loader2 size={15} className="spin" /> Sending...</>
+                          ) : (
+                            <><Mail size={15} /> Send OTP Code</>
+                          )}
+                        </button>
+                      </form>
+                    ) : (
+                      <form onSubmit={handleVerifyAndLinkCollege} className="flex-center gap-sm flex-wrap">
+                        <input
+                          type="text"
+                          maxLength={6}
+                          placeholder="6-Digit OTP Code"
+                          value={collegeOtpInput}
+                          onChange={(e) => setCollegeOtpInput(e.target.value)}
+                          className="input-field text-center font-bold tracking-widest"
+                          style={{ width: '160px', letterSpacing: '0.2rem' }}
+                        />
+                        <button type="submit" className="btn btn-success btn-sm flex-center gap-2xs" disabled={linkingCollege}>
+                          {linkingCollege ? (
+                            <><Loader2 size={15} className="spin" /> Verifying...</>
+                          ) : (
+                            <><CheckCircle2 size={15} /> Verify & Link</>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCollegeStep(1)}
+                          className="btn btn-ghost btn-sm text-xs"
+                        >
+                          Change Email
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* ABOUT CARD */}
               <div className="dash-card">
                 <div className="dash-card-header">
@@ -599,7 +803,7 @@ export const ProfilePage = () => {
                   <input
                     id="edit-college-input"
                     type="text"
-                    placeholder="Type university name (e.g. Stanford, IIT Bombay, MIT)..."
+                    placeholder="Type university name..."
                     value={form.college}
                     onChange={(e) => setForm((prev) => ({ ...prev, college: e.target.value }))}
                     onFocus={() => {
@@ -645,7 +849,7 @@ export const ProfilePage = () => {
                     <span className="sub-field-label">City</span>
                     <input
                       type="text"
-                      placeholder="Auto-selected city"
+                      placeholder="City"
                       value={form.city}
                       readOnly
                       tabIndex={-1}
@@ -656,7 +860,7 @@ export const ProfilePage = () => {
                     <span className="sub-field-label">State</span>
                     <input
                       type="text"
-                      placeholder="Auto-selected state"
+                      placeholder="State"
                       value={form.state}
                       readOnly
                       tabIndex={-1}
@@ -667,7 +871,7 @@ export const ProfilePage = () => {
                     <span className="sub-field-label">Country</span>
                     <input
                       type="text"
-                      placeholder="Auto-selected country"
+                      placeholder="Country"
                       value={form.country}
                       readOnly
                       tabIndex={-1}
@@ -957,6 +1161,16 @@ export const ProfilePage = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={showUnlinkConfirm}
+        title="Unlink College Email"
+        message="Are you sure you want to remove your linked college email? Your Verified Student status will be removed."
+        confirmText="Unlink Email"
+        onConfirm={executeUnlinkCollege}
+        onCancel={() => setShowUnlinkConfirm(false)}
+        isDangerous={true}
+      />
     </>
   );
 };
