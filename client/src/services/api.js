@@ -47,13 +47,47 @@ export const getHealthStatus = async () => {
 };
 
 /**
+ * POST /api/auth/send-otp
+ */
+export const sendOtpApi = async (email, type = 'PRIMARY') => {
+  const response = await fetch(`${API_BASE_URL}/auth/send-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, type }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to send OTP verification code.');
+  }
+  return data;
+};
+
+/**
+ * POST /api/auth/verify-otp
+ */
+export const verifyOtpApi = async (email, otpCode, type = 'PRIMARY') => {
+  const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, otpCode, type }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Invalid or expired OTP code.');
+  }
+  return data;
+};
+
+/**
  * POST /api/auth/register
  */
-export const registerUser = async (name, email, password) => {
+export const registerUser = async ({ name, email, password, primaryOtp, collegeEmail, collegeOtp }) => {
   const response = await fetch(`${API_BASE_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ name, email, password, primaryOtp, collegeEmail, collegeOtp }),
   });
 
   const data = await response.json();

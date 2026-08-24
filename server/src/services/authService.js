@@ -4,7 +4,7 @@ const { pool, query } = require('../config/db');
  * Register new user & default student_verifications record in a PostgreSQL transaction
  * @param {Object} userData - { name, email, passwordHash }
  */
-const createUserWithVerification = async ({ name, email, passwordHash }) => {
+const createUserWithVerification = async ({ name, email, passwordHash, collegeEmail = null, isCollegeVerified = false }) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -18,13 +18,27 @@ const createUserWithVerification = async ({ name, email, passwordHash }) => {
     const userRes = await client.query(insertUserText, [name, email.toLowerCase(), passwordHash]);
     const newUser = userRes.rows[0];
 
-    // 2. Create default student_verifications record with status 'UNVERIFIED'
+    // 2. Create student_verifications record
+    const verStatus = isCollegeVerified ? 'VERIFIED' : 'UNVERIFIED';
+    const verMethod = isCollegeVerified ? 'COLLEGE_EMAIL' : null;
+    const verifiedAt = isCollegeVerified ? new Date() : null;
+
     const insertVerificationText = `
-      INSERT INTO student_verifications (user_id, status)
-      VALUES ($1, 'UNVERIFIED')
+      INSERT INTO student_verifications (user_id, status, method, verified_at)
+      VALUES ($1, $2, $3, $4)
       RETURNING id, status, created_at;
     `;
-    await client.query(insertVerificationText, [newUser.id]);
+    await client.query(insertVerificationText, [newUser.id, verStatus, verMethod, verifiedAt]);
+
+    // 3. If collegeEmail provided, insert student_profiles entry
+    if (collegeEmail) {
+      await client.query(
+        `INSERT INTO student_profiles (user_id, college_email, college, degree, year_of_study)
+         VALUES ($1, $2, '', '', '')
+         ON CONFLICT (user_id) DO UPDATE SET college_email = EXCLUDED.college_email`,
+        [newUser.id, collegeEmail.toLowerCase()]
+      );
+    }
 
     await client.query('COMMIT');
     return newUser;

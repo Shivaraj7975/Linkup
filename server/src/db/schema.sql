@@ -147,6 +147,17 @@ CREATE TABLE matches (
     CONSTRAINT unique_linkup_user_match UNIQUE (linkup_id, user_id)
 );
 
+-- 13. OTP_VERIFICATIONS Table
+CREATE TABLE otp_verifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) NOT NULL,
+    otp_code VARCHAR(6) NOT NULL,
+    purpose VARCHAR(50) NOT NULL, -- 'REGISTRATION' | 'COLLEGE_VERIFICATION'
+    expires_at TIMESTAMPTZ NOT NULL,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Performance Indexes
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_student_profiles_user_id ON student_profiles(user_id);

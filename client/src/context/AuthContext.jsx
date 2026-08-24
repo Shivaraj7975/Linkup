@@ -33,8 +33,8 @@ export const AuthProvider = ({ children }) => {
     fetchCurrentUser();
   }, [fetchCurrentUser]);
 
-  const register = async ({ name, email, password }) => {
-    const data = await registerUser(name, email, password);
+  const register = async (registerData) => {
+    const data = await registerUser(registerData);
     localStorage.setItem('linkup_token', data.token);
     setToken(data.token);
     // Fetch full user with isProfileComplete from /me

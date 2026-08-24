@@ -4,7 +4,7 @@
  * Configured for high-speed, compact JSON mode output with zero chain-of-thought.
  */
 
-const analyzeMatchesWithNemotron = async (compactPayload) => {
+const analyzeMatchesWithNvidia = async (compactPayload) => {
   const apiKey = process.env.NVIDIA_API_KEY;
   const modelName = process.env.NEMOTRON_MODEL || 'nvidia/nemotron-3.5-lightning-30b-a3b';
 

@@ -5,6 +5,13 @@ const {
   findUserByEmail,
   isProfileComplete,
 } = require('../services/authService');
+const {
+  isCollegeEmail,
+  generateOtpCode,
+  saveOtpToDb,
+  verifyOtpInDb,
+  sendOtpEmail,
+} = require('../services/emailService');
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -22,11 +29,82 @@ const generateToken = (user) => {
 };
 
 /**
+ * POST /api/auth/send-otp
+ */
+const sendOtp = async (req, res, next) => {
+  try {
+    const { email, type = 'PRIMARY' } = req.body;
+
+    if (!email || !emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid email address is required.',
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Check college domain if type is COLLEGE
+    if (type === 'COLLEGE') {
+      if (!isCollegeEmail(cleanEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please enter a valid institutional college email address ending with .edu, .edu.in, .ac.in, etc.',
+        });
+      }
+    }
+
+    const otpCode = generateOtpCode();
+    await saveOtpToDb(cleanEmail, otpCode, type);
+    await sendOtpEmail({ toEmail: cleanEmail, otpCode, type });
+
+    return res.json({
+      success: true,
+      message: `OTP verification code sent to ${cleanEmail}.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/auth/verify-otp
+ */
+const verifyOtp = async (req, res, next) => {
+  try {
+    const { email, otpCode, type = 'PRIMARY' } = req.body;
+
+    if (!email || !otpCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and OTP code are required.',
+      });
+    }
+
+    const isValid = await verifyOtpInDb(email, otpCode, type);
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP verification code.',
+      });
+    }
+
+    return res.json({
+      success: true,
+      verified: true,
+      message: 'OTP verified successfully.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * POST /api/auth/register
  */
 const register = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, primaryOtp, collegeEmail, collegeOtp } = req.body;
 
     // 1. Validate inputs
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
@@ -62,21 +140,60 @@ const register = async (req, res, next) => {
       });
     }
 
-    // 3. Hash password securely
+    // 3. Verify Primary OTP if provided
+    if (primaryOtp) {
+      const isPrimaryValid = await verifyOtpInDb(cleanEmail, primaryOtp, 'PRIMARY');
+      if (!isPrimaryValid) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid or expired OTP code for primary email.',
+        });
+      }
+    }
+
+    // 4. Validate and verify College Email & College OTP if provided
+    let cleanCollegeEmail = null;
+    let isCollegeVerified = false;
+
+    if (collegeEmail && collegeEmail.trim()) {
+      cleanCollegeEmail = collegeEmail.trim().toLowerCase();
+
+      if (!isCollegeEmail(cleanCollegeEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please enter a valid institutional college email address ending with .edu, .edu.in, .ac.in, etc.',
+        });
+      }
+
+      if (collegeOtp) {
+        const isCollegeValid = await verifyOtpInDb(cleanCollegeEmail, collegeOtp, 'COLLEGE');
+        if (!isCollegeValid) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid or expired OTP code for college email.',
+          });
+        }
+        isCollegeVerified = true;
+      }
+    }
+
+    // 5. Hash password securely
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    // 4. Create user and default student_verifications record
+    // 6. Create user and student_verifications record
     const newUser = await createUserWithVerification({
       name: cleanName,
       email: cleanEmail,
       passwordHash,
+      collegeEmail: cleanCollegeEmail,
+      isCollegeVerified,
     });
 
-    // 5. Generate JWT token
+    // 7. Generate JWT token
     const token = generateToken(newUser);
 
-    // 6. Return response (never returning password hash)
+    // 8. Return response
     return res.status(201).json({
       success: true,
       token,
@@ -84,6 +201,8 @@ const register = async (req, res, next) => {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
+        collegeEmail: cleanCollegeEmail,
+        isCollegeVerified,
       },
     });
   } catch (error) {
@@ -171,4 +290,6 @@ module.exports = {
   register,
   login,
   getMe,
+  sendOtp,
+  verifyOtp,
 };
