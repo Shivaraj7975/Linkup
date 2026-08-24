@@ -8,6 +8,7 @@ import {
   PlusCircle,
   LogOut,
   LogIn,
+  Mail,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,6 +20,7 @@ export const Navbar = () => {
     { label: 'Discover', path: '/discover', icon: Compass },
     { label: 'My Melds', path: '/my-melds', icon: FolderGit2 },
     { label: 'Create Meld', path: '/create-linkup', icon: PlusCircle },
+    { label: 'Invitations', path: '/invitations', icon: Mail },
     { label: 'Profile', path: '/profile', icon: User },
   ];
 
@@ -64,19 +66,20 @@ export const Navbar = () => {
                 </Link>
 
                 <Link
+                  to="/invitations"
+                  className={`btn btn-ghost btn-sm ${location.pathname === '/invitations' ? 'active-nav-link' : ''}`}
+                >
+                  <Mail size={15} />
+                  <span>Invitations</span>
+                </Link>
+
+                <Link
                   to="/profile"
                   className={`btn btn-ghost btn-sm ${location.pathname === '/profile' ? 'active-nav-link' : ''}`}
                 >
                   <User size={15} />
                   <span>Profile</span>
                 </Link>
-
-                <span className="nav-greeting">Hi, {user?.name?.split(' ')[0]}</span>
-
-                <button onClick={logout} className="btn btn-ghost btn-sm">
-                  <LogOut size={14} />
-                  <span>Logout</span>
-                </button>
               </>
             ) : (
               <>
@@ -86,13 +89,17 @@ export const Navbar = () => {
             )}
           </nav>
 
-          {/* Mobile Top Actions (User Greeting / Logout or Login) */}
+          {/* Mobile Top Actions (Profile or Login) */}
           <div className="mobile-top-actions">
             {isAuthenticated ? (
-              <button onClick={logout} className="btn btn-ghost btn-sm" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem', gap: '0.3rem' }}>
-                <LogOut size={14} />
-                <span>Logout</span>
-              </button>
+              <Link
+                to="/profile"
+                className={`btn btn-ghost btn-sm ${location.pathname === '/profile' ? 'active-nav-link' : ''}`}
+                style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', gap: '0.4rem' }}
+              >
+                <User size={16} />
+                <span>Profile</span>
+              </Link>
             ) : (
               <Link to="/login" className="btn btn-primary btn-sm" style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}>
                 <LogIn size={14} />

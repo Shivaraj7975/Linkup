@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getLinkupMatches } from '../services/api';
+import { getLinkupMatches, inviteToLinkup } from '../services/api';
 import { PublicProfileModal } from './PublicProfileModal';
 import {
   Sparkles,
@@ -19,6 +19,7 @@ import {
   Clock,
   RotateCw,
   Database,
+  MailPlus,
 } from 'lucide-react';
 
 export const MatchResultsModal = ({ linkup, onClose }) => {
@@ -28,7 +29,10 @@ export const MatchResultsModal = ({ linkup, onClose }) => {
   const [isCached, setIsCached] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [actionSuccess, setActionSuccess] = useState('');
+  const [actionError, setActionError] = useState('');
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [invitingId, setInvitingId] = useState(null); // Track which user is being invited
 
   const linkupId = linkup?.id;
   const isCreator = linkup?.isCreator || false;
@@ -46,6 +50,25 @@ export const MatchResultsModal = ({ linkup, onClose }) => {
       setError(err.message || 'Failed to analyze candidate matches.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInvite = async (e, targetId) => {
+    e.stopPropagation();
+    if (!targetId) return;
+    
+    setActionSuccess('');
+    setActionError('');
+    try {
+      setInvitingId(targetId);
+      await inviteToLinkup(linkup.id, targetId);
+      setActionSuccess('Invitation sent successfully!');
+      setTimeout(() => setActionSuccess(''), 4000);
+    } catch (err) {
+      setActionError(err.message || 'Failed to send invitation.');
+      setTimeout(() => setActionError(''), 4000);
+    } finally {
+      setInvitingId(null);
     }
   };
 
@@ -118,6 +141,20 @@ export const MatchResultsModal = ({ linkup, onClose }) => {
 
                   <span className="matches-count-badge">{matches.length} Candidates</span>
                 </div>
+              </div>
+            )}
+
+            {/* ACTION ALERTS */}
+            {actionSuccess && (
+              <div className="alert alert-success" style={{ margin: '0 2rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle2 size={18} />
+                <span>{actionSuccess}</span>
+              </div>
+            )}
+            {actionError && (
+              <div className="alert alert-error" style={{ margin: '0 2rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertCircle size={18} />
+                <span>{actionError}</span>
               </div>
             )}
 
@@ -263,6 +300,24 @@ export const MatchResultsModal = ({ linkup, onClose }) => {
                         >
                           <User size={14} />
                           <span>View Profile</span>
+                        </button>
+                        
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ marginLeft: 'auto', background: 'rgba(99, 102, 241, 0.1)', color: '#a855f7', border: '1px solid rgba(168, 85, 247, 0.3)' }}
+                          onClick={(e) => {
+                            const targetId = item.userId || item.id || item.candidate?.userId || item.candidate?.id;
+                            handleInvite(e, targetId);
+                          }}
+                          disabled={invitingId === (item.userId || item.id || item.candidate?.userId || item.candidate?.id)}
+                        >
+                          {invitingId === (item.userId || item.id || item.candidate?.userId || item.candidate?.id) ? (
+                            <Sparkles size={14} className="spin" />
+                          ) : (
+                            <MailPlus size={14} />
+                          )}
+                          <span>Invite to MELD</span>
                         </button>
                       </div>
                     </div>

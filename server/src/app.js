@@ -4,6 +4,7 @@ const healthRoutes = require('./routes/healthRoutes');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const linkupRoutes = require('./routes/linkupRoutes');
+const invitationRoutes = require('./routes/invitationRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -29,6 +30,7 @@ app.use('/api', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', linkupRoutes);
+app.use('/api/invitations', invitationRoutes);
 
 // Root route welcome message
 app.get('/', (req, res) => {

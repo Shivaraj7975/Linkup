@@ -37,4 +37,10 @@ router.delete('/linkups/:linkupId/members/:userId', authenticateToken, linkupCon
 // Get Ranked AI Candidate Matches for a Linkup (Auth required)
 router.get('/linkups/:linkupId/matches', authenticateToken, linkupController.getLinkupMatches);
 
+// Invite a user to a Linkup (Auth required, Creator ONLY)
+router.post('/linkups/:linkupId/invite', authenticateToken, linkupController.inviteUser);
+
+// Leave a Linkup (Auth required, Member ONLY)
+router.post('/linkups/:linkupId/leave', authenticateToken, linkupController.leaveLinkupHandler);
+
 module.exports = router;

@@ -440,3 +440,60 @@ export const getPublicUserProfile = async (userId) => {
   return data;
 };
 
+/* ==========================================================================
+   INVITATIONS & LEAVING API ENDPOINTS
+   ========================================================================== */
+
+/**
+ * POST /api/linkups/:linkupId/invite - Invite a user to a Linkup
+ */
+export const inviteToLinkup = async (linkupId, inviteeId) => {
+  const response = await fetch(`${API_BASE_URL}/linkups/${linkupId}/invite`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ inviteeId }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to send invitation.');
+  return data;
+};
+
+/**
+ * POST /api/linkups/:linkupId/leave - Leave a Linkup
+ */
+export const leaveLinkup = async (linkupId) => {
+  const response = await fetch(`${API_BASE_URL}/linkups/${linkupId}/leave`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to leave Linkup.');
+  return data;
+};
+
+/**
+ * GET /api/invitations - Get pending invitations
+ */
+export const getUserInvitations = async () => {
+  const response = await fetch(`${API_BASE_URL}/invitations`, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch invitations.');
+  return data;
+};
+
+/**
+ * POST /api/invitations/:id/respond - Accept or reject invitation
+ */
+export const respondToInvitation = async (invitationId, action) => {
+  const response = await fetch(`${API_BASE_URL}/invitations/${invitationId}/respond`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ action }), // 'ACCEPTED' or 'REJECTED'
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to respond to invitation.');
+  return data;
+};

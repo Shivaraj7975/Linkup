@@ -45,7 +45,7 @@ export const UserProfilePage = () => {
   }, [userId]);
 
   return (
-    <div className="app-container">
+    <div className="app-layout">
       <Navbar />
       
       <main className="main-content container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }}>

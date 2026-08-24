@@ -856,6 +856,42 @@ const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh 
   }
 };
 
+/**
+ * Leave a Linkup
+ */
+const leaveLinkup = async (linkupId, userId) => {
+  // Check if member exists
+  const memberCheck = await query(
+    `SELECT * FROM linkup_members WHERE linkup_id = $1 AND user_id = $2`,
+    [linkupId, userId]
+  );
+  
+  if (memberCheck.rows.length === 0) {
+    throw new Error('You are not a member of this Linkup.');
+  }
+
+  const linkup = await getLinkupById(linkupId);
+  if (linkup.creatorId === userId) {
+    throw new Error('Creators cannot leave their own Linkup. Delete the Linkup instead.');
+  }
+
+  // Delete member
+  await query(
+    `DELETE FROM linkup_members WHERE linkup_id = $1 AND user_id = $2`,
+    [linkupId, userId]
+  );
+
+  // If linkup was full, reopen it
+  if (linkup.currentStatus === 'FULL') {
+    await query(
+      `UPDATE linkups SET current_status = 'OPEN' WHERE id = $1`,
+      [linkupId]
+    );
+  }
+
+  return { success: true };
+};
+
 module.exports = {
   createLinkup,
   getLinkups,
@@ -868,4 +904,5 @@ module.exports = {
   rejectJoinRequest,
   removeTeamMember,
   getMatchesForLinkup,
+  leaveLinkup,
 };

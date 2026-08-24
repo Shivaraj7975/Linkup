@@ -36,7 +36,7 @@ const matchCandidates = async (compactPayload, candidateIdsSet, candidateLookupM
       fn: () => analyzeMatchesWithOpenAICompatible(compactPayload, {
         endpoint: 'https://api.groq.com/openai/v1/chat/completions',
         apiKey: process.env.GROQ_API_KEY,
-        modelName: process.env.GROQ_MODEL || 'llama3-8b-8192',
+        modelName: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
         providerName: 'GROQ',
         timeoutMs
       })

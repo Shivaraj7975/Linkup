@@ -58,14 +58,13 @@ export const DashboardPage = () => {
   };
 
   return (
-    <>
+    <div className="app-layout">
       <div className="ambient-glow-1"></div>
       <div className="ambient-glow-2"></div>
 
-      <div className="container">
-        <Navbar />
+      <Navbar />
 
-        <main className="dashboard-layout">
+      <main className="container dashboard-layout">
           {/* Header Banner */}
           <div
             className="dash-card page-header-hero"
@@ -326,15 +325,13 @@ export const DashboardPage = () => {
               )}
             </div>
           )}
-        </main>
-      </div>
-
-      {matchingLinkup && (
-        <MatchResultsModal
-          linkup={matchingLinkup}
-          onClose={() => setMatchingLinkup(null)}
-        />
-      )}
-    </>
+        {matchingLinkup && (
+          <MatchResultsModal
+            linkup={matchingLinkup}
+            onClose={() => setMatchingLinkup(null)}
+          />
+        )}
+      </main>
+    </div>
   );
 };

@@ -2,6 +2,7 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Drop existing tables if re-initializing (in reverse dependency order)
+DROP TABLE IF EXISTS linkup_invitations CASCADE;
 DROP TABLE IF EXISTS matches CASCADE;
 DROP TABLE IF EXISTS join_requests CASCADE;
 DROP TABLE IF EXISTS linkup_members CASCADE;
@@ -147,7 +148,19 @@ CREATE TABLE matches (
     CONSTRAINT unique_linkup_user_match UNIQUE (linkup_id, user_id)
 );
 
--- 13. OTP_VERIFICATIONS Table
+-- 13. LINKUP_INVITATIONS Table
+CREATE TABLE linkup_invitations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    linkup_id UUID NOT NULL REFERENCES linkups(id) ON DELETE CASCADE,
+    inviter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    invitee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'ACCEPTED', 'REJECTED')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_linkup_invitee UNIQUE (linkup_id, invitee_id)
+);
+
+-- 14. OTP_VERIFICATIONS Table
 CREATE TABLE otp_verifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) NOT NULL,
@@ -188,6 +201,9 @@ CREATE INDEX idx_matches_linkup_id ON matches(linkup_id);
 CREATE INDEX idx_matches_user_id ON matches(user_id);
 CREATE INDEX idx_matches_percentage ON matches(match_percentage);
 
+CREATE INDEX idx_linkup_invitations_linkup_id ON linkup_invitations(linkup_id);
+CREATE INDEX idx_linkup_invitations_invitee_id ON linkup_invitations(invitee_id);
+
 -- Function and Triggers for automatic updated_at timestamp updates
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -202,3 +218,4 @@ CREATE TRIGGER update_student_profiles_updated_at BEFORE UPDATE ON student_profi
 CREATE TRIGGER update_student_verifications_updated_at BEFORE UPDATE ON student_verifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_linkups_updated_at BEFORE UPDATE ON linkups FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_join_requests_updated_at BEFORE UPDATE ON join_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_linkup_invitations_updated_at BEFORE UPDATE ON linkup_invitations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

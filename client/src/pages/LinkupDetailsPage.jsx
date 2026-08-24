@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
-import { getLinkupById, sendJoinRequest, deleteLinkup } from '../services/api';
+import { getLinkupById, sendJoinRequest, deleteLinkup, leaveLinkup } from '../services/api';
 import { MatchResultsModal } from '../components/MatchResultsModal';
 import { ConfirmModal } from '../components/ConfirmModal';
 import {
@@ -30,6 +30,9 @@ export const LinkupDetailsPage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [showMatchModal, setShowMatchModal] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [actionSuccess, setActionSuccess] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Data & Loading State
@@ -101,12 +104,31 @@ export const LinkupDetailsPage = () => {
   const executeDeleteLinkup = async () => {
     setShowDeleteConfirm(false);
     setDeleting(true);
+    setActionError('');
     try {
       await deleteLinkup(id);
       navigate('/discover');
     } catch (err) {
-      alert(err.message || 'Failed to delete Meld.');
+      setActionError(err.message || 'Failed to delete Meld.');
+      setTimeout(() => setActionError(''), 4000);
       setDeleting(false);
+    }
+  };
+
+  const handleLeaveLinkup = async () => {
+    if (!window.confirm("Are you sure you want to leave this MELD?")) return;
+    try {
+      setLeaving(true);
+      setActionError('');
+      await leaveLinkup(id);
+      setActionSuccess('You have left the MELD.');
+      await fetchLinkupDetails(); // refresh details
+      setTimeout(() => setActionSuccess(''), 4000);
+    } catch (err) {
+      setActionError(err.message || 'Failed to leave MELD.');
+      setTimeout(() => setActionError(''), 4000);
+    } finally {
+      setLeaving(false);
     }
   };
 
@@ -234,6 +256,20 @@ export const LinkupDetailsPage = () => {
                 )}
               </div>
 
+              {/* ACTION ALERTS */}
+              {actionSuccess && (
+                <div className="alert alert-success" style={{ margin: '1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <CheckCircle2 size={18} />
+                  <span>{actionSuccess}</span>
+                </div>
+              )}
+              {actionError && (
+                <div className="alert alert-error" style={{ margin: '1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <AlertCircle size={18} />
+                  <span>{actionError}</span>
+                </div>
+              )}
+
               {/* ACTION CONTAINER */}
               <div className="details-action-bar margin-top-lg">
                 {isCreator ? (
@@ -260,9 +296,19 @@ export const LinkupDetailsPage = () => {
                     </button>
                   </div>
                 ) : isMember ? (
-                  <div className="badge-banner banner-success">
-                    <CheckCircle2 size={20} />
-                    <span>You are a member of this team!</span>
+                  <div className="badge-banner banner-success" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <CheckCircle2 size={20} />
+                      <span>You are a member of this team!</span>
+                    </div>
+                    <button 
+                      className="btn btn-ghost btn-sm"
+                      style={{ color: '#ef4444' }}
+                      onClick={handleLeaveLinkup}
+                      disabled={leaving}
+                    >
+                      <span>{leaving ? 'Leaving...' : 'Leave MELD'}</span>
+                    </button>
                   </div>
                 ) : userJoinRequestStatus === 'PENDING' ? (
                   <div className="badge-banner banner-info">

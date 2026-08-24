@@ -13,6 +13,7 @@ import { CreateLinkupPage } from './pages/CreateLinkupPage';
 import { LinkupDetailsPage } from './pages/LinkupDetailsPage';
 import { ManageLinkupPage } from './pages/ManageLinkupPage';
 import { UserProfilePage } from './pages/UserProfilePage';
+import { InvitationsPage } from './pages/InvitationsPage';
 
 function App() {
   return (
@@ -45,6 +46,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/invitations"
+            element={
+              <ProtectedRoute>
+                <InvitationsPage />
               </ProtectedRoute>
             }
           />

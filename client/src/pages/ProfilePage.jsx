@@ -36,6 +36,7 @@ import {
   Mail,
   ShieldCheck,
   Trash2,
+  LogOut,
 } from 'lucide-react';
 
 const isCollegeEmailValid = (email) => {
@@ -120,7 +121,7 @@ const FEATURED_SECTOR_INTEREST_NAMES = [
 ];
 
 export const ProfilePage = () => {
-  const { user, fetchCurrentUser } = useAuth();
+  const { user, fetchCurrentUser, logout } = useAuth();
   
   // Page Profile State
   const [profileData, setProfileData] = useState(null);
@@ -263,6 +264,9 @@ export const ProfilePage = () => {
   // Open Edit Modal & load reference data
   const handleOpenEdit = async () => {
     setEditError('');
+    skipSearchRef.current = true;
+    setShowUniDropdown(false);
+    setUniSuggestions([]);
     setIsEditing(true);
 
     try {
@@ -491,14 +495,13 @@ export const ProfilePage = () => {
     : (slicedFeaturedInterests.length > 0 ? slicedFeaturedInterests : dbInterests.slice(0, featuredInterestLimit));
 
   return (
-    <>
+    <div className="app-layout">
       <div className="ambient-glow-1"></div>
       <div className="ambient-glow-2"></div>
 
-      <div className="container">
-        <Navbar />
+      <Navbar />
 
-        <main className="dashboard-layout">
+      <main className="container dashboard-layout">
           {pageSuccess && (
             <div className="alert alert-success" style={{ marginBottom: '1.5rem' }}>
               <CheckCircle2 size={16} /> {pageSuccess}
@@ -570,11 +573,15 @@ export const ProfilePage = () => {
               )}
             </div>
 
-            {/* EDIT PROFILE BUTTON */}
-            <div className="profile-header-actions">
+            {/* EDIT PROFILE & LOGOUT BUTTONS */}
+            <div className="profile-header-actions" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
               <button onClick={handleOpenEdit} className="btn btn-primary">
                 <Pencil size={16} />
                 <span>Edit Profile</span>
+              </button>
+              <button onClick={logout} className="btn btn-ghost" style={{ color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <LogOut size={16} />
+                <span>Logout</span>
               </button>
             </div>
           </div>
@@ -631,53 +638,58 @@ export const ProfilePage = () => {
                     </button>
                   </div>
                 ) : (
-                  <div className="p-sm rounded-lg" style={{ background: 'rgba(99, 102, 241, 0.06)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-                    <p className="text-sm text-muted margin-bottom-sm">
+                  <div className="p-md rounded-lg" style={{ background: 'rgba(99, 102, 241, 0.04)', border: '1px solid rgba(99, 102, 241, 0.15)', marginTop: '0.5rem' }}>
+                    <p className="text-sm text-muted" style={{ marginBottom: '1rem', lineHeight: '1.5' }}>
                       Link your institutional email to verify your student status and receive top priority in AI candidate matching!
                     </p>
 
                     {collegeStep === 1 ? (
-                      <form onSubmit={handleSendCollegeOtp} className="flex-center gap-sm flex-wrap">
-                        <input
-                          type="email"
-                          placeholder="student@university.edu"
-                          value={collegeInput}
-                          onChange={(e) => setCollegeInput(e.target.value)}
-                          className="input-field"
-                          style={{ flex: 1, minWidth: '220px' }}
-                        />
-                        <button type="submit" className="btn btn-primary btn-sm flex-center gap-2xs" disabled={sendingCollegeOtp}>
+                      <form onSubmit={handleSendCollegeOtp} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: '220px' }}>
+                          <input
+                            type="email"
+                            placeholder="student@university.edu"
+                            value={collegeInput}
+                            onChange={(e) => setCollegeInput(e.target.value)}
+                            className="input-field"
+                            style={{ height: '44px' }}
+                          />
+                        </div>
+                        <button type="submit" className="btn btn-primary" style={{ height: '44px', padding: '0 1.25rem', whiteSpace: 'nowrap' }} disabled={sendingCollegeOtp}>
                           {sendingCollegeOtp ? (
-                            <><Loader2 size={15} className="spin" /> Sending...</>
+                            <><Loader2 size={16} className="spin" /> Sending...</>
                           ) : (
-                            <><Mail size={15} /> Send OTP Code</>
+                            <><Mail size={16} /> Send OTP Code</>
                           )}
                         </button>
                       </form>
                     ) : (
-                      <form onSubmit={handleVerifyAndLinkCollege} className="flex-center gap-sm flex-wrap">
-                        <input
-                          type="text"
-                          maxLength={6}
-                          placeholder="6-Digit OTP Code"
-                          value={collegeOtpInput}
-                          onChange={(e) => setCollegeOtpInput(e.target.value)}
-                          className="input-field text-center font-bold tracking-widest"
-                          style={{ width: '160px', letterSpacing: '0.2rem' }}
-                        />
-                        <button type="submit" className="btn btn-success btn-sm flex-center gap-2xs" disabled={linkingCollege}>
+                      <form onSubmit={handleVerifyAndLinkCollege} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: '160px', maxWidth: '240px' }}>
+                          <input
+                            type="text"
+                            maxLength={6}
+                            placeholder="6-Digit OTP Code"
+                            value={collegeOtpInput}
+                            onChange={(e) => setCollegeOtpInput(e.target.value)}
+                            className="input-field text-center font-bold"
+                            style={{ height: '44px', letterSpacing: '0.25rem', fontSize: '1.05rem' }}
+                          />
+                        </div>
+                        <button type="submit" className="btn btn-success" style={{ height: '44px', padding: '0 1.25rem', whiteSpace: 'nowrap' }} disabled={linkingCollege}>
                           {linkingCollege ? (
-                            <><Loader2 size={15} className="spin" /> Verifying...</>
+                            <><Loader2 size={16} className="spin" /> Verifying...</>
                           ) : (
-                            <><CheckCircle2 size={15} /> Verify & Link</>
+                            <><CheckCircle2 size={16} /> Verify & Link</>
                           )}
                         </button>
                         <button
                           type="button"
                           onClick={() => setCollegeStep(1)}
-                          className="btn btn-ghost btn-sm text-xs"
+                          className="btn btn-ghost"
+                          style={{ height: '44px' }}
                         >
-                          Change Email
+                          Cancel
                         </button>
                       </form>
                     )}
@@ -776,18 +788,17 @@ export const ProfilePage = () => {
             </div>
           </div>
         </main>
-      </div>
 
-      {/* EDIT PROFILE MODAL */}
-      {isEditing && (
-        <div className="modal-overlay" onClick={() => setIsEditing(false)}>
-          <div className="modal-card edit-profile-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title-group">
-                <Pencil size={20} color="#6366f1" />
-                <h2>Edit Student Profile</h2>
-              </div>
-              <button onClick={() => setIsEditing(false)} className="modal-close-btn">
+        {/* EDIT PROFILE MODAL */}
+        {isEditing && (
+          <div className="modal-overlay" onClick={() => setIsEditing(false)}>
+            <div className="modal-card edit-profile-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <div className="modal-title-group">
+                  <Pencil size={20} color="#6366f1" />
+                  <h2>Edit Student Profile</h2>
+                </div>
+                <button onClick={() => setIsEditing(false)} className="modal-close-btn">
                 <X size={20} />
               </button>
             </div>
@@ -1171,6 +1182,6 @@ export const ProfilePage = () => {
         onCancel={() => setShowUnlinkConfirm(false)}
         isDangerous={true}
       />
-    </>
+    </div>
   );
 };

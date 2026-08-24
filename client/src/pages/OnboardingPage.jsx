@@ -449,13 +449,13 @@ export const OnboardingPage = () => {
   }
 
   return (
-    <>
+    <div className="app-layout">
       <div className="ambient-glow-1"></div>
       <div className="ambient-glow-2"></div>
 
-      <div className="container">
-        <Navbar />
+      <Navbar />
 
+      <main className="container page-content">
         <div className="onboarding-wrapper">
           {/* Stepper Header */}
           <div className="stepper-bar">
@@ -1006,7 +1006,7 @@ export const OnboardingPage = () => {
             </div>
           </div>
         </div>
-      </div>
-    </>
+      </main>
+    </div>
   );
 };
