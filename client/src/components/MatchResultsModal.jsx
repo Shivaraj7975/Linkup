@@ -108,23 +108,8 @@ export const MatchResultsModal = ({ linkup, onClose }) => {
             {!loading && !error && (
               <div className="match-engine-banner">
                 <div className="engine-indicator">
-                  {generatedBy === 'AI' ? (
-                    <>
-                      <Sparkles size={16} color="#a855f7" />
-                      <span>✨ Gemini AI Teammate Matching Engine</span>
-                    </>
-                  ) : (
-                    <>
-                      <Zap size={16} color="#06b6d4" />
-                      <span>⚡ Deterministic Skill & Interest Matching Engine</span>
-                    </>
-                  )}
-
-                  {isCached && (
-                    <span className="cache-status-pill" style={{ marginLeft: '0.4rem', fontSize: '0.72rem', color: '#94a3b8', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                      <Database size={11} /> Saved Cache
-                    </span>
-                  )}
+                  <Sparkles size={16} color="#a855f7" />
+                  <span>AI Teammate Compatibility Matcher</span>
                 </div>
 
                 <div className="banner-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

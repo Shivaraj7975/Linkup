@@ -110,9 +110,9 @@ export const Navbar = () => {
         </div>
       </header>
 
-      {/* Mobile Fixed Bottom Navigation Bar */}
+      {/* Mobile Fixed Bottom Navigation Bar (Excludes Profile since it is in top header) */}
       <nav className="mobile-bottom-nav">
-        {navItems.map((item) => {
+        {navItems.filter((item) => item.path !== '/profile').map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
           return (

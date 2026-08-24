@@ -526,7 +526,7 @@ export const OnboardingPage = () => {
                         <div className="uni-dropdown">
                           <div className="uni-dropdown-header">
                             <span>ROR Registry Matches ({uniSuggestions.length})</span>
-                            <span className="api-attribution">via ROR v2 API</span>
+                            <span className="api-attribution">Verified Institutional Registry</span>
                           </div>
                           {uniSuggestions.map((uni) => (
                             <div
