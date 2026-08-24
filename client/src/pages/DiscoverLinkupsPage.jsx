@@ -137,15 +137,15 @@ export const DiscoverLinkupsPage = () => {
             <Sparkles size={14} />
             <span>Project Discovery</span>
           </div>
-          <h1 className="hero-title" style={{ fontSize: '2rem' }}>Discover Student Linkups</h1>
+          <h1 className="hero-title" style={{ fontSize: '2rem' }}>Discover Student Melds</h1>
           <p className="hero-subtitle" style={{ fontSize: '0.95rem' }}>
-            Find innovative student projects, join cross-functional teams, and showcase your skills.
+            Don't ask around, post it and gather the crew. Find innovative student projects and join cross-functional teams.
           </p>
 
           <div className="margin-top-sm">
             <Link to="/create-linkup" className="btn btn-primary btn-sm" style={{ padding: '0.45rem 1rem', fontSize: '0.85rem' }}>
               <Plus size={15} />
-              <span>Create a Linkup</span>
+              <span>Create a Meld</span>
             </Link>
           </div>
         </div>
@@ -290,7 +290,7 @@ export const DiscoverLinkupsPage = () => {
         {loading ? (
           <div className="loading-state card glass-card text-center p-xl">
             <RefreshCw size={32} className="spin text-accent margin-bottom-md" />
-            <h3>Loading Linkups...</h3>
+            <h3>Loading Melds...</h3>
             <p className="text-muted">Fetching latest student project requests</p>
           </div>
         ) : error ? (
@@ -304,7 +304,7 @@ export const DiscoverLinkupsPage = () => {
         ) : linkups.length === 0 ? (
           <div className="empty-state card glass-card text-center p-xl">
             <FolderGit2 size={48} className="text-muted margin-bottom-md" />
-            <h3>No Linkups Found</h3>
+            <h3>No Melds Found</h3>
             <p className="text-muted margin-bottom-md">
               No project requests match your current filters or search criteria.
             </p>
@@ -314,7 +314,7 @@ export const DiscoverLinkupsPage = () => {
               </button>
               <Link to="/create-linkup" className="btn btn-primary btn-sm">
                 <Plus size={16} />
-                <span>Create a Linkup</span>
+                <span>Create a Meld</span>
               </Link>
             </div>
           </div>

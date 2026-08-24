@@ -79,11 +79,11 @@ export const RegisterPage = () => {
             <div className="brand-icon">
               <Link2 size={22} />
             </div>
-            <span>Linkup</span>
+            <span>MELD</span>
           </Link>
 
           <h1 className="auth-title">Create your account</h1>
-          <p className="auth-subtitle">Join Linkup to find teammates and build amazing projects.</p>
+          <p className="auth-subtitle">Join MELD to gather your crew and build amazing projects.</p>
 
           {apiError && <div className="alert alert-error">{apiError}</div>}
 

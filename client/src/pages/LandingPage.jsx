@@ -14,13 +14,13 @@ export const LandingPage = () => {
 
         <main className="hero-section">
           <div className="hero-pill">
-            <span>✨ Connect. Collaborate. Create.</span>
+            <span>✨ Connect. Collaborate. Gather the Crew.</span>
           </div>
 
-          <h1 className="hero-title">Linkup</h1>
+          <h1 className="hero-title">MELD</h1>
 
           <p className="hero-subtitle">
-            Find the right people. Build better things.
+            Don't ask around, post it and gather the crew.
           </p>
 
           <div className="hero-cta-group">
@@ -38,15 +38,15 @@ export const LandingPage = () => {
               <div className="feature-icon">
                 <Users size={24} />
               </div>
-              <h3>Find Teammates</h3>
-              <p>Connect with students who have the skills you need for your next project.</p>
+              <h3>Gather Your Crew</h3>
+              <p>Post your project idea and find student builders ready to collaborate.</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">
                 <Zap size={24} />
               </div>
               <h3>Smart Matching</h3>
-              <p>AI-powered matching finds the most compatible collaborators for your goals.</p>
+              <p>AI Waterfall matching finds the most compatible teammates for your goals.</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">
@@ -59,7 +59,7 @@ export const LandingPage = () => {
         </main>
 
         <footer className="footer">
-          <p>&copy; {new Date().getFullYear()} Linkup. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} MELD. All rights reserved.</p>
         </footer>
       </div>
     </>

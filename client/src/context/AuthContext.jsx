@@ -5,14 +5,14 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('linkup_token'));
+  const [token, setToken] = useState(localStorage.getItem('meld_token') || localStorage.getItem('linkup_token'));
   const [loading, setLoading] = useState(true);
 
   const isAuthenticated = !!token && !!user;
 
   // Restore session on mount if token exists
   const fetchCurrentUser = useCallback(async () => {
-    const stored = localStorage.getItem('linkup_token');
+    const stored = localStorage.getItem('meld_token') || localStorage.getItem('linkup_token');
     if (!stored) {
       setLoading(false);
       return;
@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }) => {
       const data = await getCurrentUser();
       setUser(data.user);
     } catch {
+      localStorage.removeItem('meld_token');
       localStorage.removeItem('linkup_token');
       setToken(null);
       setUser(null);
@@ -35,7 +36,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async ({ name, email, password }) => {
     const data = await registerUser(name, email, password);
-    localStorage.setItem('linkup_token', data.token);
+    localStorage.setItem('meld_token', data.token);
     setToken(data.token);
     // Fetch full user with isProfileComplete from /me
     const meData = await getCurrentUser();
@@ -45,7 +46,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async ({ email, password }) => {
     const data = await loginUser(email, password);
-    localStorage.setItem('linkup_token', data.token);
+    localStorage.setItem('meld_token', data.token);
     setToken(data.token);
     const meData = await getCurrentUser();
     setUser(meData.user);
@@ -53,6 +54,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    localStorage.removeItem('meld_token');
     localStorage.removeItem('linkup_token');
     setToken(null);
     setUser(null);

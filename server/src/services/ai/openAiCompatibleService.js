@@ -11,7 +11,7 @@ const analyzeMatchesWithOpenAICompatible = async (compactPayload, config) => {
     throw new Error(`${providerName} API key is missing or unconfigured.`);
   }
 
-  const systemInstruction = `You are Linkup's fast teammate matching engine.
+  const systemInstruction = `You are MELD's fast teammate matching engine.
 Compare the project requirements with each candidate.
 For every candidate:
 - calculate a match score from 0 to 100

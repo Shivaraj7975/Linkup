@@ -4,7 +4,7 @@
  * Configured for high-speed, compact JSON mode output with zero chain-of-thought.
  */
 
-const analyzeMatchesWithNemotron = async (compactPayload) => {
+const analyzeMatchesWithNvidia = async (compactPayload) => {
   const apiKey = process.env.NVIDIA_API_KEY;
   const modelName = process.env.NEMOTRON_MODEL || 'nvidia/nemotron-3.5-lightning-30b-a3b';
 
@@ -12,7 +12,7 @@ const analyzeMatchesWithNemotron = async (compactPayload) => {
     throw new Error('NVIDIA_API_KEY is missing or unconfigured.');
   }
 
-  const systemInstruction = `You are Linkup's fast teammate matching engine.
+  const systemInstruction = `You are MELD's fast teammate matching engine.
 Compare the project requirements with each candidate.
 For every candidate:
 - calculate a match score from 0 to 100
@@ -97,6 +97,10 @@ Respond with JSON adhering to this exact schema:
   }
 };
 
+const analyzeMatchesWithNemotron = analyzeMatchesWithNvidia;
+
 module.exports = {
   analyzeMatchesWithNvidia,
+  analyzeMatchesWithNemotron,
 };
+

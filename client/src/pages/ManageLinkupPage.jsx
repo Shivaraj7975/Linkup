@@ -121,7 +121,7 @@ export const ManageLinkupPage = () => {
         <Navbar />
         <main className="container page-content text-center p-xl">
           <RefreshCw size={32} className="spin text-accent margin-bottom-md" />
-          <h3>Loading Linkup Management Dashboard...</h3>
+          <h3>Loading Meld Management Dashboard...</h3>
         </main>
       </div>
     );
@@ -134,7 +134,7 @@ export const ManageLinkupPage = () => {
         <main className="container page-content">
           <div className="card glass-card text-center p-xl">
             <h3 className="text-danger margin-bottom-sm">Access Denied or Not Found</h3>
-            <p className="text-muted margin-bottom-md">{error || 'Linkup not found.'}</p>
+            <p className="text-muted margin-bottom-md">{error || 'Meld not found.'}</p>
             <button onClick={() => navigate('/discover')} className="btn btn-primary btn-sm">
               <ArrowLeft size={16} />
               <span>Back to Discover</span>
@@ -155,7 +155,7 @@ export const ManageLinkupPage = () => {
       <main className="container page-content">
         <button onClick={() => navigate(`/linkups/${id}`)} className="btn btn-ghost btn-sm margin-bottom-md">
           <ArrowLeft size={16} />
-          <span>Back to Linkup Page</span>
+          <span>Back to Meld Page</span>
         </button>
 
         {/* DASHBOARD TITLE CARD */}
@@ -175,9 +175,9 @@ export const ManageLinkupPage = () => {
             </span>
           </div>
 
-          <h1 className="card-title">Manage Linkup: {linkup.title}</h1>
+          <h1 className="card-title">Manage Meld: {linkup.title}</h1>
           <p className="card-subtitle">
-            Review applicant join requests, evaluate candidate profiles, and form your team.
+            Review applicant join requests, evaluate candidate profiles, and gather your crew.
           </p>
 
           <div className="meta-stats-bar margin-top-md">

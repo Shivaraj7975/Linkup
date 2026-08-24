@@ -7,7 +7,7 @@ const dbHost = process.env.DB_HOST || '127.0.0.1';
 const dbPort = parseInt(process.env.DB_PORT, 10) || 5432;
 const dbUser = process.env.DB_USER || 'postgres';
 const dbPassword = process.env.DB_PASSWORD || '6844';
-const dbName = process.env.DB_NAME || 'linkup_db';
+const dbName = process.env.DB_NAME || 'meld_db';
 
 /**
  * Connect to default 'postgres' database to verify or create the application database

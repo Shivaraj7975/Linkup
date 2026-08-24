@@ -7,7 +7,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 /**
  * Get stored JWT token from localStorage
  */
-const getToken = () => localStorage.getItem('linkup_token');
+const getToken = () => localStorage.getItem('meld_token') || localStorage.getItem('linkup_token');
 
 /**
  * Helper to build request headers with optional auth token
@@ -41,7 +41,7 @@ export const getHealthStatus = async () => {
     console.error('API Error fetching /api/health:', error);
     return {
       success: false,
-      error: error.message || 'Failed to connect to Linkup backend API',
+      error: error.message || 'Failed to connect to MELD backend API',
     };
   }
 };
