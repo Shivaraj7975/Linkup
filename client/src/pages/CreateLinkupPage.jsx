@@ -155,9 +155,9 @@ export const CreateLinkupPage = () => {
               <PlusCircle size={20} className="text-accent" />
               <span>Team Formation</span>
             </div>
-            <h1 className="card-title">Create a Linkup</h1>
+            <h1 className="card-title">Create a Meld</h1>
             <p className="card-subtitle">
-              Post a project collaboration request to find talented student teammates.
+              Don't ask around, post it and gather the crew. Post a project collaboration request to find talented student teammates.
             </p>
           </div>
 
@@ -369,11 +369,11 @@ export const CreateLinkupPage = () => {
               </button>
               <button type="submit" className="btn btn-primary" disabled={loading}>
                 {loading ? (
-                  <span>Creating Linkup...</span>
+                  <span>Posting Meld...</span>
                 ) : (
                   <>
                     <CheckCircle2 size={18} />
-                    <span>Create Linkup</span>
+                    <span>Post Meld & Gather Crew</span>
                   </>
                 )}
               </button>

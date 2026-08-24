@@ -71,11 +71,11 @@ export const LoginPage = () => {
             <div className="brand-icon">
               <Link2 size={22} />
             </div>
-            <span>Linkup</span>
+            <span>MELD</span>
           </Link>
 
           <h1 className="auth-title">Welcome back</h1>
-          <p className="auth-subtitle">Log in to continue building with your team.</p>
+          <p className="auth-subtitle">Log in to MELD and gather your crew.</p>
 
           {apiError && <div className="alert alert-error">{apiError}</div>}
 

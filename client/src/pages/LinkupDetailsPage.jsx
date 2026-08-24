@@ -93,7 +93,7 @@ export const LinkupDetailsPage = () => {
   };
 
   const handleDeleteLinkup = async () => {
-    if (!window.confirm('Are you sure you want to delete this Linkup? This action cannot be undone.')) {
+    if (!window.confirm('Are you sure you want to delete this Meld? This action cannot be undone.')) {
       return;
     }
 
@@ -102,7 +102,7 @@ export const LinkupDetailsPage = () => {
       await deleteLinkup(id);
       navigate('/discover');
     } catch (err) {
-      alert(err.message || 'Failed to delete Linkup.');
+      alert(err.message || 'Failed to delete Meld.');
       setDeleting(false);
     }
   };
@@ -125,7 +125,7 @@ export const LinkupDetailsPage = () => {
         <main className="container page-content">
           <div className="card glass-card text-center p-xl">
             <h2 className="text-danger margin-bottom-sm">Error</h2>
-            <p className="text-muted margin-bottom-md">{error || 'Linkup not found'}</p>
+            <p className="text-muted margin-bottom-md">{error || 'Meld not found'}</p>
             <button onClick={() => navigate('/discover')} className="btn btn-primary btn-sm">
               <ArrowLeft size={16} />
               <span>Back to Discover</span>

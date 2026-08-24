@@ -1,8 +1,8 @@
-# 🚀 Linkup — Student Teammate & Project Collaboration Platform
+# 🚀 MELD — Student Teammate & Project Collaboration Platform
 
-> *"Find the right people. Build better things."*
+> *"Don't ask around, post it and gather the crew."*
 
-Linkup is a full-stack platform built for university students to find compatible project collaborators, build teams, and showcase their academic & technical skills.
+MELD is a full-stack platform built for university students to find compatible project collaborators, build teams, and showcase their academic & technical skills.
 
 ---
 

@@ -12,7 +12,7 @@ const analyzeMatchesWithNvidia = async (compactPayload) => {
     throw new Error('NVIDIA_API_KEY is missing or unconfigured.');
   }
 
-  const systemInstruction = `You are Linkup's fast teammate matching engine.
+  const systemInstruction = `You are MELD's fast teammate matching engine.
 Compare the project requirements with each candidate.
 For every candidate:
 - calculate a match score from 0 to 100
@@ -97,6 +97,10 @@ Respond with JSON adhering to this exact schema:
   }
 };
 
+const analyzeMatchesWithNemotron = analyzeMatchesWithNvidia;
+
 module.exports = {
   analyzeMatchesWithNvidia,
+  analyzeMatchesWithNemotron,
 };
+

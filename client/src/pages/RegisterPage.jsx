@@ -180,13 +180,13 @@ export const RegisterPage = () => {
             <div className="brand-icon">
               <Link2 size={22} />
             </div>
-            <span>Linkup</span>
+            <span>MELD</span>
           </Link>
 
           <h1 className="auth-title">Create your account</h1>
           <p className="auth-subtitle">
             {step === 1
-              ? 'Join Linkup to find teammates and build amazing projects.'
+              ? 'Join MELD to gather your crew and build amazing projects.'
               : 'Enter the verification OTP code(s) sent via Resend API to your email.'}
           </p>
 

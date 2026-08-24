@@ -83,17 +83,17 @@ export const DashboardPage = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
                 <FolderGit2 size={24} color="#6366f1" />
                 <h1 style={{ fontSize: '1.85rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
-                  My Linkups
+                  My Melds
                 </h1>
               </div>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0 }}>
-                Manage student project linkups you have joined as a member or created as a lead.
+                Manage student project melds you have joined as a member or created as a lead.
               </p>
             </div>
 
             <Link to="/create-linkup" className="btn btn-primary btn-md">
               <Plus size={16} />
-              <span>Create a Linkup</span>
+              <span>Create a Meld</span>
             </Link>
           </div>
 
@@ -123,7 +123,7 @@ export const DashboardPage = () => {
               }}
             >
               <Users size={16} />
-              <span>Joined Linkups</span>
+              <span>Joined Melds</span>
               <span
                 style={{
                   background: activeTab === 'joined' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
@@ -149,7 +149,7 @@ export const DashboardPage = () => {
               }}
             >
               <Rocket size={16} />
-              <span>Created Linkups</span>
+              <span>Created Melds</span>
               <span
                 style={{
                   background: activeTab === 'created' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
@@ -168,7 +168,7 @@ export const DashboardPage = () => {
           {loading ? (
             <div className="page-loader" style={{ padding: '4rem 0', minHeight: 'auto' }}>
               <Loader2 size={36} className="spin" color="#6366f1" style={{ margin: '0 auto 1rem auto' }} />
-              <p style={{ color: 'var(--text-secondary)' }}>Loading your Linkups...</p>
+              <p style={{ color: 'var(--text-secondary)' }}>Loading your Melds...</p>
             </div>
           ) : error ? (
             <div className="alert alert-error" style={{ margin: '1rem 0' }}>
@@ -182,14 +182,14 @@ export const DashboardPage = () => {
                 <div className="dash-card text-center" style={{ padding: '3.5rem 1.5rem' }}>
                   <Users size={48} color="#64748b" style={{ marginBottom: '1rem' }} />
                   <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#fff' }}>
-                    No Joined Linkups Yet
+                    No Joined Melds Yet
                   </h3>
                   <p style={{ color: 'var(--text-secondary)', maxWidth: '460px', margin: '0 auto 1.5rem', lineHeight: 1.5 }}>
-                    You haven't joined any project teams yet. Discover open student Linkups and submit join requests to collaborate!
+                    You haven't joined any project teams yet. Discover open student Melds and submit join requests to collaborate!
                   </p>
                   <Link to="/discover" className="btn btn-primary btn-sm">
                     <ArrowRight size={16} />
-                    <span>Discover Open Linkups</span>
+                    <span>Discover Open Melds</span>
                   </Link>
                 </div>
               ) : (
@@ -253,14 +253,14 @@ export const DashboardPage = () => {
                 <div className="dash-card text-center" style={{ padding: '3.5rem 1.5rem' }}>
                   <Rocket size={48} color="#64748b" style={{ marginBottom: '1rem' }} />
                   <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#fff' }}>
-                    No Created Linkups Yet
+                    No Created Melds Yet
                   </h3>
                   <p style={{ color: 'var(--text-secondary)', maxWidth: '460px', margin: '0 auto 1.5rem', lineHeight: 1.5 }}>
-                    You haven't posted any project Linkups. Post a project request to find AI-matched student teammates!
+                    You haven't posted any project Melds. Post a project request to find AI-matched student teammates!
                   </p>
                   <Link to="/create-linkup" className="btn btn-primary btn-sm">
                     <Plus size={16} />
-                    <span>Create a Linkup</span>
+                    <span>Create a Meld</span>
                   </Link>
                 </div>
               ) : (
@@ -317,7 +317,7 @@ export const DashboardPage = () => {
                           onClick={() => navigate(`/linkups/${l.id}/manage`)}
                         >
                           <Settings size={15} />
-                          <span>Manage Linkup</span>
+                          <span>Manage Meld</span>
                         </button>
                       </div>
                     </div>
