@@ -1,19 +1,31 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const healthRoutes = require('./routes/healthRoutes');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const linkupRoutes = require('./routes/linkupRoutes');
 const invitationRoutes = require('./routes/invitationRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
-// Configure CORS
+// Disable x-powered-by banner
+app.disable('x-powered-by');
+
+// 1. Helmet HTTP Security Headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Allowed for cross-origin API integration
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// 2. Configure CORS
 const allowedOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || origin === allowedOrigin || allowedOrigin === '*') {
+    if (!origin || origin === allowedOrigin || allowedOrigin === '*' || origin.includes('localhost')) {
       return callback(null, true);
     }
     return callback(null, true);
@@ -21,9 +33,30 @@ app.use(cors({
   credentials: true,
 }));
 
+// 3. Rate Limiting (General & Auth)
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300, // Limit each IP to 300 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests from this IP, please try again after 15 minutes.' }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 25, // Limit each IP to 25 login/register attempts per 15 mins
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many authentication attempts, please try again after 15 minutes.' }
+});
+
+app.use('/api/', generalLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+
 // Body parser middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Register routes
 app.use('/api', healthRoutes);
@@ -31,6 +64,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', linkupRoutes);
 app.use('/api/invitations', invitationRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Root route welcome message
 app.get('/', (req, res) => {

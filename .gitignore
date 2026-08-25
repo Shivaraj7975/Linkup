@@ -9,6 +9,7 @@ node_modules/
 # Build Outputs
 dist/
 build/
+*.timestamp*.mjs
 
 # Logs
 npm-debug.log*

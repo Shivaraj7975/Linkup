@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminRoute } from './components/AdminRoute';
 import { LandingPage } from './pages/LandingPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { LoginPage } from './pages/LoginPage';
@@ -14,6 +15,7 @@ import { LinkupDetailsPage } from './pages/LinkupDetailsPage';
 import { ManageLinkupPage } from './pages/ManageLinkupPage';
 import { UserProfilePage } from './pages/UserProfilePage';
 import { InvitationsPage } from './pages/InvitationsPage';
+import { AdminPage } from './pages/AdminPage';
 
 function App() {
   return (
@@ -25,6 +27,14 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/discover" element={<DiscoverLinkupsPage />} />
           <Route path="/linkups/:id" element={<LinkupDetailsPage />} />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }
+          />
           <Route
             path="/onboarding"
             element={

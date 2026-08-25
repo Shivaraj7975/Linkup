@@ -279,6 +279,7 @@ const login = async (req, res, next) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        role: user.role || 'USER',
       },
     });
   } catch (error) {
@@ -300,6 +301,7 @@ const getMe = async (req, res, next) => {
         id: req.user.id,
         name: req.user.name,
         email: req.user.email,
+        role: req.user.role || 'USER',
         isProfileComplete: profileComplete,
         createdAt: req.user.created_at,
       },

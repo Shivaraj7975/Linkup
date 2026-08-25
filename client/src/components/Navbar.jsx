@@ -9,6 +9,7 @@ import {
   LogOut,
   LogIn,
   Mail,
+  ShieldAlert,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -73,6 +74,17 @@ export const Navbar = () => {
                   <span>Invitations</span>
                 </Link>
 
+                {user?.role === 'ADMIN' && (
+                  <Link
+                    to="/admin"
+                    className={`btn btn-sm ${location.pathname === '/admin' ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ color: '#f43f5e', borderColor: 'rgba(244, 63, 94, 0.4)', gap: '0.35rem' }}
+                  >
+                    <ShieldAlert size={15} color="#f43f5e" />
+                    <span>Admin</span>
+                  </Link>
+                )}
+
                 <Link
                   to="/profile"
                   className={`btn btn-ghost btn-sm ${location.pathname === '/profile' ? 'active-nav-link' : ''}`}
@@ -92,14 +104,26 @@ export const Navbar = () => {
           {/* Mobile Top Actions (Profile or Login) */}
           <div className="mobile-top-actions">
             {isAuthenticated ? (
-              <Link
-                to="/profile"
-                className={`btn btn-ghost btn-sm ${location.pathname === '/profile' ? 'active-nav-link' : ''}`}
-                style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', gap: '0.4rem' }}
-              >
-                <User size={16} />
-                <span>Profile</span>
-              </Link>
+              <>
+                {user?.role === 'ADMIN' && (
+                  <Link
+                    to="/admin"
+                    className="btn btn-ghost btn-sm"
+                    style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem', color: '#f43f5e', borderColor: 'rgba(244, 63, 94, 0.4)', gap: '0.3rem' }}
+                  >
+                    <ShieldAlert size={14} color="#f43f5e" />
+                    <span>Admin</span>
+                  </Link>
+                )}
+                <Link
+                  to="/profile"
+                  className={`btn btn-ghost btn-sm ${location.pathname === '/profile' ? 'active-nav-link' : ''}`}
+                  style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', gap: '0.4rem' }}
+                >
+                  <User size={16} />
+                  <span>Profile</span>
+                </Link>
+              </>
             ) : (
               <Link to="/login" className="btn btn-primary btn-sm" style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}>
                 <LogIn size={14} />

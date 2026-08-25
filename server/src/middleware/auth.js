@@ -27,7 +27,7 @@ const authenticateToken = async (req, res, next) => {
 
     // Fetch user from DB to ensure user still exists
     const userResult = await query(
-      'SELECT id, name, email, created_at, updated_at FROM users WHERE id = $1',
+      'SELECT id, name, email, role, created_at, updated_at FROM users WHERE id = $1',
       [decoded.id]
     );
 
