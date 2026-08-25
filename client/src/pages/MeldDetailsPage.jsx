@@ -282,7 +282,7 @@ export const MeldDetailsPage = () => {
                       <Sparkles size={18} />
                       <span>Find My Team</span>
                     </button>
-                    <Link to={`/linkups/${id}/manage`} className="btn btn-ghost">
+                    <Link to={`/melds/${id}/manage`} className="btn btn-ghost">
                       <Settings size={18} />
                       <span>Manage Join Requests</span>
                     </Link>
@@ -292,7 +292,7 @@ export const MeldDetailsPage = () => {
                       className="btn btn-danger btn-ghost"
                     >
                       <Trash2 size={18} />
-                      <span>Delete Linkup</span>
+                      <span>Delete MELD</span>
                     </button>
                   </div>
                 ) : isMember ? (

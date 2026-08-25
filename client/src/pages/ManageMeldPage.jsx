@@ -157,7 +157,7 @@ export const ManageMeldPage = () => {
       <Navbar />
 
       <main className="container page-content">
-        <button onClick={() => navigate(`/linkups/${id}`)} className="btn btn-ghost btn-sm margin-bottom-md">
+        <button onClick={() => navigate(`/melds/${id}`)} className="btn btn-ghost btn-sm margin-bottom-md">
           <ArrowLeft size={16} />
           <span>Back to Meld Page</span>
         </button>

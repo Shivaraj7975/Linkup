@@ -20,7 +20,7 @@ export const Navbar = () => {
   const navItems = [
     { label: 'Discover', path: '/discover', icon: Compass },
     { label: 'My Melds', path: '/my-melds', icon: FolderGit2 },
-    { label: 'Create Meld', path: '/create-linkup', icon: PlusCircle },
+    { label: 'Create Meld', path: '/create-meld', icon: PlusCircle },
     { label: 'Invitations', path: '/invitations', icon: Mail },
     { label: 'Profile', path: '/profile', icon: User },
   ];
@@ -59,8 +59,8 @@ export const Navbar = () => {
                 </Link>
 
                 <Link
-                  to="/create-linkup"
-                  className={`btn btn-ghost btn-sm ${location.pathname === '/create-linkup' ? 'active-nav-link' : ''}`}
+                  to="/create-meld"
+                  className={`btn btn-ghost btn-sm ${location.pathname === '/create-meld' ? 'active-nav-link' : ''}`}
                 >
                   <PlusCircle size={15} />
                   <span>Create Meld</span>

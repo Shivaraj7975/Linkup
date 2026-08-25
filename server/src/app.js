@@ -5,7 +5,7 @@ const rateLimit = require('express-rate-limit');
 const healthRoutes = require('./routes/healthRoutes');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
-const linkupRoutes = require('./routes/linkupRoutes');
+const meldRoutes = require('./routes/meldRoutes');
 const invitationRoutes = require('./routes/invitationRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
@@ -62,7 +62,7 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use('/api', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api', profileRoutes);
-app.use('/api', linkupRoutes);
+app.use('/api', meldRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/admin', adminRoutes);
 

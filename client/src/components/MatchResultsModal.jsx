@@ -22,8 +22,9 @@ import {
   MailPlus,
 } from 'lucide-react';
 
-export const MatchResultsModal = ({ linkup, onClose }) => {
+export const MatchResultsModal = ({ linkup, meld, onClose }) => {
   const navigate = useNavigate();
+  const activeMeld = meld || linkup;
   const [matches, setMatches] = useState([]);
   const [generatedBy, setGeneratedBy] = useState('AI');
   const [isCached, setIsCached] = useState(false);
@@ -34,8 +35,8 @@ export const MatchResultsModal = ({ linkup, onClose }) => {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [invitingId, setInvitingId] = useState(null); // Track which user is being invited
 
-  const linkupId = linkup?.id;
-  const isCreator = linkup?.isCreator || false;
+  const linkupId = activeMeld?.id;
+  const isCreator = activeMeld?.isCreator || false;
 
   const fetchMatches = async (forceRefresh = false) => {
     setLoading(true);

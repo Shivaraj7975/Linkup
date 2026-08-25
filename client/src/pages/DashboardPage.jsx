@@ -90,7 +90,7 @@ export const DashboardPage = () => {
               </p>
             </div>
 
-            <Link to="/create-linkup" className="btn btn-primary btn-md">
+            <Link to="/create-meld" className="btn btn-primary btn-md">
               <Plus size={16} />
               <span>Create a Meld</span>
             </Link>
@@ -232,7 +232,7 @@ export const DashboardPage = () => {
 
                         <button
                           type="button"
-                          onClick={() => navigate(`/linkups/${l.id}`)}
+                          onClick={() => navigate(`/melds/${l.id}`)}
                           className="btn btn-ghost btn-sm"
                           style={{ gap: '0.35rem' }}
                         >
@@ -257,7 +257,7 @@ export const DashboardPage = () => {
                   <p style={{ color: 'var(--text-secondary)', maxWidth: '460px', margin: '0 auto 1.5rem', lineHeight: 1.5 }}>
                     You haven't posted any project Melds. Post a project request to find AI-matched student teammates!
                   </p>
-                  <Link to="/create-linkup" className="btn btn-primary btn-sm">
+                  <Link to="/create-meld" className="btn btn-primary btn-sm">
                     <Plus size={16} />
                     <span>Create a Meld</span>
                   </Link>
@@ -313,7 +313,7 @@ export const DashboardPage = () => {
                           type="button"
                           className="btn btn-ghost btn-sm"
                           style={{ width: '100%', justifyContent: 'center', gap: '0.4rem' }}
-                          onClick={() => navigate(`/linkups/${l.id}/manage`)}
+                          onClick={() => navigate(`/melds/${l.id}/manage`)}
                         >
                           <Settings size={15} />
                           <span>Manage Meld</span>

@@ -323,7 +323,7 @@ export const DiscoverMeldsPage = () => {
             {linkups.map((l) => (
               <div
                 key={l.id}
-                onClick={() => navigate(`/linkups/${l.id}`)}
+                onClick={() => navigate(`/melds/${l.id}`)}
                 className="card glass-card linkup-card interactive-card"
               >
                 <div className="card-top-row">

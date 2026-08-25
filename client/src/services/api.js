@@ -312,8 +312,8 @@ export const getLinkupById = async (id) => {
     headers: authHeaders(),
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to fetch Linkup details.');
-  return data.linkup;
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch Meld details.');
+  return data.meld || data.linkup;
 };
 
 /**
@@ -497,3 +497,16 @@ export const respondToInvitation = async (invitationId, action) => {
   if (!response.ok) throw new Error(data.message || 'Failed to respond to invitation.');
   return data;
 };
+
+// MELD Alias Exports for seamless backward/forward compatibility
+export const createMeld = createLinkup;
+export const getMelds = getLinkups;
+export const getMeldById = getLinkupById;
+export const updateMeld = updateLinkup;
+export const deleteMeld = deleteLinkup;
+export const sendMeldJoinRequest = sendJoinRequest;
+export const getMeldRequests = getLinkupRequests;
+export const removeMeldMember = removeTeamMember;
+export const getMeldMatches = getLinkupMatches;
+export const inviteToMeld = inviteToLinkup;
+export const leaveMeld = leaveLinkup;

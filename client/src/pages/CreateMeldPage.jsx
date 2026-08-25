@@ -127,10 +127,11 @@ export const CreateMeldPage = () => {
         projectDuration,
       });
 
-      if (res.success && res.linkup) {
-        navigate(`/linkups/${res.linkup.id}`);
+      const createdObj = res.meld || res.linkup;
+      if (res.success && createdObj) {
+        navigate(`/melds/${createdObj.id}`);
       } else {
-        setError(res.message || 'Failed to create Linkup project.');
+        setError(res.message || 'Failed to create Meld project.');
       }
     } catch (err) {
       setError(err.message || 'An error occurred while creating your Linkup.');

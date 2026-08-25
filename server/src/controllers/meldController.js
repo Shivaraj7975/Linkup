@@ -27,7 +27,8 @@ const createLinkup = async (req, res, next) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Linkup created successfully!',
+      message: 'MELD created successfully!',
+      meld: createdLinkup,
       linkup: createdLinkup,
     });
   } catch (error) {
@@ -46,6 +47,7 @@ const getLinkups = async (req, res, next) => {
     return res.json({
       success: true,
       count: linkups.length,
+      melds: linkups,
       linkups,
     });
   } catch (error) {
@@ -66,12 +68,13 @@ const getLinkupById = async (req, res, next) => {
     if (!linkup) {
       return res.status(404).json({
         success: false,
-        message: 'Linkup not found.',
+        message: 'MELD not found.',
       });
     }
 
     return res.json({
       success: true,
+      meld: linkup,
       linkup,
     });
   } catch (error) {
@@ -89,7 +92,8 @@ const updateLinkup = async (req, res, next) => {
     const updatedLinkup = await linkupService.updateLinkup(id, req.user.id, req.body);
     return res.json({
       success: true,
-      message: 'Linkup updated successfully!',
+      message: 'MELD updated successfully!',
+      meld: updatedLinkup,
       linkup: updatedLinkup,
     });
   } catch (error) {

@@ -401,7 +401,7 @@ export const AdminPage = () => {
                         <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
                           <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
                             <button
-                              onClick={() => navigate(`/linkups/${m.id}`)}
+                              onClick={() => navigate(`/melds/${m.id}`)}
                               className="btn btn-ghost btn-sm"
                               style={{ padding: '0.25rem 0.5rem', fontSize: '0.78rem', gap: '0.2rem' }}
                               title="View project details"
