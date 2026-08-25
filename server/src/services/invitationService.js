@@ -1,5 +1,5 @@
 const { pool, query } = require('../config/db');
-const { getLinkupById } = require('./linkupService');
+const { getLinkupById } = require('./meldService');
 
 /**
  * Invite a user to a Linkup (by Creator)
@@ -16,14 +16,14 @@ const inviteUserToLinkup = async (linkupId, inviterId, inviteeId) => {
   if (invitee.rows.length === 0) throw new Error('Invitee not found.');
 
   // Check if already a member
-  const memberCheck = await query(`SELECT id FROM linkup_members WHERE linkup_id = $1 AND user_id = $2`, [linkupId, inviteeId]);
+  const memberCheck = await query(`SELECT id FROM meld_members WHERE meld_id = $1 AND user_id = $2`, [linkupId, inviteeId]);
   if (memberCheck.rows.length > 0) throw new Error('User is already a member.');
 
   // Create or update invitation
   const res = await query(
-    `INSERT INTO linkup_invitations (linkup_id, inviter_id, invitee_id, status) 
+    `INSERT INTO meld_invitations (meld_id, inviter_id, invitee_id, status) 
      VALUES ($1, $2, $3, 'PENDING')
-     ON CONFLICT (linkup_id, invitee_id) DO UPDATE SET status = 'PENDING', updated_at = CURRENT_TIMESTAMP
+     ON CONFLICT (meld_id, invitee_id) DO UPDATE SET status = 'PENDING', updated_at = CURRENT_TIMESTAMP
      RETURNING id, status`,
     [linkupId, inviterId, inviteeId]
   );
@@ -39,8 +39,8 @@ const getUserInvitations = async (userId) => {
     `SELECT i.id as invitation_id, i.status, i.created_at,
             l.id as linkup_id, l.title, l.category, l.description, l.current_status,
             u.name as inviter_name
-     FROM linkup_invitations i
-     JOIN linkups l ON i.linkup_id = l.id
+     FROM meld_invitations i
+     JOIN melds l ON i.meld_id = l.id
      JOIN users u ON i.inviter_id = u.id
      WHERE i.invitee_id = $1 AND i.status = 'PENDING'
      ORDER BY i.created_at DESC`,
@@ -51,8 +51,8 @@ const getUserInvitations = async (userId) => {
     `SELECT i.id as invitation_id, i.status, i.created_at,
             l.id as linkup_id, l.title, l.category, l.description, l.current_status,
             u.name as invitee_name, u.email as invitee_email
-     FROM linkup_invitations i
-     JOIN linkups l ON i.linkup_id = l.id
+     FROM meld_invitations i
+     JOIN melds l ON i.meld_id = l.id
      JOIN users u ON i.invitee_id = u.id
      WHERE i.inviter_id = $1 AND i.status = 'PENDING'
      ORDER BY i.created_at DESC`,
@@ -79,7 +79,7 @@ const respondToInvitation = async (invitationId, userId, action) => {
 
     // Get invitation
     const invRes = await client.query(
-      `SELECT * FROM linkup_invitations WHERE id = $1 AND invitee_id = $2 AND status = 'PENDING'`,
+      `SELECT * FROM meld_invitations WHERE id = $1 AND invitee_id = $2 AND status = 'PENDING'`,
       [invitationId, userId]
     );
 
@@ -91,15 +91,15 @@ const respondToInvitation = async (invitationId, userId, action) => {
 
     // Update invitation status
     await client.query(
-      `UPDATE linkup_invitations SET status = $1 WHERE id = $2`,
+      `UPDATE meld_invitations SET status = $1 WHERE id = $2`,
       [action, invitationId]
     );
 
     if (action === 'ACCEPTED') {
       // Check if full
       const lRes = await client.query(
-        `SELECT max_members, current_status FROM linkups WHERE id = $1 FOR UPDATE`,
-        [invitation.linkup_id]
+        `SELECT max_members, current_status FROM melds WHERE id = $1 FOR UPDATE`,
+        [invitation.meld_id]
       );
       
       const linkup = lRes.rows[0];
@@ -108,8 +108,8 @@ const respondToInvitation = async (invitationId, userId, action) => {
       }
 
       const mRes = await client.query(
-        `SELECT COUNT(*)::int as count FROM linkup_members WHERE linkup_id = $1`,
-        [invitation.linkup_id]
+        `SELECT COUNT(*)::int as count FROM meld_members WHERE meld_id = $1`,
+        [invitation.meld_id]
       );
       const currentCount = mRes.rows[0].count;
 
@@ -119,24 +119,24 @@ const respondToInvitation = async (invitationId, userId, action) => {
 
       // Add to members
       await client.query(
-        `INSERT INTO linkup_members (linkup_id, user_id, role, status)
+        `INSERT INTO meld_members (meld_id, user_id, role, status)
          VALUES ($1, $2, 'Member', 'ACTIVE')
          ON CONFLICT DO NOTHING`,
-        [invitation.linkup_id, userId]
+        [invitation.meld_id, userId]
       );
 
       // Check if full now
       if (currentCount + 1 >= linkup.max_members) {
         await client.query(
-          `UPDATE linkups SET current_status = 'FULL' WHERE id = $1`,
-          [invitation.linkup_id]
+          `UPDATE melds SET current_status = 'FULL' WHERE id = $1`,
+          [invitation.meld_id]
         );
       }
       
       // Also delete any join_requests for this user to this linkup
       await client.query(
-        `DELETE FROM join_requests WHERE linkup_id = $1 AND user_id = $2`,
-        [invitation.linkup_id, userId]
+        `DELETE FROM join_requests WHERE meld_id = $1 AND user_id = $2`,
+        [invitation.meld_id, userId]
       );
     }
 

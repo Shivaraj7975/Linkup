@@ -38,7 +38,7 @@ const STATUS_OPTIONS = [
   { label: 'All Statuses', value: '' },
 ];
 
-export const DiscoverLinkupsPage = () => {
+export const DiscoverMeldsPage = () => {
   const navigate = useNavigate();
 
   // Filters State

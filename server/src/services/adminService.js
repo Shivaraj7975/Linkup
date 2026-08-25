@@ -5,10 +5,10 @@ const { query } = require('../config/db');
  */
 const getPlatformStats = async () => {
   const usersCountRes = await query('SELECT COUNT(*) FROM users');
-  const meldsCountRes = await query('SELECT COUNT(*) FROM linkups');
-  const openMeldsRes = await query("SELECT COUNT(*) FROM linkups WHERE current_status = 'OPEN'");
+  const meldsCountRes = await query('SELECT COUNT(*) FROM melds');
+  const openMeldsRes = await query("SELECT COUNT(*) FROM melds WHERE current_status = 'OPEN'");
   const verifiedUsersRes = await query("SELECT COUNT(*) FROM student_verifications WHERE status = 'VERIFIED'");
-  const invitationsCountRes = await query('SELECT COUNT(*) FROM linkup_invitations');
+  const invitationsCountRes = await query('SELECT COUNT(*) FROM meld_invitations');
 
   const totalUsers = parseInt(usersCountRes.rows[0].count, 10) || 0;
   const totalMelds = parseInt(meldsCountRes.rows[0].count, 10) || 0;
@@ -41,8 +41,8 @@ const getAllUsers = async (search = '') => {
       sp.degree,
       (SELECT year_of_study FROM student_profiles sp WHERE sp.user_id = u.id) AS "yearOfStudy",
       COALESCE((SELECT status FROM student_verifications sv WHERE sv.user_id = u.id ORDER BY created_at DESC LIMIT 1), 'UNVERIFIED') AS "verificationStatus",
-      (SELECT COUNT(*) FROM linkup_members lm WHERE lm.user_id = u.id) AS "meldsJoinedCount",
-      (SELECT COUNT(*) FROM linkups l WHERE l.creator_id = u.id) AS "meldsCreatedCount"
+      (SELECT COUNT(*) FROM meld_members lm WHERE lm.user_id = u.id) AS "meldsJoinedCount",
+      (SELECT COUNT(*) FROM melds l WHERE l.creator_id = u.id) AS "meldsCreatedCount"
     FROM users u
     LEFT JOIN student_profiles sp ON u.id = sp.user_id
   `;
@@ -130,8 +130,8 @@ const getAllMelds = async (search = '', status = '') => {
       u.name AS "creatorName",
       u.email AS "creatorEmail",
       u.id AS "creatorId",
-      (SELECT COUNT(*) FROM linkup_members lm WHERE lm.linkup_id = l.id) AS "memberCount"
-    FROM linkups l
+      (SELECT COUNT(*) FROM meld_members lm WHERE lm.meld_id = l.id) AS "memberCount"
+    FROM melds l
     LEFT JOIN users u ON l.creator_id = u.id
   `;
 
@@ -162,7 +162,7 @@ const getAllMelds = async (search = '', status = '') => {
  * Delete a MELD project
  */
 const deleteMeld = async (meldId) => {
-  const res = await query('DELETE FROM linkups WHERE id = $1 RETURNING id, title', [meldId]);
+  const res = await query('DELETE FROM melds WHERE id = $1 RETURNING id, title', [meldId]);
   if (res.rows.length === 0) {
     throw new Error('MELD project not found.');
   }
@@ -177,7 +177,7 @@ const updateMeldStatus = async (meldId, newStatus) => {
     throw new Error('Invalid MELD status.');
   }
   const res = await query(
-    'UPDATE linkups SET current_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, title, current_status AS "currentStatus"',
+    'UPDATE melds SET current_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, title, current_status AS "currentStatus"',
     [newStatus, meldId]
   );
   if (res.rows.length === 0) {

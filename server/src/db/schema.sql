@@ -2,12 +2,13 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Drop existing tables if re-initializing (in reverse dependency order)
-DROP TABLE IF EXISTS linkup_invitations CASCADE;
+DROP TABLE IF EXISTS otp_verifications CASCADE;
+DROP TABLE IF EXISTS meld_invitations CASCADE;
 DROP TABLE IF EXISTS matches CASCADE;
 DROP TABLE IF EXISTS join_requests CASCADE;
-DROP TABLE IF EXISTS linkup_members CASCADE;
-DROP TABLE IF EXISTS linkup_skills CASCADE;
-DROP TABLE IF EXISTS linkups CASCADE;
+DROP TABLE IF EXISTS meld_members CASCADE;
+DROP TABLE IF EXISTS meld_skills CASCADE;
+DROP TABLE IF EXISTS melds CASCADE;
 DROP TABLE IF EXISTS student_verifications CASCADE;
 DROP TABLE IF EXISTS user_interests CASCADE;
 DROP TABLE IF EXISTS interests CASCADE;
@@ -15,6 +16,12 @@ DROP TABLE IF EXISTS user_skills CASCADE;
 DROP TABLE IF EXISTS skills CASCADE;
 DROP TABLE IF EXISTS student_profiles CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
+
+-- Also drop old linkup tables if they exist (migration cleanup)
+DROP TABLE IF EXISTS linkup_invitations CASCADE;
+DROP TABLE IF EXISTS linkup_members CASCADE;
+DROP TABLE IF EXISTS linkup_skills CASCADE;
+DROP TABLE IF EXISTS linkups CASCADE;
 
 -- Drop custom types if they exist
 DROP TYPE IF EXISTS verification_status CASCADE;
@@ -92,8 +99,8 @@ CREATE TABLE student_verifications (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- 8. LINKUPS Table
-CREATE TABLE linkups (
+-- 8. MELDS Table
+CREATE TABLE melds (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -107,58 +114,58 @@ CREATE TABLE linkups (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- 9. LINKUP_SKILLS Table (Many-to-Many join table)
-CREATE TABLE linkup_skills (
-    linkup_id UUID NOT NULL REFERENCES linkups(id) ON DELETE CASCADE,
+-- 9. MELD_SKILLS Table (Many-to-Many join table)
+CREATE TABLE meld_skills (
+    meld_id UUID NOT NULL REFERENCES melds(id) ON DELETE CASCADE,
     skill_id INT NOT NULL REFERENCES skills(id) ON DELETE CASCADE,
-    PRIMARY KEY (linkup_id, skill_id)
+    PRIMARY KEY (meld_id, skill_id)
 );
 
--- 10. LINKUP_MEMBERS Table
-CREATE TABLE linkup_members (
+-- 10. MELD_MEMBERS Table
+CREATE TABLE meld_members (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    linkup_id UUID NOT NULL REFERENCES linkups(id) ON DELETE CASCADE,
+    meld_id UUID NOT NULL REFERENCES melds(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role VARCHAR(100) NOT NULL DEFAULT 'Member',
     status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
     joined_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_linkup_member UNIQUE (linkup_id, user_id)
+    CONSTRAINT unique_meld_member UNIQUE (meld_id, user_id)
 );
 
 -- 11. JOIN_REQUESTS Table
 CREATE TABLE join_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    linkup_id UUID NOT NULL REFERENCES linkups(id) ON DELETE CASCADE,
+    meld_id UUID NOT NULL REFERENCES melds(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     message TEXT,
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'ACCEPTED', 'REJECTED')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_user_join_request UNIQUE (linkup_id, user_id)
+    CONSTRAINT unique_user_join_request UNIQUE (meld_id, user_id)
 );
 
--- 12. MATCHES Table (Phase 7 AI Match Results Persistence & Caching)
+-- 12. MATCHES Table (AI Match Results Persistence & Caching)
 CREATE TABLE matches (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    linkup_id UUID NOT NULL REFERENCES linkups(id) ON DELETE CASCADE,
+    meld_id UUID NOT NULL REFERENCES melds(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     match_percentage INT NOT NULL CHECK (match_percentage >= 0 AND match_percentage <= 100),
     match_data JSONB NOT NULL DEFAULT '{}'::jsonb,
     generated_by VARCHAR(50) NOT NULL DEFAULT 'AI' CHECK (generated_by IN ('AI', 'FALLBACK')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_linkup_user_match UNIQUE (linkup_id, user_id)
+    CONSTRAINT unique_meld_user_match UNIQUE (meld_id, user_id)
 );
 
--- 13. LINKUP_INVITATIONS Table
-CREATE TABLE linkup_invitations (
+-- 13. MELD_INVITATIONS Table
+CREATE TABLE meld_invitations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    linkup_id UUID NOT NULL REFERENCES linkups(id) ON DELETE CASCADE,
+    meld_id UUID NOT NULL REFERENCES melds(id) ON DELETE CASCADE,
     inviter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     invitee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'ACCEPTED', 'REJECTED')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_linkup_invitee UNIQUE (linkup_id, invitee_id)
+    CONSTRAINT unique_meld_invitee UNIQUE (meld_id, invitee_id)
 );
 
 -- 14. OTP_VERIFICATIONS Table
@@ -187,23 +194,23 @@ CREATE INDEX idx_user_interests_interest_id ON user_interests(interest_id);
 CREATE INDEX idx_student_verifications_user_id ON student_verifications(user_id);
 CREATE INDEX idx_student_verifications_status ON student_verifications(status);
 
-CREATE INDEX idx_linkups_creator_id ON linkups(creator_id);
-CREATE INDEX idx_linkups_category ON linkups(category);
-CREATE INDEX idx_linkups_status ON linkups(current_status);
-CREATE INDEX idx_linkup_skills_linkup_id ON linkup_skills(linkup_id);
-CREATE INDEX idx_linkup_skills_skill_id ON linkup_skills(skill_id);
-CREATE INDEX idx_linkup_members_linkup_id ON linkup_members(linkup_id);
-CREATE INDEX idx_linkup_members_user_id ON linkup_members(user_id);
-CREATE INDEX idx_join_requests_linkup_id ON join_requests(linkup_id);
+CREATE INDEX idx_melds_creator_id ON melds(creator_id);
+CREATE INDEX idx_melds_category ON melds(category);
+CREATE INDEX idx_melds_status ON melds(current_status);
+CREATE INDEX idx_meld_skills_meld_id ON meld_skills(meld_id);
+CREATE INDEX idx_meld_skills_skill_id ON meld_skills(skill_id);
+CREATE INDEX idx_meld_members_meld_id ON meld_members(meld_id);
+CREATE INDEX idx_meld_members_user_id ON meld_members(user_id);
+CREATE INDEX idx_join_requests_meld_id ON join_requests(meld_id);
 CREATE INDEX idx_join_requests_user_id ON join_requests(user_id);
 CREATE INDEX idx_join_requests_status ON join_requests(status);
 
-CREATE INDEX idx_matches_linkup_id ON matches(linkup_id);
+CREATE INDEX idx_matches_meld_id ON matches(meld_id);
 CREATE INDEX idx_matches_user_id ON matches(user_id);
 CREATE INDEX idx_matches_percentage ON matches(match_percentage);
 
-CREATE INDEX idx_linkup_invitations_linkup_id ON linkup_invitations(linkup_id);
-CREATE INDEX idx_linkup_invitations_invitee_id ON linkup_invitations(invitee_id);
+CREATE INDEX idx_meld_invitations_meld_id ON meld_invitations(meld_id);
+CREATE INDEX idx_meld_invitations_invitee_id ON meld_invitations(invitee_id);
 
 -- Function and Triggers for automatic updated_at timestamp updates
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -217,6 +224,6 @@ $$ language 'plpgsql';
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_student_profiles_updated_at BEFORE UPDATE ON student_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_student_verifications_updated_at BEFORE UPDATE ON student_verifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_linkups_updated_at BEFORE UPDATE ON linkups FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_melds_updated_at BEFORE UPDATE ON melds FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_join_requests_updated_at BEFORE UPDATE ON join_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_linkup_invitations_updated_at BEFORE UPDATE ON linkup_invitations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_meld_invitations_updated_at BEFORE UPDATE ON meld_invitations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

@@ -25,7 +25,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-export const LinkupDetailsPage = () => {
+export const MeldDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();

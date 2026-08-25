@@ -21,7 +21,7 @@ import {
   User,
 } from 'lucide-react';
 
-export const ManageLinkupPage = () => {
+export const ManageMeldPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 

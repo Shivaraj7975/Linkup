@@ -1,7 +1,7 @@
 {
-  "name": "linkup-server",
+  "name": "meld-server",
   "version": "1.0.0",
-  "description": "Backend API for Linkup",
+  "description": "Backend API for MELD",
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {
@@ -10,7 +10,7 @@
     "db:init": "node src/db/initDb.js"
   },
   "keywords": [
-    "linkup",
+    "meld",
     "express",
     "postgresql",
     "nodejs"

@@ -34,7 +34,7 @@ const DURATION_OPTIONS = [
   'Ongoing Project',
 ];
 
-export const CreateLinkupPage = () => {
+export const CreateMeldPage = () => {
   const navigate = useNavigate();
 
   // Form State

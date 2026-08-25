@@ -1,4 +1,4 @@
-const linkupService = require('../services/linkupService');
+const linkupService = require('../services/meldService');
 
 /**
  * POST /api/linkups

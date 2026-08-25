@@ -12,17 +12,17 @@ const inFlightLocks = new Map();
 const getSkillsForLinkups = async (linkupIds) => {
   if (!linkupIds || linkupIds.length === 0) return {};
   const res = await query(
-    `SELECT ls.linkup_id, s.id as skill_id, s.name 
-     FROM linkup_skills ls 
+    `SELECT ls.meld_id, s.id as skill_id, s.name 
+     FROM meld_skills ls 
      JOIN skills s ON ls.skill_id = s.id 
-     WHERE ls.linkup_id = ANY($1::uuid[]) 
+     WHERE ls.meld_id = ANY($1::uuid[]) 
      ORDER BY s.name ASC`,
     [linkupIds]
   );
   const skillsMap = {};
   for (const row of res.rows) {
-    if (!skillsMap[row.linkup_id]) skillsMap[row.linkup_id] = [];
-    skillsMap[row.linkup_id].push({ id: row.skill_id, name: row.name });
+    if (!skillsMap[row.meld_id]) skillsMap[row.meld_id] = [];
+    skillsMap[row.meld_id].push({ id: row.skill_id, name: row.name });
   }
   return skillsMap;
 };
@@ -33,15 +33,15 @@ const getSkillsForLinkups = async (linkupIds) => {
 const getMemberCountsForLinkups = async (linkupIds) => {
   if (!linkupIds || linkupIds.length === 0) return {};
   const res = await query(
-    `SELECT linkup_id, COUNT(*)::int as count 
-     FROM linkup_members 
-     WHERE linkup_id = ANY($1::uuid[]) 
-     GROUP BY linkup_id`,
+    `SELECT meld_id, COUNT(*)::int as count 
+     FROM meld_members 
+     WHERE meld_id = ANY($1::uuid[]) 
+     GROUP BY meld_id`,
     [linkupIds]
   );
   const countsMap = {};
   for (const row of res.rows) {
-    countsMap[row.linkup_id] = row.count;
+    countsMap[row.meld_id] = row.count;
   }
   return countsMap;
 };
@@ -71,7 +71,7 @@ const createLinkup = async (creatorId, data) => {
 
     // 1. Insert Linkup
     const linkupInsert = await client.query(
-      `INSERT INTO linkups (
+      `INSERT INTO melds (
         creator_id, title, description, category, max_members, current_status, commitment_level, project_duration
       ) VALUES ($1, $2, $3, $4, $5, 'OPEN', $6, $7)
       RETURNING *`,
@@ -97,7 +97,7 @@ const createLinkup = async (creatorId, data) => {
 
         if (skillId) {
           await client.query(
-            `INSERT INTO linkup_skills (linkup_id, skill_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+            `INSERT INTO meld_skills (meld_id, skill_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
             [linkupId, skillId]
           );
         }
@@ -106,7 +106,7 @@ const createLinkup = async (creatorId, data) => {
 
     // 3. Add creator as initial team member
     await client.query(
-      `INSERT INTO linkup_members (linkup_id, user_id, role, status) VALUES ($1, $2, 'Creator', 'ACTIVE')`,
+      `INSERT INTO meld_members (meld_id, user_id, role, status) VALUES ($1, $2, 'Creator', 'ACTIVE')`,
       [linkupId, creatorId]
     );
 
@@ -135,7 +135,7 @@ const getLinkups = async (filters = {}) => {
   }
 
   if (memberUserId && memberUserId.trim()) {
-    whereClauses.push(`l.id IN (SELECT linkup_id FROM linkup_members WHERE user_id = $${paramIdx++}) AND l.creator_id != $${paramIdx++}`);
+    whereClauses.push(`l.id IN (SELECT meld_id FROM meld_members WHERE user_id = $${paramIdx++}) AND l.creator_id != $${paramIdx++}`);
     params.push(memberUserId.trim(), memberUserId.trim());
   }
 
@@ -169,8 +169,8 @@ const getLinkups = async (filters = {}) => {
 
   if (skill && skill.trim()) {
     whereClauses.push(`l.id IN (
-      SELECT ls.linkup_id 
-      FROM linkup_skills ls 
+      SELECT ls.meld_id 
+      FROM meld_skills ls 
       JOIN skills s ON ls.skill_id = s.id 
       WHERE s.name ILIKE $${paramIdx++}
     )`);
@@ -188,7 +188,7 @@ const getLinkups = async (filters = {}) => {
       sp.college as creator_college,
       sp.availability as creator_availability,
       COALESCE(sv.status, 'UNVERIFIED') as creator_verification_status
-    FROM linkups l
+    FROM melds l
     JOIN users u ON l.creator_id = u.id
     LEFT JOIN student_profiles sp ON u.id = sp.user_id
     LEFT JOIN student_verifications sv ON u.id = sv.user_id
@@ -234,7 +234,7 @@ const getLinkupById = async (id, currentUserId = null) => {
       l.id, l.creator_id, l.title, l.description, l.category, 
       l.max_members, l.current_status, l.commitment_level, l.project_duration, 
       l.created_at, l.updated_at
-     FROM linkups l
+     FROM melds l
      WHERE l.id = $1`,
     [id]
   );
@@ -248,9 +248,9 @@ const getLinkupById = async (id, currentUserId = null) => {
   // Fetch required skills
   const skillsRes = await query(
     `SELECT s.id, s.name 
-     FROM linkup_skills ls 
+     FROM meld_skills ls 
      JOIN skills s ON ls.skill_id = s.id 
-     WHERE ls.linkup_id = $1 
+     WHERE ls.meld_id = $1 
      ORDER BY s.name ASC`,
     [id]
   );
@@ -260,11 +260,11 @@ const getLinkupById = async (id, currentUserId = null) => {
     `SELECT 
       lm.id as member_table_id, lm.user_id, lm.role, lm.status, lm.joined_at,
       u.name, sp.college, COALESCE(sv.status, 'UNVERIFIED') as verification_status
-     FROM linkup_members lm
+     FROM meld_members lm
      JOIN users u ON lm.user_id = u.id
      LEFT JOIN student_profiles sp ON u.id = sp.user_id
      LEFT JOIN student_verifications sv ON u.id = sv.user_id
-     WHERE lm.linkup_id = $1
+     WHERE lm.meld_id = $1
      ORDER BY lm.joined_at ASC`,
     [id]
   );
@@ -309,7 +309,7 @@ const getLinkupById = async (id, currentUserId = null) => {
 
     if (!isCreator && !isMember) {
       const reqRes = await query(
-        `SELECT status FROM join_requests WHERE linkup_id = $1 AND user_id = $2`,
+        `SELECT status FROM join_requests WHERE meld_id = $1 AND user_id = $2`,
         [id, currentUserId]
       );
       if (reqRes.rows.length > 0) {
@@ -344,7 +344,7 @@ const getLinkupById = async (id, currentUserId = null) => {
  * Update Linkup (Creator ONLY)
  */
 const updateLinkup = async (id, creatorId, data) => {
-  const existing = await query('SELECT creator_id FROM linkups WHERE id = $1', [id]);
+  const existing = await query('SELECT creator_id FROM melds WHERE id = $1', [id]);
   if (existing.rows.length === 0) throw new Error('Linkup not found.');
   if (existing.rows[0].creator_id !== creatorId) throw new Error('Unauthorized. Only creator can edit Linkup.');
 
@@ -364,7 +364,7 @@ const updateLinkup = async (id, creatorId, data) => {
     await client.query('BEGIN');
 
     const updateSql = `
-      UPDATE linkups SET
+      UPDATE melds SET
         title = COALESCE($1, title),
         description = COALESCE($2, description),
         category = COALESCE($3, category),
@@ -390,7 +390,7 @@ const updateLinkup = async (id, creatorId, data) => {
     ]);
 
     if (Array.isArray(requiredSkills)) {
-      await client.query('DELETE FROM linkup_skills WHERE linkup_id = $1', [id]);
+      await client.query('DELETE FROM meld_skills WHERE meld_id = $1', [id]);
       for (const item of requiredSkills) {
         let skillId = typeof item === 'object' && item.id ? item.id : null;
         let skillName = typeof item === 'string' ? item.trim() : item.name?.trim();
@@ -405,7 +405,7 @@ const updateLinkup = async (id, creatorId, data) => {
 
         if (skillId) {
           await client.query(
-            `INSERT INTO linkup_skills (linkup_id, skill_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+            `INSERT INTO meld_skills (meld_id, skill_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
             [id, skillId]
           );
         }
@@ -427,7 +427,7 @@ const updateLinkup = async (id, creatorId, data) => {
  */
 const deleteLinkup = async (id, creatorId) => {
   const res = await query(
-    'DELETE FROM linkups WHERE id = $1 AND creator_id = $2 RETURNING id',
+    'DELETE FROM melds WHERE id = $1 AND creator_id = $2 RETURNING id',
     [id, creatorId]
   );
   if (res.rows.length === 0) {
@@ -442,7 +442,7 @@ const deleteLinkup = async (id, creatorId) => {
 const createJoinRequest = async (linkupId, userId, message) => {
   // 1. Fetch linkup info & current capacity
   const linkupRes = await query(
-    `SELECT id, creator_id, max_members, current_status FROM linkups WHERE id = $1`,
+    `SELECT id, creator_id, max_members, current_status FROM melds WHERE id = $1`,
     [linkupId]
   );
   if (linkupRes.rows.length === 0) throw new Error('Linkup not found.');
@@ -460,7 +460,7 @@ const createJoinRequest = async (linkupId, userId, message) => {
 
   // Check if user is already a member
   const memberCheck = await query(
-    `SELECT id FROM linkup_members WHERE linkup_id = $1 AND user_id = $2`,
+    `SELECT id FROM meld_members WHERE meld_id = $1 AND user_id = $2`,
     [linkupId, userId]
   );
   if (memberCheck.rows.length > 0) {
@@ -469,7 +469,7 @@ const createJoinRequest = async (linkupId, userId, message) => {
 
   // Requirement: Duplicate join requests prohibited
   const existingReq = await query(
-    `SELECT id, status FROM join_requests WHERE linkup_id = $1 AND user_id = $2`,
+    `SELECT id, status FROM join_requests WHERE meld_id = $1 AND user_id = $2`,
     [linkupId, userId]
   );
   if (existingReq.rows.length > 0) {
@@ -478,21 +478,21 @@ const createJoinRequest = async (linkupId, userId, message) => {
 
   // Check team capacity
   const countRes = await query(
-    `SELECT COUNT(*)::int as count FROM linkup_members WHERE linkup_id = $1`,
+    `SELECT COUNT(*)::int as count FROM meld_members WHERE meld_id = $1`,
     [linkupId]
   );
   const currentCount = countRes.rows[0].count;
   if (currentCount >= linkup.max_members) {
     // Automatically flag as FULL
-    await query(`UPDATE linkups SET current_status = 'FULL' WHERE id = $1`, [linkupId]);
+    await query(`UPDATE melds SET current_status = 'FULL' WHERE id = $1`, [linkupId]);
     throw new Error('Cannot join. This Linkup has reached maximum capacity.');
   }
 
   // Create PENDING request
   const reqInsert = await query(
-    `INSERT INTO join_requests (linkup_id, user_id, message, status)
+    `INSERT INTO join_requests (meld_id, user_id, message, status)
      VALUES ($1, $2, $3, 'PENDING')
-     RETURNING id, linkup_id, user_id, message, status, created_at`,
+     RETURNING id, meld_id as linkup_id, user_id, message, status, created_at`,
     [linkupId, userId, message ? message.trim() : '']
   );
 
@@ -504,16 +504,16 @@ const createJoinRequest = async (linkupId, userId, message) => {
  */
 const getLinkupRequests = async (linkupId, creatorId) => {
   // Check authorization
-  const linkupRes = await query(`SELECT creator_id FROM linkups WHERE id = $1`, [linkupId]);
+  const linkupRes = await query(`SELECT creator_id FROM melds WHERE id = $1`, [linkupId]);
   if (linkupRes.rows.length === 0) throw new Error('Linkup not found.');
   if (linkupRes.rows[0].creator_id !== creatorId) {
     throw new Error('Unauthorized. Only the Linkup creator can view join requests.');
   }
 
   const reqsRes = await query(
-    `SELECT id, linkup_id, user_id, message, status, created_at, updated_at
+    `SELECT id, meld_id as linkup_id, user_id, message, status, created_at, updated_at
      FROM join_requests
-     WHERE linkup_id = $1
+     WHERE meld_id = $1
      ORDER BY created_at DESC`,
     [linkupId]
   );
@@ -547,9 +547,9 @@ const acceptJoinRequest = async (requestId, creatorId) => {
 
     // 1. Fetch join request & check existence
     const reqRes = await client.query(
-      `SELECT jr.id, jr.linkup_id, jr.user_id, jr.status, l.creator_id, l.max_members, l.current_status
+      `SELECT jr.id, jr.meld_id as linkup_id, jr.user_id, jr.status, l.creator_id, l.max_members, l.current_status
        FROM join_requests jr
-       JOIN linkups l ON jr.linkup_id = l.id
+       JOIN melds l ON jr.meld_id = l.id
        WHERE jr.id = $1`,
       [requestId]
     );
@@ -568,20 +568,20 @@ const acceptJoinRequest = async (requestId, creatorId) => {
 
     // 3. Check capacity
     const memberCountRes = await client.query(
-      `SELECT COUNT(*)::int as count FROM linkup_members WHERE linkup_id = $1`,
+      `SELECT COUNT(*)::int as count FROM meld_members WHERE meld_id = $1`,
       [reqInfo.linkup_id]
     );
     const currentMemberCount = memberCountRes.rows[0].count;
     if (currentMemberCount >= reqInfo.max_members) {
-      await client.query(`UPDATE linkups SET current_status = 'FULL' WHERE id = $1`, [reqInfo.linkup_id]);
+      await client.query(`UPDATE melds SET current_status = 'FULL' WHERE id = $1`, [reqInfo.linkup_id]);
       throw new Error('Cannot accept candidate. The team is already at maximum capacity.');
     }
 
-    // 4. Add candidate to linkup_members
+    // 4. Add candidate to meld_members
     await client.query(
-      `INSERT INTO linkup_members (linkup_id, user_id, role, status)
+      `INSERT INTO meld_members (meld_id, user_id, role, status)
        VALUES ($1, $2, 'Member', 'ACTIVE')
-       ON CONFLICT (linkup_id, user_id) DO NOTHING`,
+       ON CONFLICT (meld_id, user_id) DO NOTHING`,
       [reqInfo.linkup_id, reqInfo.user_id]
     );
 
@@ -593,13 +593,13 @@ const acceptJoinRequest = async (requestId, creatorId) => {
 
     // 6. Recalculate member count and auto-update status to FULL if max capacity reached
     const newMemberCountRes = await client.query(
-      `SELECT COUNT(*)::int as count FROM linkup_members WHERE linkup_id = $1`,
+      `SELECT COUNT(*)::int as count FROM meld_members WHERE meld_id = $1`,
       [reqInfo.linkup_id]
     );
     const newCount = newMemberCountRes.rows[0].count;
 
     if (newCount >= reqInfo.max_members) {
-      await client.query(`UPDATE linkups SET current_status = 'FULL' WHERE id = $1`, [reqInfo.linkup_id]);
+      await client.query(`UPDATE melds SET current_status = 'FULL' WHERE id = $1`, [reqInfo.linkup_id]);
     }
 
     await client.query('COMMIT');
@@ -624,9 +624,9 @@ const acceptJoinRequest = async (requestId, creatorId) => {
  */
 const rejectJoinRequest = async (requestId, creatorId) => {
   const reqRes = await query(
-    `SELECT jr.id, jr.linkup_id, l.creator_id 
+    `SELECT jr.id, jr.meld_id as linkup_id, l.creator_id 
      FROM join_requests jr 
-     JOIN linkups l ON jr.linkup_id = l.id 
+     JOIN melds l ON jr.meld_id = l.id 
      WHERE jr.id = $1`,
     [requestId]
   );
@@ -647,7 +647,7 @@ const rejectJoinRequest = async (requestId, creatorId) => {
  * Remove Team Member (Creator ONLY)
  */
 const removeTeamMember = async (linkupId, memberUserId, creatorId) => {
-  const linkupRes = await query(`SELECT creator_id, current_status FROM linkups WHERE id = $1`, [linkupId]);
+  const linkupRes = await query(`SELECT creator_id, current_status FROM melds WHERE id = $1`, [linkupId]);
   if (linkupRes.rows.length === 0) throw new Error('Linkup not found.');
   const linkup = linkupRes.rows[0];
 
@@ -660,7 +660,7 @@ const removeTeamMember = async (linkupId, memberUserId, creatorId) => {
   }
 
   const delRes = await query(
-    `DELETE FROM linkup_members WHERE linkup_id = $1 AND user_id = $2 RETURNING id`,
+    `DELETE FROM meld_members WHERE meld_id = $1 AND user_id = $2 RETURNING id`,
     [linkupId, memberUserId]
   );
 
@@ -670,7 +670,7 @@ const removeTeamMember = async (linkupId, memberUserId, creatorId) => {
 
   // Re-open Linkup status if it was FULL
   if (linkup.current_status === 'FULL') {
-    await query(`UPDATE linkups SET current_status = 'OPEN' WHERE id = $1`, [linkupId]);
+    await query(`UPDATE melds SET current_status = 'OPEN' WHERE id = $1`, [linkupId]);
   }
 
   return { success: true, removedUserId: memberUserId };
@@ -678,15 +678,6 @@ const removeTeamMember = async (linkupId, memberUserId, creatorId) => {
 
 /**
  * GET /api/linkups/:linkupId/matches implementation (Phase 7 with DB Caching & Persistence)
- * 
- * Caching Rules:
- * 1. Checks `matches` table for saved match results.
- * 2. Invalidates cache if:
- *    - Force refresh is requested (forceRefresh === true)
- *    - Linkup requirements or skills updated (`linkup.updated_at` > `matches.created_at`)
- *    - Any candidate profile updated (`student_profiles.updated_at` > `matches.created_at`)
- *    - Active team members joined/changed after `matches.created_at`
- * 3. Saves newly generated matches to PostgreSQL `matches` table.
  */
 const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh = false) => {
   const totalStartTime = Date.now();
@@ -719,13 +710,13 @@ const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh 
   const checkCache = async () => {
     if (forceRefresh) return null;
     const cachedMatchesRes = await query(
-      `SELECT m.id, m.linkup_id, m.user_id, m.match_percentage, m.match_data, m.generated_by, m.created_at,
+      `SELECT m.id, m.meld_id as linkup_id, m.user_id, m.match_percentage, m.match_data, m.generated_by, m.created_at,
               u.name, sp.college, sp.degree, sp.year_of_study, COALESCE(sv.status, 'UNVERIFIED') as verification_status
        FROM matches m
        JOIN users u ON m.user_id = u.id
        JOIN student_profiles sp ON u.id = sp.user_id
        LEFT JOIN student_verifications sv ON u.id = sv.user_id
-       WHERE m.linkup_id = $1 AND m.match_data->>'inputHash' = $2
+       WHERE m.meld_id = $1 AND m.match_data->>'inputHash' = $2
        ORDER BY m.match_percentage DESC`,
       [linkupId, inputHash]
     );
@@ -808,13 +799,13 @@ const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh 
 
     // Save to DB
     try {
-      await query(`DELETE FROM matches WHERE linkup_id = $1`, [linkupId]);
+      await query(`DELETE FROM matches WHERE meld_id = $1`, [linkupId]);
 
       for (const matchItem of formattedMatches) {
         await query(
-          `INSERT INTO matches (linkup_id, user_id, match_percentage, match_data, generated_by)
+          `INSERT INTO matches (meld_id, user_id, match_percentage, match_data, generated_by)
            VALUES ($1, $2, $3, $4, $5)
-           ON CONFLICT (linkup_id, user_id) DO UPDATE SET
+           ON CONFLICT (meld_id, user_id) DO UPDATE SET
              match_percentage = EXCLUDED.match_percentage,
              match_data = EXCLUDED.match_data,
              generated_by = EXCLUDED.generated_by,
@@ -862,7 +853,7 @@ const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh 
 const leaveLinkup = async (linkupId, userId) => {
   // Check if member exists
   const memberCheck = await query(
-    `SELECT * FROM linkup_members WHERE linkup_id = $1 AND user_id = $2`,
+    `SELECT * FROM meld_members WHERE meld_id = $1 AND user_id = $2`,
     [linkupId, userId]
   );
   
@@ -877,14 +868,14 @@ const leaveLinkup = async (linkupId, userId) => {
 
   // Delete member
   await query(
-    `DELETE FROM linkup_members WHERE linkup_id = $1 AND user_id = $2`,
+    `DELETE FROM meld_members WHERE meld_id = $1 AND user_id = $2`,
     [linkupId, userId]
   );
 
   // If linkup was full, reopen it
   if (linkup.currentStatus === 'FULL') {
     await query(
-      `UPDATE linkups SET current_status = 'OPEN' WHERE id = $1`,
+      `UPDATE melds SET current_status = 'OPEN' WHERE id = $1`,
       [linkupId]
     );
   }
