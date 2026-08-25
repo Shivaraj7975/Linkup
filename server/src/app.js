@@ -11,7 +11,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 const app = express();
-
+app.set('trust proxy', 1);
 // Disable x-powered-by banner
 app.disable('x-powered-by');
 
