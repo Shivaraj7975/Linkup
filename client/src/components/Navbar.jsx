@@ -32,8 +32,13 @@ export const Navbar = () => {
         <div className="navbar">
           {/* Brand Logo */}
           <Link to="/" className="brand-logo">
-            <div className="brand-icon">
-              <Link2 size={22} />
+            <div className="brand-icon" style={{ overflow: 'hidden', padding: 0 }}>
+              <img
+                src="/meld-logo.png"
+                alt="MELD Logo"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
             </div>
             <span>MELD</span>
           </Link>
