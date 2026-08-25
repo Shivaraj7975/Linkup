@@ -5,6 +5,9 @@ node_modules/
 .env
 .env.local
 .env.production
+server/src/db/migrate_admin.js
+server/src/db/migrate.js
+TEAMMATE_SETUP_GUIDE.txt
 
 # Build Outputs
 dist/
