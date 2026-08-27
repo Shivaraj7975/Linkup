@@ -4,19 +4,7 @@ import { Navbar } from '../components/Navbar';
 import { getSkills, createLinkup } from '../services/api';
 import { PlusCircle, Search, X, Users, Clock, Calendar, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
 
-const CATEGORIES = [
-  'Web Development',
-  'Mobile App Development',
-  'AI / Machine Learning',
-  'Data Science & Analytics',
-  'Cybersecurity',
-  'Blockchain & Web3',
-  'UI/UX & Product Design',
-  'Embedded Systems & IoT',
-  'Game Development',
-  'Research & Academic',
-  'Other',
-];
+import { CATEGORY_NAMES as CATEGORIES } from '../constants/categories';
 
 const COMMITMENT_OPTIONS = [
   '1-5 hours / week',
@@ -255,7 +243,7 @@ export const CreateMeldPage = () => {
                 )}
 
                 {/* Skill Input */}
-                <div className="input-wrapper">
+                <div className="input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <Search size={18} className="input-left-icon" />
                   <input
                     type="text"
@@ -264,7 +252,29 @@ export const CreateMeldPage = () => {
                     value={skillSearch}
                     onChange={(e) => setSkillSearch(e.target.value)}
                     onKeyDown={handleAddCustomSkill}
+                    style={{ paddingRight: skillSearch.trim() ? '5.5rem' : '1rem' }}
                   />
+                  {skillSearch.trim().length > 0 && (
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => handleAddCustomSkill({ key: 'Enter', preventDefault: () => {} })}
+                      style={{
+                        position: 'absolute',
+                        right: '6px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        padding: '0.35rem 0.85rem',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        borderRadius: 'var(--radius-sm, 6px)',
+                        gap: '0.25rem',
+                        zIndex: 2,
+                      }}
+                    >
+                      <span>Add</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Search Dropdown / Recommendations */}

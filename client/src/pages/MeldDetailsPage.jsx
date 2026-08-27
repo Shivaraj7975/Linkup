@@ -23,6 +23,7 @@ import {
   ShieldCheck,
   MessageSquare,
   Sparkles,
+  Pencil,
 } from 'lucide-react';
 
 export const MeldDetailsPage = () => {
@@ -282,6 +283,10 @@ export const MeldDetailsPage = () => {
                       <Sparkles size={18} />
                       <span>Find My Team</span>
                     </button>
+                    <Link to={`/melds/${id}/edit`} className="btn btn-secondary" style={{ gap: '0.4rem' }}>
+                      <Pencil size={18} />
+                      <span>Edit Meld Details</span>
+                    </Link>
                     <Link to={`/melds/${id}/manage`} className="btn btn-ghost">
                       <Settings size={18} />
                       <span>Manage Join Requests</span>

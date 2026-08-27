@@ -20,6 +20,11 @@ import {
   ChevronUp,
   Award,
   Lock,
+  Gamepad2,
+  Plane,
+  Trophy,
+  PartyPopper,
+  Music,
 } from 'lucide-react';
 
 export const LandingPage = () => {
@@ -31,16 +36,16 @@ export const LandingPage = () => {
 
   const faqs = [
     {
-      q: 'Is MELD free for student developers and creators?',
-      a: 'Yes, 100% free! MELD is designed specifically for university students, hackathon participants, and capstone project teams.',
+      q: 'Is MELD free for student builders, gamers, and travelers?',
+      a: 'Yes, 100% free! MELD is designed for university students to form project teams, gaming squads, trip groups, and campus event crews.',
     },
     {
       q: 'How does the AI Candidate Matching engine work?',
-      a: 'Our platform uses an advanced multi-provider AI matching architecture to evaluate candidate skill overlap, weekly availability compatibility, interest alignment, and verification status.',
+      a: 'Our platform uses an advanced multi-provider AI matching architecture to evaluate candidate skill overlap, availability compatibility, interest alignment, and verification status.',
     },
     {
       q: 'How do project invitations and team joining work?',
-      a: 'Project creators can browse AI match candidates and send direct invitations. Candidates receive invites in their Invitations hub where they can Accept or Decline. Once accepted, the team count updates automatically.',
+      a: 'Creators can browse AI match candidates and send direct invitations. Candidates receive invites in their Invitations hub where they can Accept or Decline. Once accepted, the team count updates automatically.',
     },
     {
       q: 'How do I get the Verified Student status?',
@@ -60,15 +65,15 @@ export const LandingPage = () => {
         <section className="hero-section" style={{ padding: '3rem 1rem 3.5rem', textAlign: 'center' }}>
           <div className="hero-pill" style={{ animation: 'pulseGlow 3s infinite ease-in-out' }}>
             <Sparkles size={16} />
-            <span>MELD Platform • AI-Powered Student Team Discovery</span>
+            <span>MELD Platform • AI-Powered Teammate & Activity Discovery</span>
           </div>
 
-          <h1 className="hero-title" style={{ maxWidth: '850px', margin: '0 auto 1.5rem' }}>
-            Gather the Crew for Your Next Student Project
+          <h1 className="hero-title" style={{ maxWidth: '880px', margin: '0 auto 1.5rem' }}>
+            Gather the Crew for Projects, Gaming, Trips & Student Life
           </h1>
 
           <p className="hero-subtitle" style={{ margin: '0 auto 2.5rem' }}>
-            Post your project vision, discover verified student builders, and let our intelligent AI engine match you with compatible teammates.
+            Whether building a software project, assembling an esports squad, planning a weekend trek, or finding workout partners—connect with verified campus peers instantly.
           </p>
 
           <div className="hero-cta-group">
@@ -83,12 +88,14 @@ export const LandingPage = () => {
           </div>
 
           {/* INLINE TECH & ROLE BADGES STRIP */}
-          <div className="hero-tech-strip">
-            <span className="tech-pill"><Code2 size={14} color="#818cf8" /> Full-Stack Devs</span>
-            <span className="tech-pill"><Sparkles size={14} color="#c084fc" /> AI & Machine Learning</span>
-            <span className="tech-pill"><Cpu size={14} color="#38bdf8" /> System Design</span>
-            <span className="tech-pill"><UserCheck size={14} color="#34d399" /> Verified Student Builders</span>
-            <span className="tech-pill"><FolderGit2 size={14} color="#f472b6" /> Project Leads</span>
+          <div className="hero-tech-strip" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
+            <span className="tech-pill"><Gamepad2 size={14} color="#a855f7" /> Gaming & Esports</span>
+            <span className="tech-pill"><Plane size={14} color="#f59e0b" /> Trips & Travel</span>
+            <span className="tech-pill"><Trophy size={14} color="#10b981" /> Sports & Fitness</span>
+            <span className="tech-pill"><PartyPopper size={14} color="#3b82f6" /> Events & Hangouts</span>
+            <span className="tech-pill"><Music size={14} color="#ec4899" /> Music & Creative</span>
+            <span className="tech-pill"><Code2 size={14} color="#818cf8" /> Dev Projects</span>
+            <span className="tech-pill"><UserCheck size={14} color="#34d399" /> Verified Students</span>
           </div>
 
           {/* CLEAN DYNAMIC STATS BANNER */}
