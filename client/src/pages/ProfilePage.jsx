@@ -991,34 +991,46 @@ export const ProfilePage = () => {
                 </div>
 
                 <div className="skill-search-wrapper" style={{ marginBottom: '0.75rem' }}>
-                  <div className="input-wrapper icon-left">
+                  <div className="input-wrapper icon-left" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                     <Search size={16} className="search-icon input-left-icon" />
                     <input
                       type="text"
-                      placeholder="Search skills or type custom skill & press Enter..."
+                      placeholder="Search skills or type custom skill..."
                       value={skillSearch}
                       onChange={(e) => setSkillSearch(e.target.value)}
                       onKeyDown={handleKeyDownSkill}
+                      style={{ paddingRight: skillSearch.trim() ? '5.5rem' : '1rem' }}
                     />
+                    {skillSearch.trim().length > 0 && (
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleAddCustomSkill(skillSearch)}
+                        style={{
+                          position: 'absolute',
+                          right: '6px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          padding: '0.35rem 0.85rem',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          borderRadius: 'var(--radius-sm, 6px)',
+                          gap: '0.25rem',
+                          zIndex: 2,
+                        }}
+                      >
+                        <Plus size={14} />
+                        <span>Add</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
                 <div className="pill-grid">
                   {searchResultsSkills.length === 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'flex-start', width: '100%' }}>
-                      <p className="no-pills-text" style={{ margin: 0 }}>
-                        No matching skill found in database for "{skillSearch}".
-                      </p>
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-sm"
-                        onClick={() => handleAddCustomSkill(skillSearch)}
-                        style={{ gap: '0.4rem', padding: '0.45rem 0.85rem' }}
-                      >
-                        <Plus size={15} />
-                        <span>Add "{skillSearch}" as Custom Skill</span>
-                      </button>
-                    </div>
+                    <p className="no-pills-text">
+                      No matching skill found in database for "{skillSearch}". Click <strong style={{ color: 'var(--accent-primary, #818cf8)' }}>Add</strong> above or press Enter to create it.
+                    </p>
                   ) : (
                     <>
                       {searchResultsSkills.map((sk) => {
@@ -1036,19 +1048,6 @@ export const ProfilePage = () => {
                           </button>
                         );
                       })}
-
-                      {/* Custom Skill button when searching */}
-                      {isSearchingSkills && !searchResultsSkills.some(s => s.name.toLowerCase() === skillSearch.trim().toLowerCase()) && (
-                        <button
-                          type="button"
-                          className="pill-btn"
-                          onClick={() => handleAddCustomSkill(skillSearch)}
-                          style={{ background: 'var(--gradient-primary)', color: '#fff', borderColor: 'transparent', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
-                        >
-                          <Plus size={14} />
-                          <span>Add "{skillSearch}"</span>
-                        </button>
-                      )}
                     </>
                   )}
                   {!isSearchingSkills && (
