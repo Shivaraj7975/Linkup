@@ -16,20 +16,7 @@ import {
   FolderGit2,
 } from 'lucide-react';
 
-const CATEGORIES = [
-  'All Categories',
-  'Web Development',
-  'Mobile App Development',
-  'AI / Machine Learning',
-  'Data Science & Analytics',
-  'Cybersecurity',
-  'Blockchain & Web3',
-  'UI/UX & Product Design',
-  'Embedded Systems & IoT',
-  'Game Development',
-  'Research & Academic',
-  'Other',
-];
+import { DISCOVER_CATEGORIES as CATEGORIES } from '../constants/categories';
 
 const STATUS_OPTIONS = [
   { label: 'Open (Recruiting)', value: 'OPEN' },

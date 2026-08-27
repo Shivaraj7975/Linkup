@@ -4,19 +4,7 @@ import { Navbar } from '../components/Navbar';
 import { getSkills, createLinkup } from '../services/api';
 import { PlusCircle, Search, X, Users, Clock, Calendar, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
 
-const CATEGORIES = [
-  'Web Development',
-  'Mobile App Development',
-  'AI / Machine Learning',
-  'Data Science & Analytics',
-  'Cybersecurity',
-  'Blockchain & Web3',
-  'UI/UX & Product Design',
-  'Embedded Systems & IoT',
-  'Game Development',
-  'Research & Academic',
-  'Other',
-];
+import { CATEGORY_NAMES as CATEGORIES } from '../constants/categories';
 
 const COMMITMENT_OPTIONS = [
   '1-5 hours / week',

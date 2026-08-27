@@ -103,6 +103,11 @@ const FEATURED_SECTOR_SKILL_NAMES = [
 
 // Curated Featured Sector Interests representing distinct domains
 const FEATURED_SECTOR_INTEREST_NAMES = [
+  'Gaming & Esports (BGMI, Valorant, PC)',
+  'Trips & Travel (Trekking, Road Trips)',
+  'Sports & Fitness (Football, Gym, Cricket)',
+  'Music, Band & Jamming',
+  'Events, Parties & Campus Hangouts',
   'Web Development',
   'Artificial Intelligence (AI)',
   'UI/UX & Product Design',
