@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { getLinkupById, sendJoinRequest, deleteLinkup, leaveLinkup } from '../services/api';
 import { MatchResultsModal } from '../components/MatchResultsModal';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { MeldChat } from '../components/MeldChat';
 import {
   Users,
   User,
@@ -35,6 +36,7 @@ export const MeldDetailsPage = () => {
   const [actionError, setActionError] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
 
   // Data & Loading State
   const [linkup, setLinkup] = useState(null);
@@ -189,7 +191,34 @@ export const MeldDetailsPage = () => {
           <span>Back to Discover</span>
         </button>
 
-        <div className="grid-details-layout">
+        {/* Tab Navigation */}
+        <div className="tabs margin-bottom-lg" style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+          <button
+            className={`btn btn-ghost ${activeTab === 'overview' ? 'text-accent' : ''}`}
+            style={{ borderBottom: activeTab === 'overview' ? '2px solid var(--accent-primary)' : 'none', borderRadius: '0' }}
+            onClick={() => setActiveTab('overview')}
+          >
+            Overview
+          </button>
+          
+          {(isCreator || isMember) && (
+            <button
+              className={`btn btn-ghost ${activeTab === 'chat' ? 'text-accent' : ''}`}
+              style={{ borderBottom: activeTab === 'chat' ? '2px solid var(--accent-primary)' : 'none', borderRadius: '0' }}
+              onClick={() => setActiveTab('chat')}
+            >
+              <MessageSquare size={16} style={{ marginRight: '0.4rem' }} />
+              Team Chat
+            </button>
+          )}
+        </div>
+
+        {activeTab === 'chat' ? (
+          <div className="chat-container">
+            <MeldChat meldId={id} currentUser={user} />
+          </div>
+        ) : (
+          <div className="grid-details-layout">
           {/* LEFT COLUMN: PROJECT DETAILS */}
           <div className="details-main">
             <div className="card glass-card margin-bottom-lg">
@@ -461,6 +490,7 @@ export const MeldDetailsPage = () => {
             </div>
           </div>
         </div>
+        )}
       </main>
 
       {/* JOIN REQUEST MODAL */}

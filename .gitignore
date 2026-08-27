@@ -25,3 +25,6 @@ yarn-error.log*
 .idea/
 *.suo
 *.user
+
+# Temporary Seed Files
+server/src/db/seed_dummy.sql

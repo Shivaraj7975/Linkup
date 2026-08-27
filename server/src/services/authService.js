@@ -72,9 +72,17 @@ const findUserById = async (id) => {
  * Check if student profile is complete for user
  */
 const isProfileComplete = async (userId) => {
-  const text = 'SELECT 1 FROM student_profiles WHERE user_id = $1 LIMIT 1';
+  const text = 'SELECT college_email FROM student_profiles WHERE user_id = $1';
   const res = await query(text, [userId]);
-  return res.rows.length > 0;
+  return !!res.rows[0];
+};
+
+/**
+ * Update user password
+ */
+const updateUserPassword = async (email, passwordHash) => {
+  const text = 'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(email) = LOWER($2)';
+  await query(text, [passwordHash, email]);
 };
 
 module.exports = {
@@ -82,4 +90,5 @@ module.exports = {
   findUserByEmail,
   findUserById,
   isProfileComplete,
+  updateUserPassword,
 };

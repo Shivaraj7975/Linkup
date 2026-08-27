@@ -4,6 +4,7 @@ const {
   createUserWithVerification,
   findUserByEmail,
   isProfileComplete,
+  updateUserPassword,
 } = require('../services/authService');
 const {
   isCollegeEmail,
@@ -311,10 +312,57 @@ const getMe = async (req, res, next) => {
   }
 };
 
+/**
+ * POST /api/auth/reset-password
+ */
+const resetPassword = async (req, res, next) => {
+  try {
+    const { email, otpCode, newPassword } = req.body;
+
+    if (!email || !otpCode || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, OTP code, and new password are required.',
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long.',
+      });
+    }
+
+    // Verify OTP
+    const isValid = await verifyOtpInDb(email, otpCode, 'PRIMARY');
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP code.',
+      });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    // Update password
+    await updateUserPassword(email, passwordHash);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password has been reset successfully. You can now login.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
   getMe,
   sendOtp,
   verifyOtp,
+  resetPassword,
 };

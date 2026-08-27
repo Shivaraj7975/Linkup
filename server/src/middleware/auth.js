@@ -22,7 +22,14 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    const secret = process.env.JWT_SECRET || 'linkup_jwt_super_secret_key_2026_dev';
+    const secret = process.env.NODE_ENV === 'production'
+      ? process.env.JWT_SECRET
+      : (process.env.JWT_SECRET || 'linkup_jwt_super_secret_key_2026_dev');
+      
+    if (!secret) {
+      throw new Error('JWT_SECRET is required in production');
+    }
+    
     const decoded = jwt.verify(token, secret);
 
     // Fetch user from DB to ensure user still exists

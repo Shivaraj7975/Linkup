@@ -195,7 +195,7 @@ export const DashboardPage = () => {
               ) : (
                 <div className="linkups-grid">
                   {joinedLinkups.map((l) => (
-                    <div key={l.id} className="card glass-card linkup-card interactive-card">
+                    <div key={l.id} className="card glass-card linkup-card interactive-card" onClick={() => navigate(`/melds/${l.id}`)} style={{ cursor: 'pointer' }}>
                       <div className="card-top-row">
                         <span className="badge badge-category">{l.category}</span>
                         <span className={`badge badge-status ${l.current_status?.toLowerCase() === 'open' ? 'status-open' : 'status-full'}`}>
@@ -233,7 +233,7 @@ export const DashboardPage = () => {
 
                         <button
                           type="button"
-                          onClick={() => navigate(`/melds/${l.id}`)}
+                          onClick={(e) => { e.stopPropagation(); navigate(`/melds/${l.id}`); }}
                           className="btn btn-ghost btn-sm"
                           style={{ gap: '0.35rem' }}
                         >
@@ -266,7 +266,7 @@ export const DashboardPage = () => {
               ) : (
                 <div className="linkups-grid">
                   {createdLinkups.map((l) => (
-                    <div key={l.id} className="card glass-card linkup-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div key={l.id} className="card glass-card linkup-card interactive-card" onClick={() => navigate(`/melds/${l.id}`)} style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer' }}>
                       <div className="card-top-row">
                         <span className="badge badge-category">{l.category}</span>
                         <span className={`badge badge-status ${l.current_status?.toLowerCase() === 'open' ? 'status-open' : 'status-full'}`}>
@@ -304,7 +304,7 @@ export const DashboardPage = () => {
                           type="button"
                           className="btn btn-primary btn-sm"
                           style={{ width: '100%', justifyContent: 'center', gap: '0.4rem' }}
-                          onClick={() => setMatchingLinkup({ ...l, isCreator: true })}
+                          onClick={(e) => { e.stopPropagation(); setMatchingLinkup({ ...l, isCreator: true }); }}
                         >
                           <Sparkles size={15} />
                           <span>Find My Team</span>
@@ -315,7 +315,7 @@ export const DashboardPage = () => {
                             type="button"
                             className="btn btn-secondary btn-sm"
                             style={{ flex: 1, justifyContent: 'center', gap: '0.35rem' }}
-                            onClick={() => navigate(`/melds/${l.id}/edit`)}
+                            onClick={(e) => { e.stopPropagation(); navigate(`/melds/${l.id}/edit`); }}
                           >
                             <Pencil size={14} />
                             <span>Edit Details</span>
@@ -324,7 +324,7 @@ export const DashboardPage = () => {
                             type="button"
                             className="btn btn-ghost btn-sm"
                             style={{ flex: 1, justifyContent: 'center', gap: '0.35rem' }}
-                            onClick={() => navigate(`/melds/${l.id}/manage`)}
+                            onClick={(e) => { e.stopPropagation(); navigate(`/melds/${l.id}/manage`); }}
                           >
                             <Settings size={14} />
                             <span>Manage</span>

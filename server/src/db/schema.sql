@@ -132,6 +132,15 @@ CREATE TABLE meld_members (
     CONSTRAINT unique_meld_member UNIQUE (meld_id, user_id)
 );
 
+-- 10.5 MELD_MESSAGES Table (Real-time Group Chat)
+CREATE TABLE meld_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    meld_id UUID NOT NULL REFERENCES melds(id) ON DELETE CASCADE,
+    sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 11. JOIN_REQUESTS Table
 CREATE TABLE join_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -205,6 +214,9 @@ CREATE INDEX idx_join_requests_meld_id ON join_requests(meld_id);
 CREATE INDEX idx_join_requests_user_id ON join_requests(user_id);
 CREATE INDEX idx_join_requests_status ON join_requests(status);
 
+CREATE INDEX idx_meld_messages_meld_id ON meld_messages(meld_id);
+CREATE INDEX idx_meld_messages_created_at ON meld_messages(created_at);
+
 CREATE INDEX idx_matches_meld_id ON matches(meld_id);
 CREATE INDEX idx_matches_user_id ON matches(user_id);
 CREATE INDEX idx_matches_percentage ON matches(match_percentage);
@@ -227,3 +239,6 @@ CREATE TRIGGER update_student_verifications_updated_at BEFORE UPDATE ON student_
 CREATE TRIGGER update_melds_updated_at BEFORE UPDATE ON melds FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_join_requests_updated_at BEFORE UPDATE ON join_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_meld_invitations_updated_at BEFORE UPDATE ON meld_invitations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Optimize Chat Query for Recent Messages
+CREATE INDEX IF NOT EXISTS idx_meld_messages_meld_created ON meld_messages (meld_id, created_at DESC);

@@ -465,8 +465,8 @@ export const OnboardingPage = () => {
   const slicedFeaturedSkills = allFeaturedSkillsPool.slice(0, featuredLimit);
   const searchResultsSkills = isSearchingSkills
     ? dbSkills.filter((s) =>
-        s.name.toLowerCase().includes(skillSearch.trim().toLowerCase())
-      )
+      s.name.toLowerCase().includes(skillSearch.trim().toLowerCase())
+    )
     : slicedFeaturedSkills;
 
   // Interests Logic
@@ -477,8 +477,8 @@ export const OnboardingPage = () => {
   const slicedFeaturedInterests = allFeaturedInterestsPool.slice(0, featuredInterestLimit);
   const searchResultsInterests = isSearchingInterests
     ? dbInterests.filter((i) =>
-        i.name.toLowerCase().includes(interestSearch.trim().toLowerCase())
-      )
+      i.name.toLowerCase().includes(interestSearch.trim().toLowerCase())
+    )
     : (slicedFeaturedInterests.length > 0 ? slicedFeaturedInterests : dbInterests.slice(0, featuredInterestLimit));
 
   if (loading) {
@@ -509,9 +509,8 @@ export const OnboardingPage = () => {
               return (
                 <div
                   key={step.id}
-                  className={`step-item ${isActive ? 'active' : ''} ${
-                    isCompleted ? 'completed' : ''
-                  }`}
+                  className={`step-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''
+                    }`}
                   onClick={() => {
                     if (isCompleted) setCurrentStep(step.id);
                   }}
@@ -658,9 +657,8 @@ export const OnboardingPage = () => {
                         <button
                           key={y}
                           type="button"
-                          className={`pill-btn ${
-                            form.year_of_study === y ? 'selected' : ''
-                          }`}
+                          className={`pill-btn ${form.year_of_study === y ? 'selected' : ''
+                            }`}
                           onClick={() => handleChange('year_of_study', y)}
                         >
                           {y}
@@ -765,18 +763,9 @@ export const OnboardingPage = () => {
 
                   <div className="pill-grid">
                     {searchResultsSkills.length === 0 ? (
-                      <div className="no-pills-text" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
-                        <p>No matching skill found for "<strong>{skillSearch}</strong>".</p>
-                        <button
-                          type="button"
-                          className="btn btn-primary"
-                          onClick={() => handleAddCustomSkill(skillSearch)}
-                          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md, 8px)' }}
-                        >
-                          <Plus size={16} />
-                          Create "{skillSearch}"
-                        </button>
-                      </div>
+                      <p className="no-pills-text">
+                        No matching skill found in database for "{skillSearch}". Click <strong style={{ color: 'var(--accent-primary, #818cf8)' }}>Add</strong> above or press Enter to create it.
+                      </p>
                     ) : (
                       <>
                         {searchResultsSkills.map((sk) => {
@@ -915,18 +904,9 @@ export const OnboardingPage = () => {
 
                   <div className="pill-grid grid-lg">
                     {searchResultsInterests.length === 0 ? (
-                      <div className="no-pills-text" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
-                        <p>No matching domain found for "<strong>{interestSearch}</strong>".</p>
-                        <button
-                          type="button"
-                          className="btn btn-primary"
-                          onClick={() => handleAddCustomInterest(interestSearch)}
-                          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md, 8px)' }}
-                        >
-                          <Plus size={16} />
-                          Create "{interestSearch}"
-                        </button>
-                      </div>
+                      <p className="no-pills-text">
+                        No matching interest domain found for "{interestSearch}". Click <strong style={{ color: 'var(--accent-primary, #818cf8)' }}>Add</strong> above or press Enter to create it.
+                      </p>
                     ) : (
                       <>
                         {searchResultsInterests.map((interest) => {
@@ -937,9 +917,8 @@ export const OnboardingPage = () => {
                             <button
                               key={interest.id}
                               type="button"
-                              className={`pill-btn interest-pill ${
-                                isSelected ? 'selected' : ''
-                              }`}
+                              className={`pill-btn interest-pill ${isSelected ? 'selected' : ''
+                                }`}
                               onClick={() => handleToggleInterest(interest)}
                             >
                               <Sparkles size={16} />
@@ -1010,9 +989,8 @@ export const OnboardingPage = () => {
                         <button
                           key={opt}
                           type="button"
-                          className={`pill-btn ${
-                            form.availability === opt ? 'selected' : ''
-                          }`}
+                          className={`pill-btn ${form.availability === opt ? 'selected' : ''
+                            }`}
                           onClick={() => handleChange('availability', opt)}
                         >
                           {opt}
