@@ -78,23 +78,23 @@ const sendOtpEmail = async ({ toEmail, otpCode, type = 'PRIMARY' }) => {
   const smtpHost = process.env.BREVO_SMTP_HOST || 'smtp-relay.brevo.com';
   const smtpPort = parseInt(process.env.BREVO_SMTP_PORT || '587', 10);
   const senderEmail = process.env.SENDER_EMAIL || 'your_sender_email@example.com';
-  const senderName = process.env.SENDER_NAME || 'MILD Platform';
+  const senderName = process.env.SENDER_NAME || 'MELD Platform';
 
   const isCollege = type === 'COLLEGE';
   const subject = isCollege
-    ? '🎓 MILD College Email Verification Code'
-    : '🔒 MILD Account Verification Code';
+    ? '🎓 MELD College Email Verification Code'
+    : '🔒 MELD Account Verification Code';
 
   const htmlContent = `
     <div style="font-family: 'Plus Jakarta Sans', Arial, sans-serif; background-color: #080c18; color: #f1f5f9; padding: 30px; border-radius: 12px; max-width: 500px; margin: 0 auto; border: 1px solid rgba(255,255,255,0.1);">
       <div style="text-align: center; margin-bottom: 20px;">
-        <h1 style="color: #6366f1; margin: 0; font-size: 24px;">MILD</h1>
+        <h1 style="color: #6366f1; margin: 0; font-size: 24px;">MELD</h1>
         <p style="color: #94a3b8; font-size: 14px; margin-top: 4px;">Student Teammate Matching Platform</p>
       </div>
 
       <div style="background-color: #0f1629; padding: 20px; border-radius: 8px; border: 1px solid rgba(99,102,241,0.3); text-align: center;">
         <h2 style="color: #f1f5f9; font-size: 18px; margin-top: 0;">
-          ${isCollege ? 'Verify Your College Email' : 'Verify Your MILD Account'}
+          ${isCollege ? 'Verify Your College Email' : 'Verify Your MELD Account'}
         </h2>
         <p style="color: #94a3b8; font-size: 14px;">
           Use the 6-digit code below to complete your ${isCollege ? 'student verification' : 'account setup'}:

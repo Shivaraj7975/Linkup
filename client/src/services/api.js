@@ -81,6 +81,23 @@ export const verifyOtpApi = async (email, otpCode, type = 'PRIMARY') => {
 };
 
 /**
+ * POST /api/auth/reset-password
+ */
+export const resetPasswordApi = async (email, otpCode, newPassword) => {
+  const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, otpCode, newPassword }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to reset password');
+  }
+  return data;
+};
+
+/**
  * POST /api/auth/register
  */
 export const registerUser = async ({ name, email, password, primaryOtp, collegeEmail, collegeOtp }) => {
@@ -368,6 +385,23 @@ export const getLinkupRequests = async (linkupId) => {
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Failed to fetch join requests.');
   return data.requests || [];
+};
+
+/**
+ * GET /api/linkups/:linkupId/requests - View Join Requests (Creator ONLY)
+ */
+export const getMeldChatHistory = async (meldId, beforeTimestamp = null) => {
+  let url = `${API_BASE_URL}/melds/${meldId}/messages`;
+  if (beforeTimestamp) {
+    url += `?before=${encodeURIComponent(beforeTimestamp)}`;
+  }
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch chat history.');
+  return data.messages || [];
 };
 
 /**

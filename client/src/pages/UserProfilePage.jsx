@@ -48,29 +48,30 @@ export const UserProfilePage = () => {
     <div className="app-layout">
       <Navbar />
       
-      <main className="main-content container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }}>
-        <button
-          onClick={() => navigate(-1)}
-          className="btn btn-ghost btn-sm"
-          style={{ marginBottom: '1.5rem', gap: '0.5rem', display: 'inline-flex', alignItems: 'center' }}
-        >
-          <ArrowLeft size={16} /> Back
-        </button>
+      <main className="container page-content" style={{ paddingTop: '5.5rem', paddingBottom: '4rem' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <button
+            onClick={() => navigate(-1)}
+            className="btn btn-ghost btn-sm"
+            style={{ marginBottom: '1.25rem', gap: '0.5rem', display: 'inline-flex', alignItems: 'center' }}
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
 
-        {loading ? (
-          <div className="page-loader" style={{ padding: '4rem 0', textAlign: 'center' }}>
-            <Loader2 size={40} className="spin" color="#6366f1" style={{ margin: '0 auto 1rem auto' }} />
-            <p style={{ color: 'var(--text-secondary)' }}>Loading candidate user profile...</p>
-          </div>
-        ) : error ? (
-          <div className="alert alert-error" style={{ maxWidth: '600px', margin: '2rem auto' }}>
-            <AlertCircle size={20} />
-            <span>{error}</span>
-          </div>
-        ) : profile ? (
-          <div className="profile-page-grid" style={{ maxWidth: '800px', margin: '0 auto' }}>
-            {/* Header Banner */}
-            <div className="dash-card profile-header-card" style={{ marginBottom: '1.5rem', padding: '2rem' }}>
+          {loading ? (
+            <div className="page-loader" style={{ padding: '4rem 0', textAlign: 'center' }}>
+              <Loader2 size={40} className="spin" color="#6366f1" style={{ margin: '0 auto 1rem auto' }} />
+              <p style={{ color: 'var(--text-secondary)' }}>Loading candidate user profile...</p>
+            </div>
+          ) : error ? (
+            <div className="alert alert-error" style={{ margin: '1rem 0' }}>
+              <AlertCircle size={20} />
+              <span>{error}</span>
+            </div>
+          ) : profile ? (
+            <div className="profile-page-grid">
+              {/* Header Banner */}
+              <div className="dash-card profile-header-card" style={{ marginBottom: '1.5rem', padding: '2rem' }}>
               <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                 <div className="user-avatar-large" style={{ width: '72px', height: '72px', fontSize: '2rem', background: 'linear-gradient(135deg, #6366f1, #a855f7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>
                   {profile.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -189,6 +190,7 @@ export const UserProfilePage = () => {
             </div>
           </div>
         ) : null}
+        </div>
       </main>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { sendOtpApi } from '../services/api';
@@ -45,9 +45,20 @@ export const RegisterPage = () => {
   const [apiSuccess, setApiSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  useEffect(() => {
+    let timer;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const validateStep1 = () => {
     const errs = {};
@@ -114,6 +125,7 @@ export const RegisterPage = () => {
       }
 
       setStep(2);
+      setResendCooldown(60);
       setApiSuccess(
         form.collegeEmail && form.collegeEmail.trim()
           ? `Verification OTP codes sent to ${form.email} AND ${form.collegeEmail}.`
@@ -184,8 +196,13 @@ export const RegisterPage = () => {
             </Link>
           </div>
           <Link to="/" className="auth-brand">
-            <div className="brand-icon">
-              <Link2 size={22} />
+            <div className="brand-icon" style={{ overflow: 'hidden', padding: 0 }}>
+              <img
+                src="/meld-logo.png"
+                alt="MELD Logo"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
             </div>
             <span>MELD</span>
           </Link>
@@ -358,6 +375,10 @@ export const RegisterPage = () => {
                 </div>
               )}
 
+              <p className="text-center text-sm text-muted margin-bottom-md" style={{ fontStyle: 'italic' }}>
+                Note: Please check your spam or junk folder if you haven't received the OTP after a minute.
+              </p>
+
               <button type="submit" className="btn btn-primary btn-full margin-top-xs" disabled={loading}>
                 {loading ? (
                   <>
@@ -384,9 +405,9 @@ export const RegisterPage = () => {
                   type="button"
                   onClick={handleSendOtps}
                   className="btn btn-ghost btn-sm text-cyan"
-                  disabled={sendingOtp}
+                  disabled={sendingOtp || resendCooldown > 0}
                 >
-                  {sendingOtp ? 'Resending...' : 'Resend Codes'}
+                  {sendingOtp ? 'Resending...' : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Codes'}
                 </button>
               </div>
             </form>

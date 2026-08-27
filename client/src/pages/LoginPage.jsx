@@ -73,8 +73,13 @@ export const LoginPage = () => {
             </Link>
           </div>
           <Link to="/" className="auth-brand">
-            <div className="brand-icon">
-              <Link2 size={22} />
+            <div className="brand-icon" style={{ overflow: 'hidden', padding: 0 }}>
+              <img
+                src="/meld-logo.png"
+                alt="MELD Logo"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
             </div>
             <span>MELD</span>
           </Link>
@@ -118,6 +123,11 @@ export const LoginPage = () => {
                 </button>
               </div>
               {errors.password && <span className="field-error">{errors.password}</span>}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                <Link to="/forgot-password" style={{ fontSize: '0.85rem', color: 'var(--accent-cyan)', textDecoration: 'none' }}>
+                  Forgot Password?
+                </Link>
+              </div>
             </div>
 
             <button type="submit" className="btn btn-primary btn-full" disabled={loading}>

@@ -2,34 +2,37 @@
 
 > *"Don't ask around, post it and gather the crew."*
 
-MELD is a full-stack platform built for university students to find compatible project collaborators, build teams, and showcase their academic & technical skills.
+**MELD** is a full-stack platform built for university students to find compatible project collaborators, build teams, and showcase their academic & technical skills.
 
 ---
 
 ## 🌟 Key Features
 
-- **JWT Student Authentication**: Secure registration, login, JWT token verification, and bcrypt password hashing.
+- **Authentication & Security**: 
+  - Secure registration, login, and JWT token verification.
+  - Custom OTP-based verification for email confirmation.
+  - Complete "Forgot Password" flow with OTP code recovery and spam-prevention cooldowns.
+  - Smart route protection prevents logged-in users from accessing public authentication pages.
 - **Dual Email Identity**: Primary personal email for login & communications, college email for institutional student badge verification.
 - **5-Step Onboarding Wizard**:
-  - *Step 1: Academics* — ROR v2 Organizations API autocomplete with auto-detected City, State, and Country.
-  - *Step 2: Skills* — 260+ multi-disciplinary sector, development, and interview skills with live background search and inline `+10 More` expansion.
-  - *Step 3: Interests* — 58 domain interests across tech, AI, design, business, biotech, law, and engineering with live search.
+  - *Step 1: Academics* — Auto-detects University/College via ROR v2 Organizations API.
+  - *Step 2: Skills* — 260+ multi-disciplinary skills with live background search.
+  - *Step 3: Interests* — 58 domain interests across tech, AI, design, business, etc.
   - *Step 4: Bio & Availability* — Short bio and weekly availability selector.
   - *Step 5: Links* — GitHub and LinkedIn portfolio URLs.
-- **Student Profile Page (`/profile`)**:
-  - Full profile view with student verification badge, skills, interests, and portfolio links.
-  - Interactive **"Edit Profile"** modal with real-time updates and ROR v2 location auto-detection.
-- **Public Profile API (`GET /api/users/:userId`)**:
-  - Exposes sanitized student profile data for Linkup Discovery, AI Teammate Matching, and Team Management modules while strictly preserving privacy (zero email/token leaks).
+- **Student Profile & Team Management (`/profile`)**:
+  - Interactive Profile UI with student verification badges.
+  - Real-time team chat and direct messaging built on WebSocket connections.
+  - Dynamic pagination and infinite scroll for chat histories.
 
 ---
 
 ## 🛠️ Technology Stack
 
 - **Frontend**: React (Vite), JavaScript, Vanilla CSS Design Tokens, Lucide Icons, React Router DOM.
-- **Backend**: Express.js, Node.js, JSON Web Tokens (JWT), bcryptjs.
+- **Backend**: Express.js, Node.js, JSON Web Tokens (JWT), bcryptjs, Socket.IO.
 - **Database**: PostgreSQL (relational schema with custom ENUMs, triggers, and B-Tree indexes).
-- **External Integration**: Research Organization Registry (ROR v2) API.
+- **External Services**: Research Organization Registry (ROR v2) API, Resend/Brevo for OTP Emails.
 
 ---
 
@@ -44,7 +47,7 @@ MELD is a full-stack platform built for university students to find compatible p
 cd server
 # Copy environment template
 cp .env.example .env
-# Edit .env with your PostgreSQL credentials
+# Edit .env with your PostgreSQL and SMTP credentials
 
 # Initialize database schema and seed data
 npm run db:init
@@ -73,9 +76,8 @@ npm run dev
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/auth/register` | Public | Register new student account |
 | `POST` | `/api/auth/login` | Public | Authenticate user & get JWT token |
+| `POST` | `/api/auth/reset-password`| Public | Reset forgotten password via OTP |
 | `GET` | `/api/auth/me` | Protected | Get current authenticated user |
-| `GET` | `/api/skills` | Public | Get all 260+ skills |
-| `GET` | `/api/interests` | Public | Get all 58 interest domains |
 | `GET` | `/api/profile` | Protected | Get full student profile & status |
 | `PUT` | `/api/profile` | Protected | Upsert student profile data |
-| `GET` | `/api/users/:userId` | Public | Get sanitized student profile for Discovery/Matching |
+| `GET` | `/api/users/:userId` | Public | Get sanitized student profile for Discovery |

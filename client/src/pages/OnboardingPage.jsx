@@ -465,8 +465,8 @@ export const OnboardingPage = () => {
   const slicedFeaturedSkills = allFeaturedSkillsPool.slice(0, featuredLimit);
   const searchResultsSkills = isSearchingSkills
     ? dbSkills.filter((s) =>
-        s.name.toLowerCase().includes(skillSearch.trim().toLowerCase())
-      )
+      s.name.toLowerCase().includes(skillSearch.trim().toLowerCase())
+    )
     : slicedFeaturedSkills;
 
   // Interests Logic
@@ -477,8 +477,8 @@ export const OnboardingPage = () => {
   const slicedFeaturedInterests = allFeaturedInterestsPool.slice(0, featuredInterestLimit);
   const searchResultsInterests = isSearchingInterests
     ? dbInterests.filter((i) =>
-        i.name.toLowerCase().includes(interestSearch.trim().toLowerCase())
-      )
+      i.name.toLowerCase().includes(interestSearch.trim().toLowerCase())
+    )
     : (slicedFeaturedInterests.length > 0 ? slicedFeaturedInterests : dbInterests.slice(0, featuredInterestLimit));
 
   if (loading) {
@@ -509,9 +509,8 @@ export const OnboardingPage = () => {
               return (
                 <div
                   key={step.id}
-                  className={`step-item ${isActive ? 'active' : ''} ${
-                    isCompleted ? 'completed' : ''
-                  }`}
+                  className={`step-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''
+                    }`}
                   onClick={() => {
                     if (isCompleted) setCurrentStep(step.id);
                   }}
@@ -658,9 +657,8 @@ export const OnboardingPage = () => {
                         <button
                           key={y}
                           type="button"
-                          className={`pill-btn ${
-                            form.year_of_study === y ? 'selected' : ''
-                          }`}
+                          className={`pill-btn ${form.year_of_study === y ? 'selected' : ''
+                            }`}
                           onClick={() => handleChange('year_of_study', y)}
                         >
                           {y}
@@ -919,9 +917,8 @@ export const OnboardingPage = () => {
                             <button
                               key={interest.id}
                               type="button"
-                              className={`pill-btn interest-pill ${
-                                isSelected ? 'selected' : ''
-                              }`}
+                              className={`pill-btn interest-pill ${isSelected ? 'selected' : ''
+                                }`}
                               onClick={() => handleToggleInterest(interest)}
                             >
                               <Sparkles size={16} />
@@ -992,9 +989,8 @@ export const OnboardingPage = () => {
                         <button
                           key={opt}
                           type="button"
-                          className={`pill-btn ${
-                            form.availability === opt ? 'selected' : ''
-                          }`}
+                          className={`pill-btn ${form.availability === opt ? 'selected' : ''
+                            }`}
                           onClick={() => handleChange('availability', opt)}
                         >
                           {opt}

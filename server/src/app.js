@@ -25,10 +25,14 @@ app.use(helmet({
 const allowedOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || origin === allowedOrigin || allowedOrigin === '*' || origin.includes('localhost')) {
+    if (process.env.NODE_ENV === 'production') {
+      if (!origin || origin === process.env.CLIENT_ORIGIN) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    } else {
       return callback(null, true);
     }
-    return callback(null, true);
   },
   credentials: true,
 }));
@@ -58,11 +62,14 @@ app.use('/api/auth/register', authLimiter);
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
+const chatRoutes = require('./routes/chatRoutes');
+
 // Register routes
 app.use('/api', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', meldRoutes);
+app.use('/api/melds', chatRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/admin', adminRoutes);
 
