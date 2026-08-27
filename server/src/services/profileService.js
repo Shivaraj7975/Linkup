@@ -178,7 +178,11 @@ const updateStudentProfile = async (userId, data) => {
     if (Array.isArray(interests)) {
       const interestIds = [];
       for (const item of interests) {
-        let interestId = typeof item === 'number' ? item : (typeof item === 'object' && item.id ? item.id : null);
+        let rawId = typeof item === 'number' ? item : typeof item === 'object' && item.id ? item.id : null;
+        let interestId =
+          rawId && !isNaN(Number(rawId)) && !String(rawId).startsWith('custom-')
+            ? parseInt(rawId, 10)
+            : null;
         let interestName = typeof item === 'string' ? item.trim() : item.name?.trim();
 
         if (interestId) {

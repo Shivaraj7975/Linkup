@@ -419,7 +419,7 @@ export const ProfilePage = () => {
     if (!exists) {
       setForm((prev) => ({
         ...prev,
-        interests: [...prev.interests, { name: trimmed, id: `custom-${Date.now()}` }],
+        interests: [...prev.interests, { name: trimmed }],
       }));
     }
     setInterestSearch('');
