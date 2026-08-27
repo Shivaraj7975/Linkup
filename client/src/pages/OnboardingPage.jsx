@@ -765,9 +765,18 @@ export const OnboardingPage = () => {
 
                   <div className="pill-grid">
                     {searchResultsSkills.length === 0 ? (
-                      <p className="no-pills-text">
-                        No matching skill found in database for "{skillSearch}". Click <strong style={{ color: 'var(--accent-primary, #818cf8)' }}>Add</strong> above or press Enter to create it.
-                      </p>
+                      <div className="no-pills-text" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
+                        <p>No matching skill found for "<strong>{skillSearch}</strong>".</p>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={() => handleAddCustomSkill(skillSearch)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md, 8px)' }}
+                        >
+                          <Plus size={16} />
+                          Create "{skillSearch}"
+                        </button>
+                      </div>
                     ) : (
                       <>
                         {searchResultsSkills.map((sk) => {
@@ -906,9 +915,18 @@ export const OnboardingPage = () => {
 
                   <div className="pill-grid grid-lg">
                     {searchResultsInterests.length === 0 ? (
-                      <p className="no-pills-text">
-                        No matching interest domain found for "{interestSearch}". Click <strong style={{ color: 'var(--accent-primary, #818cf8)' }}>Add</strong> above or press Enter to create it.
-                      </p>
+                      <div className="no-pills-text" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
+                        <p>No matching domain found for "<strong>{interestSearch}</strong>".</p>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={() => handleAddCustomInterest(interestSearch)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md, 8px)' }}
+                        >
+                          <Plus size={16} />
+                          Create "{interestSearch}"
+                        </button>
+                      </div>
                     ) : (
                       <>
                         {searchResultsInterests.map((interest) => {
