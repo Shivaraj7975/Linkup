@@ -347,6 +347,28 @@ export const OnboardingPage = () => {
     }
   };
 
+  const handleAddCustomInterest = (customName) => {
+    const trimmed = (customName || interestSearch).trim();
+    if (!trimmed) return;
+    const exists = form.interests.some(
+      (i) => (typeof i === 'string' ? i : i.name).toLowerCase() === trimmed.toLowerCase()
+    );
+    if (!exists) {
+      setForm((prev) => ({
+        ...prev,
+        interests: [...prev.interests, { name: trimmed, id: `custom-${Date.now()}` }],
+      }));
+    }
+    setInterestSearch('');
+  };
+
+  const handleKeyDownInterest = (e) => {
+    if (e.key === 'Enter' && interestSearch.trim()) {
+      e.preventDefault();
+      handleAddCustomInterest(interestSearch);
+    }
+  };
+
   // Validation per step
   const validateStep = (step) => {
     if (step === 1) {
@@ -839,14 +861,38 @@ export const OnboardingPage = () => {
 
                 {/* Interest Search Field */}
                 <div className="skill-search-wrapper">
-                  <div className="input-wrapper icon-left">
+                  <div className="input-wrapper icon-left" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                     <Search size={18} className="search-icon input-left-icon" />
                     <input
                       type="text"
-                      placeholder="Search domains..."
+                      placeholder="Search domains or type custom interest..."
                       value={interestSearch}
                       onChange={(e) => setInterestSearch(e.target.value)}
+                      onKeyDown={handleKeyDownInterest}
+                      style={{ paddingRight: interestSearch.trim() ? '5.5rem' : '1rem' }}
                     />
+                    {interestSearch.trim().length > 0 && (
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleAddCustomInterest(interestSearch)}
+                        style={{
+                          position: 'absolute',
+                          right: '6px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          padding: '0.35rem 0.85rem',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          borderRadius: 'var(--radius-sm, 6px)',
+                          gap: '0.25rem',
+                          zIndex: 2,
+                        }}
+                      >
+                        <Plus size={14} />
+                        <span>Add</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -860,7 +906,9 @@ export const OnboardingPage = () => {
 
                   <div className="pill-grid grid-lg">
                     {searchResultsInterests.length === 0 ? (
-                      <p className="no-pills-text">No matching interest domain found for "{interestSearch}".</p>
+                      <p className="no-pills-text">
+                        No matching interest domain found for "{interestSearch}". Click <strong style={{ color: 'var(--accent-primary, #818cf8)' }}>Add</strong> above or press Enter to create it.
+                      </p>
                     ) : (
                       <>
                         {searchResultsInterests.map((interest) => {
