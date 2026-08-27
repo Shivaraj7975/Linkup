@@ -19,6 +19,7 @@ import {
   Sparkles,
   Trash2,
   User,
+  Pencil,
 } from 'lucide-react';
 
 export const ManageMeldPage = () => {
@@ -157,10 +158,16 @@ export const ManageMeldPage = () => {
       <Navbar />
 
       <main className="container page-content">
-        <button onClick={() => navigate(`/melds/${id}`)} className="btn btn-ghost btn-sm margin-bottom-md">
-          <ArrowLeft size={16} />
-          <span>Back to Meld Page</span>
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="margin-bottom-md">
+          <button onClick={() => navigate(`/melds/${id}`)} className="btn btn-ghost btn-sm">
+            <ArrowLeft size={16} />
+            <span>Back to Meld Page</span>
+          </button>
+          <button onClick={() => navigate(`/melds/${id}/edit`)} className="btn btn-secondary btn-sm" style={{ gap: '0.4rem' }}>
+            <Pencil size={15} />
+            <span>Edit Meld Details</span>
+          </button>
+        </div>
 
         {/* DASHBOARD TITLE CARD */}
         <div className="card glass-card margin-bottom-lg">

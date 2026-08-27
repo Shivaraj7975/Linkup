@@ -13,6 +13,7 @@ import { DiscoverMeldsPage } from './pages/DiscoverMeldsPage';
 import { CreateMeldPage } from './pages/CreateMeldPage';
 import { MeldDetailsPage } from './pages/MeldDetailsPage';
 import { ManageMeldPage } from './pages/ManageMeldPage';
+import { EditMeldPage } from './pages/EditMeldPage';
 import { UserProfilePage } from './pages/UserProfilePage';
 import { InvitationsPage } from './pages/InvitationsPage';
 import { AdminPage } from './pages/AdminPage';
@@ -105,6 +106,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <ManageMeldPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/melds/:id/edit"
+            element={
+              <ProtectedRoute>
+                <EditMeldPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/linkups/:id/edit"
+            element={
+              <ProtectedRoute>
+                <EditMeldPage />
               </ProtectedRoute>
             }
           />

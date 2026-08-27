@@ -19,6 +19,7 @@ import {
   Code2,
   Loader2,
   ExternalLink,
+  Pencil,
 } from 'lucide-react';
 
 export const DashboardPage = () => {
@@ -309,15 +310,26 @@ export const DashboardPage = () => {
                           <span>Find My Team</span>
                         </button>
 
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          style={{ width: '100%', justifyContent: 'center', gap: '0.4rem' }}
-                          onClick={() => navigate(`/melds/${l.id}/manage`)}
-                        >
-                          <Settings size={15} />
-                          <span>Manage Meld</span>
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.4rem', width: '100%' }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ flex: 1, justifyContent: 'center', gap: '0.35rem' }}
+                            onClick={() => navigate(`/melds/${l.id}/edit`)}
+                          >
+                            <Pencil size={14} />
+                            <span>Edit Details</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm"
+                            style={{ flex: 1, justifyContent: 'center', gap: '0.35rem' }}
+                            onClick={() => navigate(`/melds/${l.id}/manage`)}
+                          >
+                            <Settings size={14} />
+                            <span>Manage</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
