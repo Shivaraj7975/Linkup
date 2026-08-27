@@ -22,20 +22,20 @@ const useSsl =
   isRemoteHost(host) ||
   Boolean(process.env.DATABASE_URL);
 
-const poolConfig = process.env.DATABASE_URL
+const poolConfig = (process.env.DB_HOST && process.env.DB_USER && process.env.DB_PASSWORD)
   ? {
-      connectionString: process.env.DATABASE_URL,
+      host: host === 'localhost' ? '127.0.0.1' : host,
+      port: parseInt(process.env.DB_PORT, 10) || 5432,
+      database: process.env.DB_NAME || 'linkup_db',
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
       ssl: useSsl ? { rejectUnauthorized: false } : false,
       max: 5,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
     }
   : {
-      host: host === 'localhost' ? '127.0.0.1' : host,
-      port: parseInt(process.env.DB_PORT, 10) || 5432,
-      database: process.env.DB_NAME || 'linkup_db',
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD,
+      connectionString: process.env.DATABASE_URL,
       ssl: useSsl ? { rejectUnauthorized: false } : false,
       max: 5,
       idleTimeoutMillis: 30000,

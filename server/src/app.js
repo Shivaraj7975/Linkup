@@ -26,9 +26,16 @@ const allowedOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 app.use(cors({
   origin: function (origin, callback) {
     if (process.env.NODE_ENV === 'production') {
-      if (!origin || origin === process.env.CLIENT_ORIGIN) {
+      const configuredOrigin = process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.replace(/\/$/, '') : null;
+      if (!origin || origin === configuredOrigin || origin === allowedOrigin) {
         return callback(null, true);
       }
+      // If they forgot to set it, log a warning but don't break the entire live site
+      if (!configuredOrigin) {
+        console.warn(`CORS Warning: CLIENT_ORIGIN is not set in production. Allowing origin: ${origin}`);
+        return callback(null, true);
+      }
+      console.error(`CORS Blocked: ${origin} does not match ${configuredOrigin}`);
       return callback(new Error('Not allowed by CORS'));
     } else {
       return callback(null, true);
