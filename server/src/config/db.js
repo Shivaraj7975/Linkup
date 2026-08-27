@@ -14,22 +14,28 @@ const isRemoteHost = (host) => {
 
 const useSsl = process.env.DB_SSL === 'true' || isRemoteHost(process.env.DB_HOST);
 
-const poolConfig = process.env.DATABASE_URL
-  ? {
-      connectionString: process.env.DATABASE_URL,
-      ssl:
-        process.env.DATABASE_URL.includes('sslmode=require') || process.env.DB_SSL === 'true'
-          ? { rejectUnauthorized: false }
-          : false,
-    }
-  : {
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT, 10) || 5432,
-      database: process.env.DB_NAME || 'linkup_db',
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD || '6844',
-      ssl: useSsl ? { rejectUnauthorized: false } : false,
-    };
+const isLocal =
+  !process.env.DB_HOST ||
+  process.env.DB_HOST === 'localhost' ||
+  process.env.DB_HOST === '127.0.0.1';
+
+const poolConfig =
+  process.env.DATABASE_URL && !isLocal
+    ? {
+        connectionString: process.env.DATABASE_URL,
+        ssl:
+          process.env.DATABASE_URL.includes('sslmode=require') || process.env.DB_SSL === 'true'
+            ? { rejectUnauthorized: false }
+            : false,
+      }
+    : {
+        host: process.env.DB_HOST === 'localhost' ? '127.0.0.1' : process.env.DB_HOST || '127.0.0.1',
+        port: parseInt(process.env.DB_PORT, 10) || 5432,
+        database: process.env.DB_NAME || 'linkup_db',
+        user: process.env.DB_USER || 'postgres',
+        password: process.env.DB_PASSWORD || '6844',
+        ssl: useSsl ? { rejectUnauthorized: false } : false,
+      };
 
 const pool = new Pool(poolConfig);
 
