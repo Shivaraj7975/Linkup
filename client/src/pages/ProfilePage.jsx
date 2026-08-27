@@ -37,6 +37,7 @@ import {
   ShieldCheck,
   Trash2,
   LogOut,
+  Plus,
 } from 'lucide-react';
 
 const isCollegeEmailValid = (email) => {
@@ -364,6 +365,20 @@ export const ProfilePage = () => {
         ...prev,
         skills: [...prev.skills, typeof skillItem === 'string' ? { name: skillItem } : skillItem],
       }));
+    }
+  };
+
+  const handleAddCustomSkill = (customName) => {
+    const trimmed = (customName || skillSearch).trim();
+    if (!trimmed) return;
+    handleAddSkill({ name: trimmed });
+    setSkillSearch('');
+  };
+
+  const handleKeyDownSkill = (e) => {
+    if (e.key === 'Enter' && skillSearch.trim()) {
+      e.preventDefault();
+      handleAddCustomSkill(skillSearch);
     }
   };
 
@@ -980,29 +995,62 @@ export const ProfilePage = () => {
                     <Search size={16} className="search-icon input-left-icon" />
                     <input
                       type="text"
-                      placeholder="Search 260+ skills..."
+                      placeholder="Search skills or type custom skill & press Enter..."
                       value={skillSearch}
                       onChange={(e) => setSkillSearch(e.target.value)}
+                      onKeyDown={handleKeyDownSkill}
                     />
                   </div>
                 </div>
 
                 <div className="pill-grid">
-                  {searchResultsSkills.map((sk) => {
-                    const isSelected = form.skills.some(
-                      (s) => (typeof s === 'string' ? s : s.name).toLowerCase() === sk.name.toLowerCase()
-                    );
-                    return (
+                  {searchResultsSkills.length === 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'flex-start', width: '100%' }}>
+                      <p className="no-pills-text" style={{ margin: 0 }}>
+                        No matching skill found in database for "{skillSearch}".
+                      </p>
                       <button
-                        key={sk.id}
                         type="button"
-                        className={`pill-btn ${isSelected ? 'selected' : ''}`}
-                        onClick={() => (isSelected ? handleRemoveSkill(sk) : handleAddSkill(sk))}
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleAddCustomSkill(skillSearch)}
+                        style={{ gap: '0.4rem', padding: '0.45rem 0.85rem' }}
                       >
-                        {sk.name}
+                        <Plus size={15} />
+                        <span>Add "{skillSearch}" as Custom Skill</span>
                       </button>
-                    );
-                  })}
+                    </div>
+                  ) : (
+                    <>
+                      {searchResultsSkills.map((sk) => {
+                        const isSelected = form.skills.some(
+                          (s) => (typeof s === 'string' ? s : s.name).toLowerCase() === sk.name.toLowerCase()
+                        );
+                        return (
+                          <button
+                            key={sk.id}
+                            type="button"
+                            className={`pill-btn ${isSelected ? 'selected' : ''}`}
+                            onClick={() => (isSelected ? handleRemoveSkill(sk) : handleAddSkill(sk))}
+                          >
+                            {sk.name}
+                          </button>
+                        );
+                      })}
+
+                      {/* Custom Skill button when searching */}
+                      {isSearchingSkills && !searchResultsSkills.some(s => s.name.toLowerCase() === skillSearch.trim().toLowerCase()) && (
+                        <button
+                          type="button"
+                          className="pill-btn"
+                          onClick={() => handleAddCustomSkill(skillSearch)}
+                          style={{ background: 'var(--gradient-primary)', color: '#fff', borderColor: 'transparent', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                        >
+                          <Plus size={14} />
+                          <span>Add "{skillSearch}"</span>
+                        </button>
+                      )}
+                    </>
+                  )}
                   {!isSearchingSkills && (
                     <>
                       {featuredSkillLimit < allFeaturedSkillsPool.length && (
