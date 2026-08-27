@@ -3,7 +3,10 @@ import { io } from 'socket.io-client';
 import { Send, AlertCircle, Loader2 } from 'lucide-react';
 import { getMeldChatHistory } from '../services/api';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+const rawApiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+const SOCKET_URL = rawApiUrl 
+  ? rawApiUrl.replace(/\/api\/?$/, '') 
+  : (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? window.location.origin : 'http://localhost:5000');
 
 export const MeldChat = ({ meldId, currentUser }) => {
   const [messages, setMessages] = useState([]);
