@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicOnlyRoute } from './components/PublicOnlyRoute';
+import { RequireCompletedProfile } from './components/RequireCompletedProfile';
 import { AdminRoute } from './components/AdminRoute';
 import { ScrollToTop } from './components/ScrollToTop';
 import { LandingPage } from './pages/LandingPage';
@@ -31,9 +32,9 @@ function App() {
           <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
           <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
           <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPasswordPage /></PublicOnlyRoute>} />
-          <Route path="/discover" element={<DiscoverMeldsPage />} />
-          <Route path="/melds/:id" element={<MeldDetailsPage />} />
-          <Route path="/linkups/:id" element={<MeldDetailsPage />} />
+          <Route path="/discover" element={<RequireCompletedProfile><DiscoverMeldsPage /></RequireCompletedProfile>} />
+          <Route path="/melds/:id" element={<RequireCompletedProfile><MeldDetailsPage /></RequireCompletedProfile>} />
+          <Route path="/linkups/:id" element={<RequireCompletedProfile><MeldDetailsPage /></RequireCompletedProfile>} />
           <Route
             path="/admin"
             element={
