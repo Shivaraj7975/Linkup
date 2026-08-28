@@ -15,6 +15,9 @@ export const PublicOnlyRoute = ({ children }) => {
   }
 
   if (user) {
+    if (user.isProfileComplete === false) {
+      return <Navigate to="/onboarding" replace />;
+    }
     return <Navigate to="/discover" replace />;
   }
 
