@@ -1,0 +1,786 @@
+/* ==========================================================================
+   RESPONSIVE — SINGLE CONSOLIDATED BLOCK
+   ========================================================================== */
+
+/* ---- Tablet (max-width: 1024px) ---- */
+@media (max-width: 1024px) {
+  .container {
+    padding: 0 1.25rem;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-details-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .linkups-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+
+  .members-grid,
+  .members-manage-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+
+  .filters-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+/* ---- Mobile (max-width: 768px) ---- */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 0.875rem;
+  }
+
+  /* --- Navbar: Fixed Top Bar & Fixed Bottom Nav --- */
+  .navbar-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 99990 !important;
+    background: #080c18 !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    padding: 0 1rem !important;
+  }
+
+  .navbar {
+    padding: 0.85rem 0;
+  }
+
+  .brand-logo {
+    font-size: 1.25rem;
+    gap: 0.55rem;
+  }
+
+  .brand-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .desktop-nav {
+    display: none !important;
+  }
+
+  .mobile-top-actions {
+    display: flex !important;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .mobile-bottom-nav {
+    display: grid !important;
+  }
+
+  /* Fixed spacing so content is never obscured by top or bottom fixed bars */
+  body,
+  main,
+  .page-content,
+  .main-content,
+  .dashboard-layout {
+    padding-top: 65px !important;
+    padding-bottom: calc(85px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* --- Stepper bar --- */
+  .stepper-bar {
+    overflow-x: auto;
+    gap: 0.75rem;
+    justify-content: flex-start;
+    padding: 0.75rem 1rem;
+  }
+
+  .step-name {
+    display: none;
+  }
+
+  /* --- Onboarding --- */
+  .onboarding-wrapper {
+    margin: 1.5rem auto 3rem;
+  }
+
+  .onboarding-card {
+    padding: 1.5rem 1.15rem;
+  }
+
+  .wizard-nav-footer {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .wizard-nav-footer .btn {
+    width: 100%;
+  }
+
+  /* --- Dashboard --- */
+  .dashboard-layout {
+    padding-bottom: 3rem !important;
+  }
+
+  .dashboard-banner {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+    padding: 1.5rem 1rem;
+    gap: 1rem;
+  }
+
+  .user-avatar-large {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+
+  .user-header-info {
+    align-items: center;
+  }
+
+  .user-title-row {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .user-title-row h1 {
+    font-size: 1.4rem;
+  }
+
+  .user-subtitle-line {
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 0.85rem;
+  }
+
+  .social-links-row {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .profile-header-actions {
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-card {
+    padding: 1.25rem;
+  }
+
+  /* Page Header Hero Card on Mobile */
+  .page-header-hero {
+    padding: 1.25rem 1rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1rem !important;
+  }
+
+  .page-header-hero h1 {
+    font-size: 1.5rem !important;
+  }
+
+  .page-header-hero .btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Segmented Tabs Bar on Mobile: Scrollable pills, zero overflow */
+  .segmented-tabs-bar {
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 0.35rem !important;
+    padding: 0.3rem !important;
+    margin-bottom: 1.5rem !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    display: flex !important;
+    justify-content: flex-start !important;
+    scrollbar-width: none !important;
+  }
+
+  .segmented-tab-btn {
+    padding: 0.5rem 0.85rem !important;
+    font-size: 0.82rem !important;
+    gap: 0.35rem !important;
+    flex: 0 0 auto !important;
+  }
+
+  /* 3-Column Segmented Tabs for Invitations: all 3 sections visible simultaneously on mobile! */
+  .segmented-tabs-bar.three-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 0.25rem !important;
+    padding: 0.25rem !important;
+    overflow-x: visible !important;
+  }
+
+  .segmented-tabs-bar.three-tabs .segmented-tab-btn {
+    padding: 0.5rem 0.2rem !important;
+    font-size: 0.76rem !important;
+    gap: 0.25rem !important;
+    width: 100% !important;
+    justify-content: center !important;
+    flex: unset !important;
+  }
+
+  .segmented-tabs-bar.three-tabs .tab-label-full {
+    display: none !important;
+  }
+
+  .segmented-tabs-bar.three-tabs .tab-label-short {
+    display: inline !important;
+  }
+
+  .segmented-tabs-bar.three-tabs .segmented-tab-badge {
+    padding: 0.08rem 0.35rem !important;
+    font-size: 0.68rem !important;
+  }
+
+  .invitations-page-header {
+    margin-bottom: 0.85rem !important;
+  }
+
+  .invitations-page-title {
+    font-size: 1.25rem !important;
+  }
+
+  .invitations-page-subtitle {
+    display: none !important;
+  }
+
+  .info-guide-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.6rem !important;
+    padding: 1rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  .dash-card.text-center,
+  .glass-card {
+    padding: 2.25rem 1.25rem !important;
+  }
+
+  /* --- Grids → single column --- */
+  .linkups-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .grid-details-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .members-grid,
+  .members-manage-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-2-col {
+    grid-template-columns: 1fr;
+  }
+
+  .location-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .country-input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* --- Cards --- */
+  .linkup-card {
+    padding: 1.15rem;
+  }
+
+  .linkup-card:hover {
+    transform: none;
+  }
+
+  .card-top-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .linkup-card-footer {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  /* --- Details page --- */
+  .details-title {
+    font-size: 1.5rem;
+  }
+
+  .details-meta-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  /* --- Candidate match cards --- */
+  .candidate-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .candidate-main-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .candidate-card-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .candidate-card-actions .btn {
+    width: 100%;
+  }
+
+  /* --- Modals --- */
+  .modal-overlay {
+    padding: 1rem 0.75rem;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .edit-profile-modal {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: var(--radius-md);
+  }
+
+  .modal-header {
+    padding: 1rem 1.15rem;
+  }
+
+  .modal-body {
+    padding: 1.15rem;
+  }
+
+  .modal-title-group h2 {
+    font-size: 1.1rem;
+  }
+
+  .modal-backdrop {
+    padding: 0.5rem;
+  }
+
+  .modal-content {
+    max-width: 100%;
+    padding: 1.25rem;
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  }
+
+  /* --- Search & filters --- */
+  .search-form {
+    flex-direction: column;
+  }
+
+  .search-filters-card {
+    padding: 1rem;
+  }
+
+  /* --- Auth pages --- */
+  .auth-card {
+    padding: 2rem 1.25rem;
+  }
+
+  /* --- Hero section --- */
+  .hero-section {
+    padding: 6rem 0.5rem 2rem;
+    min-height: auto;
+  }
+
+  .hero-cta-group {
+    flex-direction: column;
+    width: 100%;
+    max-width: 280px;
+    margin-bottom: 3rem;
+  }
+
+  .hero-cta-group .btn {
+    width: 100%;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-card {
+    padding: 1.5rem 1.15rem;
+  }
+
+  /* --- Request cards (Manage page) --- */
+  .request-card-header {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .request-actions {
+    width: 100%;
+  }
+
+  .request-actions .btn {
+    flex: 1;
+  }
+
+  /* --- Page header --- */
+  .page-header-hero {
+    padding: 1.5rem 0.5rem 1rem;
+  }
+
+  /* --- Pill tags --- */
+  .pill-tags,
+  .pills-container,
+  .pill-grid {
+    gap: 0.4rem;
+  }
+
+  .pill-btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  /* --- Form actions --- */
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+  }
+
+  .modal-footer-actions {
+    flex-direction: column;
+  }
+
+  .modal-footer-actions .btn {
+    width: 100%;
+  }
+
+  /* --- Match engine banner --- */
+  .match-engine-banner {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+
+  /* --- Admin Control Center Mobile Optimizations --- */
+  .admin-hero-title {
+    font-size: 1.45rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .admin-hero-card {
+    padding: 1.25rem 1rem !important;
+  }
+
+  .admin-tabs-nav {
+    display: flex !important;
+    gap: 0.4rem !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    padding-bottom: 0.5rem !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-tabs-nav .btn {
+    padding: 0.45rem 0.75rem !important;
+    font-size: 0.82rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .admin-search-bar {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+  }
+
+  .admin-search-bar select,
+  .admin-search-bar .search-input-wrapper,
+  .admin-search-bar input,
+  .admin-search-bar button {
+    width: 100% !important;
+  }
+}
+
+/* ---- Small phones (max-width: 400px) ---- */
+@media (max-width: 400px) {
+  .container {
+    padding: 0 0.65rem;
+  }
+
+  .brand-logo span {
+    display: none;
+  }
+
+  .onboarding-card {
+    padding: 1.25rem 0.85rem;
+  }
+
+  .candidate-main-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .candidate-card-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .candidate-card-actions .btn {
+    width: 100%;
+  }
+
+  /* --- Modals --- */
+  .modal-overlay {
+    padding: 1rem 0.75rem;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .edit-profile-modal {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: var(--radius-md);
+  }
+
+  .modal-header {
+    padding: 1rem 1.15rem;
+  }
+
+  .modal-body {
+    padding: 1.15rem;
+  }
+
+  .modal-title-group h2 {
+    font-size: 1.1rem;
+  }
+
+  .modal-backdrop {
+    padding: 0.5rem;
+  }
+
+  .modal-content {
+    max-width: 100%;
+    padding: 1.25rem;
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  }
+
+  /* --- Search & filters --- */
+  .search-form {
+    flex-direction: column;
+  }
+
+  .search-filters-card {
+    padding: 1rem;
+  }
+
+  /* --- Auth pages --- */
+  .auth-card {
+    padding: 2rem 1.25rem;
+  }
+
+  /* --- Hero section --- */
+  .hero-section {
+    padding: 6rem 0.5rem 2rem;
+    min-height: auto;
+  }
+
+  .hero-cta-group {
+    flex-direction: column;
+    width: 100%;
+    max-width: 280px;
+    margin-bottom: 3rem;
+  }
+
+  .hero-cta-group .btn {
+    width: 100%;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-card {
+    padding: 1.5rem 1.15rem;
+  }
+
+  /* --- Request cards (Manage page) --- */
+  .request-card-header {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .request-actions {
+    width: 100%;
+  }
+
+  .request-actions .btn {
+    flex: 1;
+  }
+
+  /* --- Page header --- */
+  .page-header-hero {
+    padding: 1.5rem 0.5rem 1rem;
+  }
+
+  /* --- Pill tags --- */
+  .pill-tags,
+  .pills-container,
+  .pill-grid {
+    gap: 0.4rem;
+  }
+
+  .pill-btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  /* --- Form actions --- */
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+  }
+
+  .modal-footer-actions {
+    flex-direction: column;
+  }
+
+  .modal-footer-actions .btn {
+    width: 100%;
+  }
+
+  /* --- Match engine banner --- */
+  .match-engine-banner {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+
+  /* --- Admin Control Center Mobile Optimizations --- */
+  .admin-hero-title {
+    font-size: 1.45rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .admin-hero-card {
+    padding: 1.25rem 1rem !important;
+  }
+
+  .admin-tabs-nav {
+    display: flex !important;
+    gap: 0.4rem !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    padding-bottom: 0.5rem !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-tabs-nav .btn {
+    padding: 0.45rem 0.75rem !important;
+    font-size: 0.82rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .admin-search-bar {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+  }
+
+  .admin-search-bar select,
+  .admin-search-bar .search-input-wrapper,
+  .admin-search-bar input,
+  .admin-search-bar button {
+    width: 100% !important;
+  }
+}
+
+/* ---- Small phones (max-width: 400px) ---- */
+@media (max-width: 400px) {
+  .container {
+    padding: 0 0.65rem;
+  }
+
+  .brand-logo span {
+    display: none;
+  }
+
+  .onboarding-card {
+    padding: 1.25rem 0.85rem;
+  }
+
+  .auth-card {
+    padding: 1.5rem 0.85rem;
+  }
+
+  .glass-card {
+    padding: 1.25rem;
+  }
+
+  /* Meld Chat Responsive Card */
+  .meld-chat-card {
+    height: calc(100vh - 200px);
+  }
+
+  @media (max-width: 768px) {
+    .meld-chat-card {
+      height: calc(100vh - 280px);
+    }
+  }
+}
+
+/* Meld Chat Responsive Card (Global) */
+.meld-chat-card {
+  height: calc(100vh - 200px);
+}
+
+@media (max-width: 768px) {
+  .meld-chat-card {
+    height: calc(100vh - 350px);
+  }
+}
+
+/* Chat Input Sticky */
+.chat-input-sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  background-color: var(--bg-card);
+  /* Ensure it has a background to obscure scrolling messages */
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 768px) {
+  .chat-input-sticky {
+    bottom: calc(65px + env(safe-area-inset-bottom, 0px));
+  }
+}

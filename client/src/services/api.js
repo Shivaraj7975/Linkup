@@ -47,6 +47,22 @@ export const getHealthStatus = async () => {
 };
 
 /**
+ * GET /api/auth/check-username
+ */
+export const checkUsernameApi = async (username) => {
+  const response = await fetch(`${API_BASE_URL}/auth/check-username?username=${encodeURIComponent(username)}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to check username availability.');
+  }
+  return data;
+};
+
+/**
  * POST /api/auth/send-otp
  */
 export const sendOtpApi = async (email, type = 'PRIMARY') => {
@@ -544,3 +560,46 @@ export const removeMeldMember = removeTeamMember;
 export const getMeldMatches = getLinkupMatches;
 export const inviteToMeld = inviteToLinkup;
 export const leaveMeld = leaveLinkup;
+
+/**
+ * GET /api/users/search?q=...&meldId=... - Search platform users/friends to invite
+ */
+export const searchUsersToInvite = async (query = '', meldId = null) => {
+  let url = `${API_BASE_URL}/users/search?q=${encodeURIComponent(query)}`;
+  if (meldId) {
+    url += `&meldId=${encodeURIComponent(meldId)}`;
+  }
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to search users.');
+  return data.users || [];
+};
+
+/**
+ * GET /api/user/join-requests - Fetch join requests sent by current user
+ */
+export const getMyJoinRequests = async () => {
+  const response = await fetch(`${API_BASE_URL}/user/join-requests`, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch your join requests.');
+  return data.requests || [];
+};
+
+/**
+ * DELETE /api/join-requests/:requestId - Cancel a pending join request sent by user
+ */
+export const cancelJoinRequest = async (requestId) => {
+  const response = await fetch(`${API_BASE_URL}/join-requests/${requestId}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to cancel join request.');
+  return data;
+};

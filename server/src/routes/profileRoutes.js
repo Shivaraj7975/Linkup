@@ -8,12 +8,16 @@ const {
   getPublicUserProfile,
   linkCollegeEmailController,
   unlinkCollegeEmailController,
+  searchUsers,
 } = require('../controllers/profileController');
 const { authenticateToken } = require('../middleware/auth');
 
 // Public reference endpoints
 router.get('/skills', getSkills);
 router.get('/interests', getInterests);
+
+// Search users/friends to invite (placed before /users/:userId to prevent param collision)
+router.get('/users/search', authenticateToken, searchUsers);
 
 // Public student profile endpoint for discovery, AI matching & team management
 router.get('/users/:userId', getPublicUserProfile);

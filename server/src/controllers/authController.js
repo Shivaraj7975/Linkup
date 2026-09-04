@@ -5,6 +5,8 @@ const {
   findUserByEmail,
   isProfileComplete,
   updateUserPassword,
+  validateUsername,
+  isUsernameAvailable,
 } = require('../services/authService');
 const {
   isCollegeEmail,
@@ -23,7 +25,7 @@ const generateToken = (user) => {
   const secret = process.env.JWT_SECRET || 'linkup_jwt_super_secret_key_2026_dev';
   const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
   return jwt.sign(
-    { id: user.id, email: user.email },
+    { id: user.id, email: user.email, username: user.username || null },
     secret,
     { expiresIn }
   );
@@ -301,11 +303,47 @@ const getMe = async (req, res, next) => {
       user: {
         id: req.user.id,
         name: req.user.name,
+        username: req.user.username || null,
         email: req.user.email,
         role: req.user.role || 'USER',
         isProfileComplete: profileComplete,
         createdAt: req.user.created_at,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/auth/check-username?username=xyz
+ */
+const checkUsername = async (req, res, next) => {
+  try {
+    const { username } = req.query;
+    if (!username) {
+      return res.status(200).json({
+        success: true,
+        available: false,
+        message: 'Please enter a username.',
+      });
+    }
+
+    const validation = validateUsername(username);
+    if (!validation.valid) {
+      return res.status(200).json({
+        success: true,
+        available: false,
+        message: validation.message,
+      });
+    }
+
+    const isAvail = await isUsernameAvailable(validation.cleanUsername, req.user?.id);
+    return res.status(200).json({
+      success: true,
+      available: isAvail,
+      cleanUsername: validation.cleanUsername,
+      message: isAvail ? 'Username is available!' : 'Username is already taken.',
     });
   } catch (error) {
     next(error);
@@ -362,6 +400,7 @@ module.exports = {
   register,
   login,
   getMe,
+  checkUsername,
   sendOtp,
   verifyOtp,
   resetPassword,

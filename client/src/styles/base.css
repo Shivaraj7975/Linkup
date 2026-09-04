@@ -1,0 +1,125 @@
+/* ===== BASE RESET, BODY & CONTAINERS ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: #fff;
+  font-family: var(--font-family);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--gradient-glow);
+}
+
+/* ===== Background Ambient Glows (GPU Accelerated) ===== */
+.ambient-glow-1 {
+  position: fixed;
+  top: -150px;
+  left: 50%;
+  transform: translate3d(-50%, 0, 0);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.06) 40%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.ambient-glow-2 {
+  position: fixed;
+  bottom: -100px;
+  right: -100px;
+  transform: translate3d(0, 0, 0);
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.08) 0%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* ===== Container ===== */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+
+/* ===== PAGE LOADER & KEYFRAME ANIMATIONS ===== */
+/* ===== Page Loader ===== */
+.page-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 1rem;
+  color: var(--text-secondary);
+}
+
+.loader-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ===== Animations ===== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+

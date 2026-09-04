@@ -78,8 +78,13 @@ export const UserProfilePage = () => {
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                     <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>{profile.name}</h1>
+                    {profile.username && (
+                      <span className="user-handle-pill" style={{ color: 'var(--accent-primary, #818cf8)', fontWeight: 600, fontSize: '1.05rem' }}>
+                        @{profile.username}
+                      </span>
+                    )}
                     <span className={`verification-badge ${(profile.verificationStatus || 'UNVERIFIED').toLowerCase()}`}>
                       {profile.verificationStatus === 'VERIFIED' ? (
                         <><CheckCircle2 size={14} /> Verified Student</>

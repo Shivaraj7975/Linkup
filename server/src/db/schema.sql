@@ -35,6 +35,7 @@ CREATE TYPE verification_method AS ENUM ('COLLEGE_EMAIL', 'COLLEGE_ID', 'MANUAL_
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
+    username VARCHAR(30) UNIQUE,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'USER',
@@ -58,6 +59,8 @@ CREATE TABLE student_profiles (
     availability VARCHAR(100),
     github_url VARCHAR(255),
     linkedin_url VARCHAR(255),
+    is_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    onboarding_step INT NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -242,3 +245,6 @@ CREATE TRIGGER update_meld_invitations_updated_at BEFORE UPDATE ON meld_invitati
 
 -- Optimize Chat Query for Recent Messages
 CREATE INDEX IF NOT EXISTS idx_meld_messages_meld_created ON meld_messages (meld_id, created_at DESC);
+
+-- Unique index for case-insensitive username lookup
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_lower ON users (LOWER(username));

@@ -883,6 +883,70 @@ const leaveLinkup = async (linkupId, userId) => {
   return { success: true };
 };
 
+/**
+ * Get all Join Requests sent by the current user to other Melds
+ */
+const getMySentJoinRequests = async (userId) => {
+  const reqsRes = await query(
+    `SELECT jr.id, jr.meld_id, jr.message, jr.status, jr.created_at, jr.updated_at,
+            m.title as meld_title, m.category as meld_category, m.description as meld_description,
+            m.current_status as meld_status, m.max_members,
+            (SELECT COUNT(*)::int FROM meld_members mm WHERE mm.meld_id = m.id) as current_member_count,
+            u.id as creator_id, u.name as creator_name, u.username as creator_username,
+            COALESCE(sp.college, 'University Student') as creator_college,
+            COALESCE(sv.status, 'UNVERIFIED') as creator_verification_status
+     FROM join_requests jr
+     JOIN melds m ON jr.meld_id = m.id
+     JOIN users u ON m.creator_id = u.id
+     LEFT JOIN student_profiles sp ON u.id = sp.user_id
+     LEFT JOIN student_verifications sv ON u.id = sv.user_id
+     WHERE jr.user_id = $1
+     ORDER BY jr.created_at DESC`,
+    [userId]
+  );
+
+  return reqsRes.rows.map((r) => ({
+    id: r.id,
+    meldId: r.meld_id,
+    message: r.message,
+    status: r.status,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+    meld: {
+      id: r.meld_id,
+      title: r.meld_title,
+      category: r.meld_category,
+      description: r.meld_description,
+      currentStatus: r.meld_status,
+      maxMembers: r.max_members,
+      currentMemberCount: r.current_member_count,
+      creator: {
+        id: r.creator_id,
+        name: r.creator_name,
+        username: r.creator_username,
+        college: r.creator_college,
+        verificationStatus: r.creator_verification_status,
+      },
+    },
+  }));
+};
+
+/**
+ * Cancel/Withdraw a pending Join Request by the applicant
+ */
+const cancelMyJoinRequest = async (requestId, userId) => {
+  const res = await query(
+    `DELETE FROM join_requests
+     WHERE id = $1 AND user_id = $2 AND status = 'PENDING'
+     RETURNING id`,
+    [requestId, userId]
+  );
+  if (res.rows.length === 0) {
+    throw new Error('Join request not found or cannot be cancelled.');
+  }
+  return { success: true };
+};
+
 module.exports = {
   createLinkup,
   getLinkups,
@@ -896,4 +960,6 @@ module.exports = {
   removeTeamMember,
   getMatchesForLinkup,
   leaveLinkup,
+  getMySentJoinRequests,
+  cancelMyJoinRequest,
 };

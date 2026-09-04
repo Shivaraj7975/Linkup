@@ -6,6 +6,8 @@ import { getLinkupById, sendJoinRequest, deleteLinkup, leaveLinkup } from '../se
 import { MatchResultsModal } from '../components/MatchResultsModal';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { MeldChat } from '../components/MeldChat';
+import { ShareMeldModal } from '../components/ShareMeldModal';
+import { InviteFriendsModal } from '../components/InviteFriendsModal';
 import {
   Users,
   User,
@@ -25,6 +27,8 @@ import {
   MessageSquare,
   Sparkles,
   Pencil,
+  Lock,
+  Share2,
 } from 'lucide-react';
 
 export const MeldDetailsPage = () => {
@@ -37,6 +41,8 @@ export const MeldDetailsPage = () => {
   const [actionSuccess, setActionSuccess] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   // Data & Loading State
   const [linkup, setLinkup] = useState(null);
@@ -186,10 +192,37 @@ export const MeldDetailsPage = () => {
       <Navbar />
 
       <main className="container page-content">
-        <button onClick={() => navigate('/discover')} className="btn btn-ghost btn-sm margin-bottom-md">
-          <ArrowLeft size={16} />
-          <span>Back to Discover</span>
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <button onClick={() => navigate('/discover')} className="btn btn-ghost btn-sm">
+            <ArrowLeft size={16} />
+            <span>Back to Discover</span>
+          </button>
+
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => setShowShareModal(true)}
+              style={{ gap: '0.4rem' }}
+              title="Share MELD link"
+            >
+              <Share2 size={16} />
+              <span>Share Link</span>
+            </button>
+            {(isCreator || isMember) && (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => setShowInviteModal(true)}
+                style={{ gap: '0.4rem' }}
+                title="Invite friends to this MELD"
+              >
+                <UserPlus size={16} />
+                <span>Invite Friends</span>
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Tab Navigation */}
         <div className="tabs margin-bottom-lg" style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
@@ -201,21 +234,228 @@ export const MeldDetailsPage = () => {
             Overview
           </button>
           
-          {(isCreator || isMember) && (
-            <button
-              className={`btn btn-ghost ${activeTab === 'chat' ? 'text-accent' : ''}`}
-              style={{ borderBottom: activeTab === 'chat' ? '2px solid var(--accent-primary)' : 'none', borderRadius: '0' }}
-              onClick={() => setActiveTab('chat')}
-            >
-              <MessageSquare size={16} style={{ marginRight: '0.4rem' }} />
-              Team Chat
-            </button>
-          )}
+          <button
+            className={`btn btn-ghost ${activeTab === 'chat' ? 'text-accent' : ''}`}
+            style={{ borderBottom: activeTab === 'chat' ? '2px solid var(--accent-primary)' : 'none', borderRadius: '0' }}
+            onClick={() => setActiveTab('chat')}
+          >
+            <MessageSquare size={16} style={{ marginRight: '0.4rem' }} />
+            Text
+          </button>
         </div>
 
         {activeTab === 'chat' ? (
           <div className="chat-container">
-            <MeldChat meldId={id} currentUser={user} />
+            {isCreator || isMember ? (
+              <MeldChat meldId={id} currentUser={user} />
+            ) : (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '650px',
+                backgroundColor: 'var(--bg-card, rgba(30, 41, 59, 0.5))',
+                borderRadius: 'var(--radius-lg, 12px)',
+                border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
+                overflow: 'hidden'
+              }}>
+                {/* Header */}
+                <div style={{
+                  padding: '1rem 1.25rem',
+                  borderBottom: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  backgroundColor: 'var(--bg-card, rgba(30, 41, 59, 0.5))'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <MessageSquare size={18} style={{ color: 'var(--accent-primary, #6366f1)' }} />
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Team Discussion</h3>
+                  </div>
+                  <span className="badge badge-status status-closed" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}>
+                    <Lock size={12} /> Members Only
+                  </span>
+                </div>
+
+                {/* Empty Chat Screen with Callout */}
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '2.5rem 1.5rem',
+                  textAlign: 'center',
+                  background: 'radial-gradient(ellipse at center, rgba(99, 102, 241, 0.06) 0%, transparent 70%)'
+                }}>
+                  <div style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                    border: '1px solid rgba(99, 102, 241, 0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--accent-primary, #818cf8)',
+                    marginBottom: '1.25rem',
+                    boxShadow: '0 0 24px rgba(99, 102, 241, 0.15)'
+                  }}>
+                    <Lock size={28} />
+                  </div>
+
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>
+                    Team Text is Reserved for MELD Members
+                  </h3>
+                  <p style={{ maxWidth: '460px', color: 'var(--text-secondary, #94a3b8)', fontSize: '0.95rem', lineHeight: 1.6, margin: '0 0 1.5rem 0' }}>
+                    You are not yet a member of this MELD. Join this team to participate in discussions, collaborate with teammates, and send messages.
+                  </p>
+
+                  {/* Actions to join MELD */}
+                  {userJoinRequestStatus === 'PENDING' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+                      <div className="badge-banner banner-info" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', borderRadius: 'var(--radius-full)' }}>
+                        <Clock3 size={18} />
+                        <span>Your request to join this MELD is pending creator approval.</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setShowShareModal(true)}
+                        style={{ gap: '0.4rem' }}
+                      >
+                        <Share2 size={16} />
+                        <span>Share MELD with Friends</span>
+                      </button>
+                    </div>
+                  ) : userJoinRequestStatus === 'REJECTED' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+                      <div className="badge-banner banner-warning" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', borderRadius: 'var(--radius-full)' }}>
+                        <AlertCircle size={18} />
+                        <span>Your join request was previously declined by the creator.</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setShowShareModal(true)}
+                        style={{ gap: '0.4rem' }}
+                      >
+                        <Share2 size={16} />
+                        <span>Share MELD</span>
+                      </button>
+                    </div>
+                  ) : !isAuthenticated ? (
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                      <Link to="/login" className="btn btn-primary" style={{ gap: '0.5rem', padding: '0.65rem 1.5rem' }}>
+                        <UserPlus size={18} />
+                        <span>Log in to Join MELD</span>
+                      </Link>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => setShowShareModal(true)}
+                        style={{ gap: '0.4rem' }}
+                      >
+                        <Share2 size={16} />
+                        <span>Share MELD</span>
+                      </button>
+                    </div>
+                  ) : currentStatus !== 'OPEN' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+                      <div className="badge-banner banner-neutral" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', borderRadius: 'var(--radius-full)' }}>
+                        <AlertCircle size={18} />
+                        <span>This MELD is currently {currentStatus}. Applications are closed.</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setShowShareModal(true)}
+                        style={{ gap: '0.4rem' }}
+                      >
+                        <Share2 size={16} />
+                        <span>Share MELD</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-lg"
+                        onClick={() => setShowJoinModal(true)}
+                        style={{ gap: '0.5rem', padding: '0.75rem 1.75rem', boxShadow: '0 4px 16px rgba(99, 102, 241, 0.4)' }}
+                      >
+                        <UserPlus size={18} />
+                        <span>Join MELD to Involve in Text</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-lg"
+                        onClick={() => setShowShareModal(true)}
+                        style={{ gap: '0.4rem' }}
+                      >
+                        <Share2 size={18} />
+                        <span>Share MELD</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Disabled Message Bar at Bottom */}
+                <div style={{
+                  borderTop: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
+                  backgroundColor: 'var(--bg-card, rgba(30, 41, 59, 0.7))',
+                }}>
+                  <div style={{
+                    padding: '0.45rem 1rem',
+                    fontSize: '0.8rem',
+                    color: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.45rem',
+                    borderBottom: '1px solid rgba(245, 158, 11, 0.15)'
+                  }}>
+                    <Lock size={13} />
+                    <span>Message bar is disabled. You must join this MELD to participate in the text chat.</span>
+                  </div>
+
+                  <div style={{
+                    padding: '1rem',
+                    display: 'flex',
+                    gap: '0.5rem',
+                    opacity: 0.6,
+                    cursor: 'not-allowed',
+                  }}>
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="Join this MELD to involve in the text chat..."
+                      disabled={true}
+                      style={{
+                        flex: 1,
+                        borderRadius: 'var(--radius-full)',
+                        cursor: 'not-allowed',
+                        backgroundColor: 'rgba(0, 0, 0, 0.25)',
+                        color: 'var(--text-muted)'
+                      }}
+                    />
+                    <button 
+                      type="button" 
+                      className="btn btn-primary" 
+                      disabled={true}
+                      style={{
+                        borderRadius: 'var(--radius-full)',
+                        padding: '0.5rem 1rem',
+                        cursor: 'not-allowed',
+                        opacity: 0.5
+                      }}
+                    >
+                      <Send size={18} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="grid-details-layout">
@@ -312,6 +552,24 @@ export const MeldDetailsPage = () => {
                       <Sparkles size={18} />
                       <span>Find My Team</span>
                     </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setShowInviteModal(true)}
+                      style={{ gap: '0.4rem' }}
+                    >
+                      <UserPlus size={18} />
+                      <span>Invite Friends</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      onClick={() => setShowShareModal(true)}
+                      style={{ gap: '0.4rem' }}
+                    >
+                      <Share2 size={18} />
+                      <span>Share MELD</span>
+                    </button>
                     <Link to={`/melds/${id}/edit`} className="btn btn-secondary" style={{ gap: '0.4rem' }}>
                       <Pencil size={18} />
                       <span>Edit Meld Details</span>
@@ -330,45 +588,128 @@ export const MeldDetailsPage = () => {
                     </button>
                   </div>
                 ) : isMember ? (
-                  <div className="badge-banner banner-success" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <CheckCircle2 size={20} />
-                      <span>You are a member of this team!</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                    <div className="badge-banner banner-success" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <CheckCircle2 size={20} />
+                        <span>You are a member of this team!</span>
+                      </div>
+                      <button 
+                        className="btn btn-ghost btn-sm"
+                        style={{ color: '#ef4444' }}
+                        onClick={handleLeaveLinkup}
+                        disabled={leaving}
+                      >
+                        <span>{leaving ? 'Leaving...' : 'Leave MELD'}</span>
+                      </button>
                     </div>
-                    <button 
-                      className="btn btn-ghost btn-sm"
-                      style={{ color: '#ef4444' }}
-                      onClick={handleLeaveLinkup}
-                      disabled={leaving}
-                    >
-                      <span>{leaving ? 'Leaving...' : 'Leave MELD'}</span>
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => setShowInviteModal(true)}
+                        style={{ gap: '0.4rem' }}
+                      >
+                        <UserPlus size={16} />
+                        <span>Invite Friends</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setShowShareModal(true)}
+                        style={{ gap: '0.4rem' }}
+                      >
+                        <Share2 size={16} />
+                        <span>Share MELD</span>
+                      </button>
+                    </div>
                   </div>
                 ) : userJoinRequestStatus === 'PENDING' ? (
-                  <div className="badge-banner banner-info">
-                    <Clock3 size={20} />
-                    <span>Your join request is PENDING creator approval.</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                    <div className="badge-banner banner-info" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Clock3 size={20} />
+                      <span>Your join request is PENDING creator approval.</span>
+                    </div>
+                    <div>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => setShowShareModal(true)}
+                        style={{ gap: '0.4rem' }}
+                      >
+                        <Share2 size={18} />
+                        <span>Share MELD</span>
+                      </button>
+                    </div>
                   </div>
                 ) : userJoinRequestStatus === 'REJECTED' ? (
-                  <div className="badge-banner banner-warning">
-                    <AlertCircle size={20} />
-                    <span>Your join request was previously declined by the creator.</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                    <div className="badge-banner banner-warning" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <AlertCircle size={20} />
+                      <span>Your join request was previously declined by the creator.</span>
+                    </div>
+                    <div>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => setShowShareModal(true)}
+                        style={{ gap: '0.4rem' }}
+                      >
+                        <Share2 size={18} />
+                        <span>Share MELD</span>
+                      </button>
+                    </div>
                   </div>
                 ) : !isAuthenticated ? (
-                  <Link to="/login" className="btn btn-primary">
-                    <UserPlus size={18} />
-                    <span>Log in to Request to Join</span>
-                  </Link>
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <Link to="/login" className="btn btn-primary">
+                      <UserPlus size={18} />
+                      <span>Log in to Request to Join</span>
+                    </Link>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setShowShareModal(true)}
+                      style={{ gap: '0.4rem' }}
+                    >
+                      <Share2 size={18} />
+                      <span>Share MELD</span>
+                    </button>
+                  </div>
                 ) : currentStatus !== 'OPEN' ? (
-                  <div className="badge-banner banner-neutral">
-                    <AlertCircle size={20} />
-                    <span>This Linkup is currently {currentStatus}. Applications are closed.</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                    <div className="badge-banner banner-neutral" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <AlertCircle size={20} />
+                      <span>This Linkup is currently {currentStatus}. Applications are closed.</span>
+                    </div>
+                    <div>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => setShowShareModal(true)}
+                        style={{ gap: '0.4rem' }}
+                      >
+                        <Share2 size={18} />
+                        <span>Share MELD</span>
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <button onClick={() => setShowJoinModal(true)} className="btn btn-primary btn-lg">
-                    <UserPlus size={20} />
-                    <span>Request to Join Team</span>
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <button onClick={() => setShowJoinModal(true)} className="btn btn-primary btn-lg">
+                      <UserPlus size={20} />
+                      <span>Request to Join Team</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-lg"
+                      onClick={() => setShowShareModal(true)}
+                      style={{ gap: '0.4rem' }}
+                    >
+                      <Share2 size={18} />
+                      <span>Share MELD</span>
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -578,6 +919,23 @@ export const MeldDetailsPage = () => {
         onCancel={() => setShowDeleteConfirm(false)}
         isDangerous={true}
       />
+
+      {showShareModal && (
+        <ShareMeldModal
+          meld={linkup}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
+
+      {showInviteModal && (
+        <InviteFriendsModal
+          meld={linkup}
+          onClose={() => setShowInviteModal(false)}
+          onInvitationSent={(invitedUser) => {
+            setActionSuccess(`Invitation sent to ${invitedUser.name}!`);
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -8,7 +8,11 @@ const inviteUserToLinkup = async (linkupId, inviterId, inviteeId) => {
   // Validate linkup
   const linkup = await getLinkupById(linkupId);
   if (!linkup) throw new Error('Linkup not found.');
-  if (linkup.creatorId !== inviterId) throw new Error('Only the creator can invite members.');
+  const isCreator = linkup.creatorId === inviterId;
+  const inviterMemberCheck = await query(`SELECT id FROM meld_members WHERE meld_id = $1 AND user_id = $2`, [linkupId, inviterId]);
+  if (!isCreator && inviterMemberCheck.rows.length === 0) {
+    throw new Error('Only the creator or team members can invite users.');
+  }
   if (linkup.currentStatus === 'FULL' || linkup.currentStatus === 'CLOSED') throw new Error('Linkup is not open for new members.');
 
   // Validate invitee

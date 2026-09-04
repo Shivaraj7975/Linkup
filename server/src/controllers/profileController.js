@@ -6,6 +6,7 @@ const {
   updateStudentProfile,
   linkCollegeEmail,
   unlinkCollegeEmail,
+  searchUsersForInvite,
 } = require('../services/profileService');
 const { isCollegeEmail, verifyOtpInDb } = require('../services/emailService');
 
@@ -160,6 +161,25 @@ const unlinkCollegeEmailController = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/users/search?q=...&meldId=...
+ */
+const searchUsers = async (req, res, next) => {
+  try {
+    const q = req.query.q || '';
+    const meldId = req.query.meldId || null;
+    const currentUserId = req.user.id;
+
+    const users = await searchUsersForInvite(q, currentUserId, meldId);
+    return res.status(200).json({
+      success: true,
+      users,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getSkills,
   getInterests,
@@ -168,4 +188,5 @@ module.exports = {
   getPublicUserProfile,
   linkCollegeEmailController,
   unlinkCollegeEmailController,
+  searchUsers,
 };

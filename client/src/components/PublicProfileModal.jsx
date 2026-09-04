@@ -73,6 +73,11 @@ export const PublicProfileModal = ({ userId, onClose }) => {
                 <div className="user-header-info">
                   <div className="user-title-row">
                     <h3 style={{ fontSize: '1.35rem', fontWeight: 700 }}>{profile.name}</h3>
+                    {profile.username && (
+                      <span className="user-handle-pill" style={{ color: 'var(--accent-primary, #818cf8)', fontWeight: 600, fontSize: '0.95rem' }}>
+                        @{profile.username}
+                      </span>
+                    )}
                     <span className={`verification-badge ${(profile.verificationStatus || 'UNVERIFIED').toLowerCase()}`}>
                       {profile.verificationStatus === 'VERIFIED' ? (
                         <><CheckCircle2 size={13} /> Verified Student</>

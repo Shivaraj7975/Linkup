@@ -22,7 +22,7 @@ const getAllInterests = async () => {
 const getProfileByUserId = async (userId) => {
   // 1. Fetch user base info
   const userRes = await query(
-    'SELECT id, name, email, created_at FROM users WHERE id = $1',
+    'SELECT id, name, username, email, created_at FROM users WHERE id = $1',
     [userId]
   );
   if (userRes.rows.length === 0) return null;
@@ -30,7 +30,7 @@ const getProfileByUserId = async (userId) => {
 
   // 2. Fetch student profile record
   const profileRes = await query(
-    'SELECT id, college_email, college, city, state, country, degree, year_of_study, bio, availability, github_url, linkedin_url, created_at, updated_at FROM student_profiles WHERE user_id = $1',
+    'SELECT id, college_email, college, city, state, country, degree, year_of_study, bio, availability, github_url, linkedin_url, is_completed, onboarding_step, created_at, updated_at FROM student_profiles WHERE user_id = $1',
     [userId]
   );
   const studentProfile = profileRes.rows[0] || null;
@@ -63,16 +63,18 @@ const getProfileByUserId = async (userId) => {
   const verification = verRes.rows[0] || { status: 'UNVERIFIED', method: null, verified_at: null };
 
   const isComplete = Boolean(
+    user.username &&
     studentProfile &&
+    studentProfile.is_completed === true &&
     studentProfile.college &&
-    studentProfile.degree &&
-    studentProfile.year_of_study
+    studentProfile.degree
   );
 
   return {
     user: {
       id: user.id,
       name: user.name,
+      username: user.username,
       email: user.email,
       createdAt: user.created_at,
     },
@@ -93,6 +95,7 @@ const updateStudentProfile = async (userId, data) => {
     await client.query('BEGIN');
 
     const {
+      username,
       college_email,
       college,
       city,
@@ -104,15 +107,34 @@ const updateStudentProfile = async (userId, data) => {
       availability,
       github_url,
       linkedin_url,
+      is_completed = false,
+      onboarding_step = 1,
       skills = [], // Array of skill names or skill objects
       interests = [], // Array of interest IDs or interest objects
     } = data;
 
+    // Optional: Update username if provided
+    if (username && typeof username === 'string') {
+      const { validateUsername, isUsernameAvailable } = require('./authService');
+      const val = validateUsername(username);
+      if (!val.valid) {
+        throw new Error(val.message);
+      }
+      const isAvail = await isUsernameAvailable(val.cleanUsername, userId);
+      if (!isAvail) {
+        throw new Error('Username is already taken by another user.');
+      }
+      await client.query(
+        'UPDATE users SET username = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [val.cleanUsername, userId]
+      );
+    }
+
     // 1. Upsert student_profiles
     const profileUpsertText = `
       INSERT INTO student_profiles (
-        user_id, college_email, college, city, state, country, degree, year_of_study, bio, availability, github_url, linkedin_url
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        user_id, college_email, college, city, state, country, degree, year_of_study, bio, availability, github_url, linkedin_url, is_completed, onboarding_step
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       ON CONFLICT (user_id) DO UPDATE SET
         college_email = COALESCE(EXCLUDED.college_email, student_profiles.college_email),
         college = COALESCE(EXCLUDED.college, student_profiles.college),
@@ -125,6 +147,8 @@ const updateStudentProfile = async (userId, data) => {
         availability = EXCLUDED.availability,
         github_url = EXCLUDED.github_url,
         linkedin_url = EXCLUDED.linkedin_url,
+        is_completed = CASE WHEN EXCLUDED.is_completed = TRUE THEN TRUE ELSE student_profiles.is_completed END,
+        onboarding_step = GREATEST(EXCLUDED.onboarding_step, student_profiles.onboarding_step),
         updated_at = CURRENT_TIMESTAMP
       RETURNING *;
     `;
@@ -142,6 +166,8 @@ const updateStudentProfile = async (userId, data) => {
       availability || '',
       github_url || '',
       linkedin_url || '',
+      is_completed === true,
+      parseInt(onboarding_step, 10) || 1,
     ]);
 
     // 2. Handle skills update
@@ -226,8 +252,8 @@ const getPublicStudentProfileByUserId = async (userId) => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(userId)) return null;
 
-  // 1. Fetch user base info (id, name ONLY)
-  const userRes = await query('SELECT id, name FROM users WHERE id = $1', [userId]);
+  // 1. Fetch user base info (id, name, username)
+  const userRes = await query('SELECT id, name, username FROM users WHERE id = $1', [userId]);
   if (userRes.rows.length === 0) return null;
   const user = userRes.rows[0];
 
@@ -268,6 +294,7 @@ const getPublicStudentProfileByUserId = async (userId) => {
   return {
     id: user.id,
     name: user.name,
+    username: user.username || null,
     college: p.college || '',
     city: p.city || '',
     state: p.state || '',
@@ -345,6 +372,67 @@ const unlinkCollegeEmail = async (userId) => {
   }
 };
 
+/**
+ * Search users/friends to invite to a Meld
+ */
+const searchUsersForInvite = async (searchQuery, currentUserId, meldId = null) => {
+  const cleanQ = (searchQuery || '').trim();
+  if (!cleanQ) {
+    const defaultQuery = `
+      SELECT u.id, u.name, u.username, u.created_at, sp.college, sp.degree, sp.year_of_study,
+             COALESCE(sv.status, 'UNVERIFIED') AS verification_status,
+             COALESCE(ARRAY_AGG(s.name) FILTER (WHERE s.name IS NOT NULL), '{}') AS skills,
+             ${meldId ? `EXISTS(SELECT 1 FROM meld_members mm WHERE mm.meld_id = $2 AND mm.user_id = u.id) AS is_member,
+             EXISTS(SELECT 1 FROM meld_invitations mi WHERE mi.meld_id = $2 AND mi.invitee_id = u.id AND mi.status = 'PENDING') AS is_invited` : `false AS is_member, false AS is_invited`}
+      FROM users u
+      LEFT JOIN student_profiles sp ON u.id = sp.user_id
+      LEFT JOIN student_verifications sv ON u.id = sv.user_id
+      LEFT JOIN user_skills us ON u.id = us.user_id
+      LEFT JOIN skills s ON us.skill_id = s.id
+      WHERE u.id != $1 AND (u.role IS NULL OR u.role != 'ADMIN')
+      GROUP BY u.id, u.name, u.username, u.created_at, sp.college, sp.degree, sp.year_of_study, sv.status
+      ORDER BY u.created_at DESC
+      LIMIT 10
+    `;
+    const params = meldId ? [currentUserId, meldId] : [currentUserId];
+    const res = await query(defaultQuery, params);
+    return res.rows;
+  }
+
+  const sql = `
+    SELECT u.id, u.name, u.username, u.created_at, sp.college, sp.degree, sp.year_of_study,
+           COALESCE(sv.status, 'UNVERIFIED') AS verification_status,
+           COALESCE(ARRAY_AGG(s.name) FILTER (WHERE s.name IS NOT NULL), '{}') AS skills,
+           ${meldId ? `EXISTS(SELECT 1 FROM meld_members mm WHERE mm.meld_id = $3 AND mm.user_id = u.id) AS is_member,
+           EXISTS(SELECT 1 FROM meld_invitations mi WHERE mi.meld_id = $3 AND mi.invitee_id = u.id AND mi.status = 'PENDING') AS is_invited` : `false AS is_member, false AS is_invited`}
+    FROM users u
+    LEFT JOIN student_profiles sp ON u.id = sp.user_id
+    LEFT JOIN student_verifications sv ON u.id = sv.user_id
+    LEFT JOIN user_skills us ON u.id = us.user_id
+    LEFT JOIN skills s ON us.skill_id = s.id
+    WHERE u.id != $1
+      AND (u.role IS NULL OR u.role != 'ADMIN')
+      AND (
+        LOWER(u.name) LIKE LOWER($2)
+        OR LOWER(COALESCE(u.username, '')) LIKE LOWER($2)
+        OR LOWER(COALESCE(sp.college, '')) LIKE LOWER($2)
+      )
+    GROUP BY u.id, u.name, u.username, u.created_at, sp.college, sp.degree, sp.year_of_study, sv.status
+    ORDER BY
+      CASE
+        WHEN LOWER(COALESCE(u.username, '')) = LOWER(REPLACE($2, '%', '')) THEN 1
+        WHEN LOWER(u.name) = LOWER(REPLACE($2, '%', '')) THEN 2
+        ELSE 3
+      END,
+      u.name ASC
+    LIMIT 10
+  `;
+  const likeParam = `%${cleanQ.replace(/^@/, '')}%`;
+  const params = meldId ? [currentUserId, likeParam, meldId] : [currentUserId, likeParam];
+  const res = await query(sql, params);
+  return res.rows;
+};
+
 module.exports = {
   getAllSkills,
   getAllInterests,
@@ -353,4 +441,5 @@ module.exports = {
   updateStudentProfile,
   linkCollegeEmail,
   unlinkCollegeEmail,
+  searchUsersForInvite,
 };

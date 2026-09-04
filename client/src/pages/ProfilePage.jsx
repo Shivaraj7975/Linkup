@@ -159,8 +159,9 @@ export const ProfilePage = () => {
   const [uniSuggestions, setUniSuggestions] = useState([]);
   const [uniLoading, setUniLoading] = useState(false);
   const [showUniDropdown, setShowUniDropdown] = useState(false);
+  const [collegeSelectedFromApi, setCollegeSelectedFromApi] = useState(true);
   const dropdownRef = useRef(null);
-  const skipSearchRef = useRef(false);
+  const isUserTypingCollegeRef = useRef(false);
 
   // Skill & Interest search / expand limits
   const [skillSearch, setSkillSearch] = useState('');
@@ -265,9 +266,10 @@ export const ProfilePage = () => {
   // Open Edit Modal & load reference data
   const handleOpenEdit = async () => {
     setEditError('');
-    skipSearchRef.current = true;
+    isUserTypingCollegeRef.current = false;
     setShowUniDropdown(false);
     setUniSuggestions([]);
+    setCollegeSelectedFromApi(true);
     setIsEditing(true);
 
     try {
@@ -299,13 +301,9 @@ export const ProfilePage = () => {
     }
   };
 
-  // Debounced ROR v2 University Search inside Edit Modal
+  // Debounced ROR v2 University Search inside Edit Modal (ONLY when user explicitly types)
   useEffect(() => {
-    if (!isEditing) return;
-    if (skipSearchRef.current) {
-      skipSearchRef.current = false;
-      return;
-    }
+    if (!isEditing || !isUserTypingCollegeRef.current) return;
 
     const queryStr = form.college.trim();
     if (queryStr.length < 2) {
@@ -317,7 +315,7 @@ export const ProfilePage = () => {
     const timer = setTimeout(async () => {
       setUniLoading(true);
       const results = await searchUniversities(queryStr);
-      if (!skipSearchRef.current) {
+      if (isUserTypingCollegeRef.current) {
         setUniSuggestions(results);
         setShowUniDropdown(results.length > 0);
       }
@@ -326,6 +324,21 @@ export const ProfilePage = () => {
 
     return () => clearTimeout(timer);
   }, [form.college, isEditing]);
+
+  // Prevent automated browser autofocus on college input when modal opens
+  useEffect(() => {
+    if (isEditing) {
+      setShowUniDropdown(false);
+      setUniSuggestions([]);
+      isUserTypingCollegeRef.current = false;
+      const timer = setTimeout(() => {
+        if (document.activeElement && (document.activeElement.id === 'edit-college-input' || document.activeElement.tagName === 'INPUT')) {
+          document.activeElement.blur();
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isEditing]);
 
   // Click outside listener for uni dropdown
   useEffect(() => {
@@ -339,7 +352,7 @@ export const ProfilePage = () => {
   }, []);
 
   const handleSelectUniversity = (uni) => {
-    skipSearchRef.current = true;
+    isUserTypingCollegeRef.current = false;
     setForm((prev) => ({
       ...prev,
       college: uni.name,
@@ -347,6 +360,7 @@ export const ProfilePage = () => {
       state: uni.state || prev.state || '',
       country: uni.country || prev.country || 'Global',
     }));
+    setCollegeSelectedFromApi(true);
     setUniSuggestions([]);
     setShowUniDropdown(false);
   };
@@ -438,12 +452,12 @@ export const ProfilePage = () => {
     setEditError('');
 
     // Validation
-    if (!form.college.trim()) {
-      setEditError('Please enter your college or university name.');
+    if (!collegeSelectedFromApi || !form.college.trim()) {
+      setEditError('Please search and select your college or university from the verified registry dropdown.');
       return;
     }
     if (!form.degree.trim()) {
-      setEditError('Please enter your degree or major.');
+      setEditError('Please enter your degree or program.');
       return;
     }
     if (!form.year_of_study) {
@@ -554,6 +568,11 @@ export const ProfilePage = () => {
             <div className="user-header-info">
               <div className="user-title-row">
                 <h1>{user?.name}</h1>
+                {(profileData?.user?.username || user?.username) && (
+                  <span className="user-handle-pill" style={{ color: 'var(--accent-primary, #818cf8)', fontWeight: 600, fontSize: '1.05rem', marginLeft: '0.5rem' }}>
+                    @{profileData?.user?.username || user?.username}
+                  </span>
+                )}
                 <span className={`verification-badge ${verification.status?.toLowerCase()}`}>
                   {verification.status === 'VERIFIED' ? (
                     <><CheckCircle2 size={14} /> Verified Student</>
@@ -829,44 +848,50 @@ export const ProfilePage = () => {
         {/* EDIT PROFILE MODAL */}
         {isEditing && (
           <div className="modal-overlay" onClick={() => setIsEditing(false)}>
-            <div className="modal-card edit-profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-card edit-profile-modal" onClick={(e) => e.stopPropagation()} tabIndex={-1}>
               <div className="modal-header">
                 <div className="modal-title-group">
                   <Pencil size={20} color="#6366f1" />
                   <h2>Edit Student Profile</h2>
                 </div>
-                <button onClick={() => setIsEditing(false)} className="modal-close-btn">
-                <X size={20} />
-              </button>
-            </div>
+                <button onClick={() => setIsEditing(false)} className="modal-close-btn" type="button" aria-label="Close modal">
+                  <X size={20} />
+                </button>
+              </div>
 
-            <form onSubmit={handleSaveProfile} className="modal-body auth-form">
-              {editError && <div className="alert alert-error">{editError}</div>}
+              <form onSubmit={handleSaveProfile} className="modal-body auth-form">
+                {editError && <div className="alert alert-error">{editError}</div>}
 
-              {/* College Autocomplete Search */}
-              <div className="form-group">
-                <label htmlFor="edit-college-input">College or University *</label>
-                <div className="input-wrapper icon-left" ref={dropdownRef}>
-                  <Building2 size={18} className="input-left-icon" />
-                  <input
-                    id="edit-college-input"
-                    type="text"
-                    placeholder="Type university name..."
-                    value={form.college}
-                    onChange={(e) => setForm((prev) => ({ ...prev, college: e.target.value }))}
-                    onFocus={() => {
-                      if (uniSuggestions.length > 0 && !skipSearchRef.current) {
-                        setShowUniDropdown(true);
-                      }
-                    }}
-                  />
+                {/* College Autocomplete Search */}
+                <div className="form-group">
+                  <label htmlFor="edit-college-input">College or University *</label>
+                  <div className="input-wrapper icon-left" ref={dropdownRef}>
+                    <Building2 size={18} className="input-left-icon" />
+                    <input
+                      id="edit-college-input"
+                      type="text"
+                      placeholder="Type university name to search verified registry..."
+                      value={form.college}
+                      autoComplete="off"
+                      autoFocus={false}
+                      onChange={(e) => {
+                        isUserTypingCollegeRef.current = true;
+                        setForm((prev) => ({ ...prev, college: e.target.value }));
+                        setCollegeSelectedFromApi(false);
+                      }}
+                      onFocus={() => {
+                        if (isUserTypingCollegeRef.current && uniSuggestions.length > 0 && !collegeSelectedFromApi) {
+                          setShowUniDropdown(true);
+                        }
+                      }}
+                    />
                   {uniLoading && <Loader2 size={18} className="input-icon-btn spin" />}
 
                   {showUniDropdown && uniSuggestions.length > 0 && (
                     <div className="uni-dropdown">
                       <div className="uni-dropdown-header">
                         <span>ROR Registry Matches ({uniSuggestions.length})</span>
-                        <span className="api-attribution">Verified Institutional Registry</span>
+                        <span className="api-attribution">Click to select institution</span>
                       </div>
                       {uniSuggestions.map((uni) => (
                         <div
@@ -887,6 +912,22 @@ export const ProfilePage = () => {
                     </div>
                   )}
                 </div>
+
+                {collegeSelectedFromApi ? (
+                  <div style={{ color: 'var(--accent-teal, #10b981)', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
+                    <CheckCircle2 size={14} />
+                    <span style={{ fontWeight: 500 }}>Verified from Institutional Registry</span>
+                  </div>
+                ) : form.college.trim().length >= 2 ? (
+                  <div style={{ color: '#f59e0b', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
+                    <AlertCircle size={14} />
+                    <span>Please click and select an institution from the suggestions dropdown.</span>
+                  </div>
+                ) : (
+                  <span className="field-hint">
+                    Search research & academic organizations globally. You must click an option from the dropdown to select it.
+                  </span>
+                )}
               </div>
 
               {/* Location Grid (City, State, Country) - Read-only */}

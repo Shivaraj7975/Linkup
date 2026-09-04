@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
-import { getLinkups } from '../services/api';
+import { getLinkups, getMyJoinRequests, cancelJoinRequest } from '../services/api';
 import { MatchResultsModal } from '../components/MatchResultsModal';
 import {
   Rocket,
@@ -11,6 +11,7 @@ import {
   Sparkles,
   ArrowRight,
   Clock,
+  Clock3,
   Layers,
   Settings,
   FolderGit2,
@@ -20,17 +21,24 @@ import {
   Loader2,
   ExternalLink,
   Pencil,
+  Send,
+  Trash2,
+  XCircle,
 } from 'lucide-react';
 
 export const DashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('joined'); // 'joined' | 'created'
+  const [activeTab, setActiveTab] = useState('joined'); // 'joined' | 'created' | 'requests'
   const [createdLinkups, setCreatedLinkups] = useState([]);
   const [joinedLinkups, setJoinedLinkups] = useState([]);
+  const [sentRequests, setSentRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [actionSuccess, setActionSuccess] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [cancellingRequestId, setCancellingRequestId] = useState(null);
   const [matchingLinkup, setMatchingLinkup] = useState(null);
 
   useEffect(() => {
@@ -42,19 +50,42 @@ export const DashboardPage = () => {
     setLoading(true);
     setError('');
     try {
-      // Fetch both created and joined linkups in parallel
-      const [createdRes, joinedRes] = await Promise.all([
+      // Fetch created melds, joined melds, and user's sent requests in parallel
+      const [createdRes, joinedRes, requestsRes] = await Promise.all([
         getLinkups({ creatorId: user.id }),
         getLinkups({ memberUserId: user.id }),
+        getMyJoinRequests(),
       ]);
 
       setCreatedLinkups(createdRes.linkups || []);
       setJoinedLinkups(joinedRes.linkups || []);
+      setSentRequests(requestsRes || []);
     } catch (err) {
-      console.error('Failed to load My Linkups:', err);
-      setError(err.message || 'Failed to fetch your Linkups.');
+      console.error('Failed to load My Melds:', err);
+      setError(err.message || 'Failed to fetch your Melds.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleWithdrawRequest = async (e, requestId, meldTitle) => {
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to withdraw your join request for "${meldTitle}"?`)) {
+      return;
+    }
+    try {
+      setCancellingRequestId(requestId);
+      setActionError('');
+      setActionSuccess('');
+      await cancelJoinRequest(requestId);
+      setActionSuccess(`Join request for "${meldTitle}" withdrawn.`);
+      setSentRequests((prev) => prev.filter((r) => r.id !== requestId));
+      setTimeout(() => setActionSuccess(''), 4000);
+    } catch (err) {
+      setActionError(err.message || 'Failed to withdraw join request.');
+      setTimeout(() => setActionError(''), 4000);
+    } finally {
+      setCancellingRequestId(null);
     }
   };
 
@@ -98,39 +129,18 @@ export const DashboardPage = () => {
           </div>
 
           {/* Segmented Options / Tabs */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '0.75rem',
-              marginBottom: '2rem',
-              background: 'rgba(15, 22, 41, 0.6)',
-              padding: '0.4rem',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--glass-border)',
-              width: 'fit-content',
-              maxWidth: '100%',
-            }}
-          >
+          <div className="segmented-tabs-bar">
             <button
               type="button"
               onClick={() => setActiveTab('joined')}
-              className={`btn btn-sm ${activeTab === 'joined' ? 'btn-primary' : 'btn-ghost'}`}
-              style={{
-                borderRadius: 'var(--radius-sm)',
-                padding: '0.6rem 1.25rem',
-                gap: '0.5rem',
-                fontSize: '0.9rem',
-              }}
+              className={`segmented-tab-btn ${activeTab === 'joined' ? 'btn-primary' : 'btn-ghost'}`}
             >
               <Users size={16} />
               <span>Joined Melds</span>
               <span
+                className="segmented-tab-badge"
                 style={{
                   background: activeTab === 'joined' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
-                  padding: '0.1rem 0.5rem',
-                  borderRadius: '999px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
                 }}
               >
                 {joinedLinkups.length}
@@ -140,29 +150,50 @@ export const DashboardPage = () => {
             <button
               type="button"
               onClick={() => setActiveTab('created')}
-              className={`btn btn-sm ${activeTab === 'created' ? 'btn-primary' : 'btn-ghost'}`}
-              style={{
-                borderRadius: 'var(--radius-sm)',
-                padding: '0.6rem 1.25rem',
-                gap: '0.5rem',
-                fontSize: '0.9rem',
-              }}
+              className={`segmented-tab-btn ${activeTab === 'created' ? 'btn-primary' : 'btn-ghost'}`}
             >
               <Rocket size={16} />
               <span>Created Melds</span>
               <span
+                className="segmented-tab-badge"
                 style={{
                   background: activeTab === 'created' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
-                  padding: '0.1rem 0.5rem',
-                  borderRadius: '999px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
                 }}
               >
                 {createdLinkups.length}
               </span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('requests')}
+              className={`segmented-tab-btn ${activeTab === 'requests' ? 'btn-primary' : 'btn-ghost'}`}
+            >
+              <Send size={16} />
+              <span>Requests Sent</span>
+              <span
+                className="segmented-tab-badge"
+                style={{
+                  background: activeTab === 'requests' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+                }}
+              >
+                {sentRequests.length}
+              </span>
+            </button>
           </div>
+
+          {actionSuccess && (
+            <div className="alert alert-success" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <CheckCircle2 size={18} />
+              <span>{actionSuccess}</span>
+            </div>
+          )}
+          {actionError && (
+            <div className="alert alert-error" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <AlertCircle size={18} />
+              <span>{actionError}</span>
+            </div>
+          )}
 
           {/* Tab Content */}
           {loading ? (
@@ -246,7 +277,7 @@ export const DashboardPage = () => {
                 </div>
               )}
             </div>
-          ) : (
+          ) : activeTab === 'created' ? (
             /* CREATED LINKUPS TAB */
             <div>
               {createdLinkups.length === 0 ? (
@@ -333,6 +364,138 @@ export const DashboardPage = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* SENT JOIN REQUESTS TAB */
+            <div>
+              {sentRequests.length === 0 ? (
+                <div className="dash-card text-center" style={{ padding: '3.5rem 1.5rem' }}>
+                  <Send size={48} color="#64748b" style={{ marginBottom: '1rem' }} />
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#fff' }}>
+                    No Join Requests Sent
+                  </h3>
+                  <p style={{ color: 'var(--text-secondary)', maxWidth: '460px', margin: '0 auto 1.5rem', lineHeight: 1.5 }}>
+                    You haven't requested to join any student projects. Browse Discover and apply to join teams that need your skills!
+                  </p>
+                  <Link to="/discover" className="btn btn-primary btn-sm">
+                    <Sparkles size={16} />
+                    <span>Discover Melds</span>
+                  </Link>
+                </div>
+              ) : (
+                <div className="linkups-grid">
+                  {sentRequests.map((req) => {
+                    const meld = req.meld || {};
+                    const isPending = req.status === 'PENDING';
+                    const isAccepted = req.status === 'ACCEPTED';
+                    const isRejected = req.status === 'REJECTED';
+
+                    return (
+                      <div
+                        key={req.id}
+                        className="card glass-card linkup-card interactive-card"
+                        onClick={() => navigate(`/melds/${req.meldId}`)}
+                        style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
+                      >
+                        <div className="card-top-row">
+                          <span className="badge badge-category">{meld.category || 'General'}</span>
+                          {isPending && (
+                            <span className="badge badge-warning" style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                              <Clock3 size={12} /> Pending Approval
+                            </span>
+                          )}
+                          {isAccepted && (
+                            <span className="badge badge-success" style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                              <CheckCircle2 size={12} /> Accepted
+                            </span>
+                          )}
+                          {isRejected && (
+                            <span className="badge badge-error" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                              <XCircle size={12} /> Declined
+                            </span>
+                          )}
+                        </div>
+
+                        <h3 className="linkup-card-title">{meld.title}</h3>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                          Creator: <strong style={{ color: '#fff' }}>{meld.creator?.name}</strong>
+                          {meld.creator?.username && (
+                            <span style={{ color: 'var(--accent-cyan, #22d3ee)', marginLeft: '0.25rem' }}>
+                              @{meld.creator.username}
+                            </span>
+                          )}
+                          {meld.creator?.college && ` • ${meld.creator.college}`}
+                        </div>
+
+                        <p className="linkup-card-desc">
+                          {meld.description?.length > 110 ? `${meld.description.substring(0, 110)}...` : meld.description}
+                        </p>
+
+                        {req.message && (
+                          <div style={{
+                            padding: '0.5rem 0.75rem',
+                            background: 'rgba(0,0,0,0.25)',
+                            borderRadius: 'var(--radius-sm)',
+                            borderLeft: '3px solid #6366f1',
+                            fontSize: '0.8rem',
+                            color: 'var(--text-secondary)',
+                            fontStyle: 'italic',
+                            margin: '0.5rem 0',
+                          }}>
+                            "{req.message}"
+                          </div>
+                        )}
+
+                        <div
+                          style={{
+                            display: 'flex',
+                            gap: '0.5rem',
+                            marginTop: 'auto',
+                            paddingTop: '0.85rem',
+                            borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ flex: 1, justifyContent: 'center', gap: '0.35rem' }}
+                            onClick={(e) => { e.stopPropagation(); navigate(`/melds/${req.meldId}`); }}
+                          >
+                            <ExternalLink size={14} />
+                            <span>View MELD</span>
+                          </button>
+
+                          {isPending && (
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm"
+                              style={{ color: '#ef4444', gap: '0.35rem' }}
+                              onClick={(e) => handleWithdrawRequest(e, req.id, meld.title || 'MELD')}
+                              disabled={cancellingRequestId === req.id}
+                            >
+                              <Trash2 size={14} />
+                              <span>{cancellingRequestId === req.id ? '...' : 'Withdraw'}</span>
+                            </button>
+                          )}
+
+                          {isAccepted && (
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm"
+                              style={{ gap: '0.35rem' }}
+                              onClick={(e) => { e.stopPropagation(); navigate(`/melds/${req.meldId}`); }}
+                            >
+                              <Users size={14} />
+                              <span>Team Chat</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

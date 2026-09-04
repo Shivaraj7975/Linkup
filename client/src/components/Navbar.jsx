@@ -18,11 +18,11 @@ export const Navbar = () => {
   const location = useLocation();
 
   const navItems = [
-    { label: 'Discover', path: '/discover', icon: Compass },
-    { label: 'My Melds', path: '/my-melds', icon: FolderGit2 },
-    { label: 'Create Meld', path: '/create-meld', icon: PlusCircle },
-    { label: 'Invitations', path: '/invitations', icon: Mail },
-    { label: 'Profile', path: '/profile', icon: User },
+    { label: 'Discover', shortLabel: 'Discover', path: '/discover', icon: Compass },
+    { label: 'My Melds', shortLabel: 'My Melds', path: '/my-melds', icon: FolderGit2 },
+    { label: 'Create Meld', shortLabel: 'Create', path: '/create-meld', icon: PlusCircle },
+    { label: 'Invitations & Requests', shortLabel: 'Requests', path: '/invitations', icon: Mail },
+    { label: 'Profile', shortLabel: 'Profile', path: '/profile', icon: User },
   ];
 
   const isProfileIncomplete = isAuthenticated && user?.isProfileComplete === false;
@@ -185,7 +185,7 @@ export const Navbar = () => {
                 <div className="nav-icon-wrapper">
                   <Icon size={20} />
                 </div>
-                <span className="nav-label">{item.label}</span>
+                <span className="nav-label">{item.shortLabel || item.label}</span>
               </Link>
             );
           })}
