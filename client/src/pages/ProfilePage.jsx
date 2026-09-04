@@ -569,7 +569,7 @@ export const ProfilePage = () => {
               <div className="user-title-row">
                 <h1>{user?.name}</h1>
                 {(profileData?.user?.username || user?.username) && (
-                  <span className="user-handle-pill" style={{ color: 'var(--accent-primary, #818cf8)', fontWeight: 600, fontSize: '1.05rem', marginLeft: '0.5rem' }}>
+                  <span className="user-handle-pill" style={{ color: 'var(--accent-primary, #3b82f6)', fontWeight: 600, fontSize: '1.05rem', marginLeft: '0.5rem' }}>
                     @{profileData?.user?.username || user?.username}
                   </span>
                 )}
@@ -674,7 +674,7 @@ export const ProfilePage = () => {
                 )}
 
                 {p.college_email && verification.status === 'VERIFIED' ? (
-                  <div className="flex-center-between p-sm rounded-lg" style={{ background: 'rgba(34, 211, 238, 0.08)', border: '1px solid rgba(34, 211, 238, 0.2)', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  <div className="flex-center-between p-sm rounded-lg" style={{ background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.15)', flexWrap: 'wrap', gap: '0.75rem' }}>
                     <div className="flex-center gap-sm">
                       <GraduationCap size={20} className="text-cyan" />
                       <div>
@@ -694,7 +694,7 @@ export const ProfilePage = () => {
                     </button>
                   </div>
                 ) : (
-                  <div className="p-md rounded-lg" style={{ background: 'rgba(99, 102, 241, 0.04)', border: '1px solid rgba(99, 102, 241, 0.15)', marginTop: '0.5rem' }}>
+                  <div className="p-md rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.08)', marginTop: '0.5rem' }}>
                     <p className="text-sm text-muted" style={{ marginBottom: '1rem', lineHeight: '1.5' }}>
                       Link your institutional email to verify your student status and receive top priority in AI candidate matching!
                     </p>
@@ -756,7 +756,7 @@ export const ProfilePage = () => {
               {/* ABOUT CARD */}
               <div className="dash-card">
                 <div className="dash-card-header">
-                  <BookOpen size={18} color="#6366f1" />
+                  <BookOpen size={18} color="#3b82f6" />
                   <h2>About</h2>
                 </div>
                 <p className="bio-text">{p.bio || 'No bio provided yet.'}</p>
@@ -765,7 +765,7 @@ export const ProfilePage = () => {
               {/* SKILLS CARD */}
               <div className="dash-card">
                 <div className="dash-card-header">
-                  <Code2 size={18} color="#a855f7" />
+                  <Code2 size={18} color="#3b82f6" />
                   <h2>Skills ({skills.length})</h2>
                 </div>
                 <div className="pill-tags">
@@ -784,7 +784,7 @@ export const ProfilePage = () => {
               {/* INTERESTS CARD */}
               <div className="dash-card">
                 <div className="dash-card-header">
-                  <Sparkles size={18} color="#06b6d4" />
+                  <Sparkles size={18} color="#3b82f6" />
                   <h2>Areas of Interest ({interests.length})</h2>
                 </div>
                 <div className="pill-tags">
@@ -819,7 +819,7 @@ export const ProfilePage = () => {
               {/* LINKS CARD */}
               <div className="dash-card">
                 <div className="dash-card-header">
-                  <Globe size={18} color="#6366f1" />
+                  <Globe size={18} color="#3b82f6" />
                   <h2>Portfolio & Links</h2>
                 </div>
                 <div className="links-list-group">
@@ -851,7 +851,7 @@ export const ProfilePage = () => {
             <div className="modal-card edit-profile-modal" onClick={(e) => e.stopPropagation()} tabIndex={-1}>
               <div className="modal-header">
                 <div className="modal-title-group">
-                  <Pencil size={20} color="#6366f1" />
+                  <Pencil size={20} color="#3b82f6" />
                   <h2>Edit Student Profile</h2>
                 </div>
                 <button onClick={() => setIsEditing(false)} className="modal-close-btn" type="button" aria-label="Close modal">
@@ -1092,7 +1092,7 @@ export const ProfilePage = () => {
                 <div className="pill-grid">
                   {searchResultsSkills.length === 0 ? (
                     <p className="no-pills-text">
-                      No matching skill found in database for "{skillSearch}". Click <strong style={{ color: 'var(--accent-primary, #818cf8)' }}>Add</strong> above or press Enter to create it.
+                      No matching skill found in database for "{skillSearch}". Click <strong style={{ color: 'var(--accent-primary, #3b82f6)' }}>Add</strong> above or press Enter to create it.
                     </p>
                   ) : (
                     <>
@@ -1209,7 +1209,7 @@ export const ProfilePage = () => {
                 <div className="pill-grid">
                   {searchResultsInterests.length === 0 ? (
                     <p className="no-pills-text">
-                      No matching interest domain found for "{interestSearch}". Click <strong style={{ color: 'var(--accent-primary, #818cf8)' }}>Add</strong> above or press Enter to create it.
+                      No matching interest domain found for "{interestSearch}". Click <strong style={{ color: 'var(--accent-primary, #3b82f6)' }}>Add</strong> above or press Enter to create it.
                     </p>
                   ) : (
                     searchResultsInterests.map((interest) => {

@@ -222,7 +222,7 @@ export const AdminPage = () => {
           {/* STATS METRICS ROW */}
           <div className="landing-stats-row" style={{ marginTop: '2rem' }}>
             <div className="landing-stat-item">
-              <Users size={28} color="#6366f1" />
+              <Users size={28} color="#3b82f6" />
               <div>
                 <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#fff' }}>
                   {statsLoading ? '...' : stats?.totalUsers || 0}
@@ -232,7 +232,7 @@ export const AdminPage = () => {
             </div>
 
             <div className="landing-stat-item">
-              <FolderGit2 size={28} color="#a855f7" />
+              <FolderGit2 size={28} color="#3b82f6" />
               <div>
                 <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#fff' }}>
                   {statsLoading ? '...' : `${stats?.openMelds || 0} / ${stats?.totalMelds || 0}`}
@@ -515,13 +515,13 @@ export const AdminPage = () => {
                               padding: '0.2rem 0.55rem',
                               fontSize: '0.75rem',
                               fontWeight: 700,
-                              color: u.role === 'ADMIN' ? '#f43f5e' : '#818cf8',
+                              color: u.role === 'ADMIN' ? '#f43f5e' : '#60a5fa',
                               borderColor: u.role === 'ADMIN' ? 'rgba(244, 63, 94, 0.4)' : 'var(--glass-border)',
                               gap: '0.25rem',
                             }}
                             title="Click to toggle user role"
                           >
-                            {u.role === 'ADMIN' ? <ShieldAlert size={13} color="#f43f5e" /> : <User size={13} color="#818cf8" />}
+                            {u.role === 'ADMIN' ? <ShieldAlert size={13} color="#f43f5e" /> : <User size={13} color="#60a5fa" />}
                             <span>{u.role}</span>
                           </button>
                         </td>
@@ -565,7 +565,7 @@ export const AdminPage = () => {
           <div className="card glass-card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
             <div style={{ padding: '1rem' }}>
               <div className="badge badge-accent margin-bottom-xs" style={{ display: 'inline-flex', gap: '0.35rem' }}>
-                <Cpu size={14} color="#a855f7" />
+                <Cpu size={14} color="#3b82f6" />
                 <span>AI Candidate Matcher Engine</span>
               </div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', marginBottom: '0.5rem' }}>
@@ -575,11 +575,11 @@ export const AdminPage = () => {
                 The candidate compatibility engine utilizes an automated 4-tier provider stack with seamless failover and cache layer.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div className="pill" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', justifyContent: 'space-between', padding: '0.5rem 0.85rem' }}>
+                <div className="pill" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', justifyContent: 'space-between', padding: '0.5rem 0.85rem' }}>
                   <span>1. Primary AI Provider</span>
                   <strong>Groq (openai/gpt-oss-20b)</strong>
                 </div>
-                <div className="pill" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', justifyContent: 'space-between', padding: '0.5rem 0.85rem' }}>
+                <div className="pill" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#60a5fa', justifyContent: 'space-between', padding: '0.5rem 0.85rem' }}>
                   <span>2. Fallback Tier 1</span>
                   <strong>NVIDIA Llama 3.1 8B</strong>
                 </div>

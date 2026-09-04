@@ -108,7 +108,7 @@ export const InvitationsPage = () => {
         <div className="ambient-glow-2"></div>
         <Navbar />
         <main className="container dashboard-layout center-content" style={{ minHeight: '60vh' }}>
-          <Sparkles size={36} className="spin" color="#6366f1" />
+          <Sparkles size={36} className="spin" color="#3b82f6" />
         </main>
       </div>
     );
@@ -218,8 +218,8 @@ export const InvitationsPage = () => {
         {activeTab === 'received' && (
           receivedInvitations.length === 0 && !error ? (
             <div className="glass-card text-center" style={{ padding: '3.5rem 1.5rem', borderRadius: 'var(--radius-lg)' }}>
-              <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(59, 130, 246, 0.2))', border: '1px solid rgba(99, 102, 241, 0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', boxShadow: '0 0 20px rgba(99, 102, 241, 0.2)' }}>
-                <Mail size={26} color="#818cf8" />
+              <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.2))', border: '1px solid rgba(59, 130, 246, 0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', boxShadow: '0 0 20px rgba(59, 130, 246, 0.2)' }}>
+                <Mail size={26} color="#3b82f6" />
               </div>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.45rem' }}>
                 No Received Invitations
@@ -414,7 +414,7 @@ export const InvitationsPage = () => {
                             padding: '0.65rem 0.85rem',
                             background: 'rgba(0, 0, 0, 0.25)',
                             borderRadius: 'var(--radius-sm)',
-                            borderLeft: '3px solid #6366f1',
+                            borderLeft: '3px solid #3b82f6',
                             fontSize: '0.82rem',
                             color: 'var(--text-secondary)',
                             fontStyle: 'italic',
@@ -482,10 +482,10 @@ export const InvitationsPage = () => {
                 justifyContent: 'space-between',
                 flexWrap: 'wrap',
                 gap: '0.85rem',
-                background: 'linear-gradient(135deg, rgba(30, 27, 75, 0.55) 0%, rgba(15, 23, 42, 0.75) 100%)',
-                border: '1px solid rgba(139, 92, 246, 0.35)',
+                background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.2) 0%, rgba(15, 23, 42, 0.75) 100%)',
+                border: '1px solid rgba(59, 130, 246, 0.25)',
                 borderRadius: 'var(--radius-md)',
-                boxShadow: '0 4px 20px rgba(99, 102, 241, 0.15)',
+                boxShadow: '0 4px 20px rgba(59, 130, 246, 0.15)',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -494,12 +494,12 @@ export const InvitationsPage = () => {
                     width: '38px',
                     height: '38px',
                     borderRadius: '10px',
-                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                    background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: '#fff',
-                    boxShadow: '0 2px 10px rgba(99, 102, 241, 0.4)',
+                    boxShadow: '0 2px 10px rgba(59, 130, 246, 0.4)',
                     flexShrink: 0,
                   }}
                 >
@@ -526,7 +526,7 @@ export const InvitationsPage = () => {
                 className="glass-card text-center"
                 style={{
                   padding: '3.5rem 1.5rem',
-                  border: '1px dashed rgba(139, 92, 246, 0.35)',
+                  border: '1px dashed rgba(59, 130, 246, 0.25)',
                   borderRadius: 'var(--radius-lg)',
                 }}
               >
@@ -535,13 +535,13 @@ export const InvitationsPage = () => {
                     width: '64px',
                     height: '64px',
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.25))',
-                    border: '1px solid rgba(167, 139, 250, 0.4)',
+                    background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(59, 130, 246, 0.15))',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     margin: '0 auto 1.25rem',
-                    boxShadow: '0 0 24px rgba(99, 102, 241, 0.25)',
+                    boxShadow: '0 0 24px rgba(59, 130, 246, 0.25)',
                   }}
                 >
                   <UserPlus size={28} color="#c4b5fd" />
@@ -572,7 +572,7 @@ export const InvitationsPage = () => {
                     key={inv.invitation_id}
                     className="request-item-card sent-invite-card"
                     style={{
-                      border: '1px solid rgba(139, 92, 246, 0.28)',
+                      border: '1px solid rgba(59, 130, 246, 0.2)',
                       borderRadius: 'var(--radius-md)',
                       padding: '1.25rem',
                       background: 'rgba(15, 22, 41, 0.65)',
@@ -586,7 +586,7 @@ export const InvitationsPage = () => {
                         <div
                           className="applicant-avatar"
                           style={{
-                            background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+                            background: 'linear-gradient(135deg, #2563eb, #38bdf8)',
                             width: '42px',
                             height: '42px',
                             fontSize: '1rem',
@@ -630,7 +630,7 @@ export const InvitationsPage = () => {
                         padding: '0.75rem',
                         background: 'rgba(0,0,0,0.25)',
                         borderRadius: 'var(--radius-sm)',
-                        borderLeft: '3px solid #8b5cf6',
+                        borderLeft: '3px solid #3b82f6',
                       }}
                     >
                       <div

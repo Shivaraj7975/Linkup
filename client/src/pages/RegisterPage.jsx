@@ -353,7 +353,7 @@ export const RegisterPage = () => {
               </div>
 
               {form.collegeEmail && form.collegeEmail.trim() && (
-                <div className="form-group card glass-card p-md margin-bottom-md" style={{ background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                <div className="form-group card glass-card p-md margin-bottom-md" style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
                   <label htmlFor="college-otp" className="flex-center-between">
                     <span className="flex-center gap-xs font-semibold text-primary">
                       <GraduationCap size={16} /> College Email OTP

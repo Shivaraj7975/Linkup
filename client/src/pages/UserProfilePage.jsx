@@ -60,7 +60,7 @@ export const UserProfilePage = () => {
 
           {loading ? (
             <div className="page-loader" style={{ padding: '4rem 0', textAlign: 'center' }}>
-              <Loader2 size={40} className="spin" color="#6366f1" style={{ margin: '0 auto 1rem auto' }} />
+              <Loader2 size={40} className="spin" color="#3b82f6" style={{ margin: '0 auto 1rem auto' }} />
               <p style={{ color: 'var(--text-secondary)' }}>Loading candidate user profile...</p>
             </div>
           ) : error ? (
@@ -73,7 +73,7 @@ export const UserProfilePage = () => {
               {/* Header Banner */}
               <div className="dash-card profile-header-card" style={{ marginBottom: '1.5rem', padding: '2rem' }}>
               <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                <div className="user-avatar-large" style={{ width: '72px', height: '72px', fontSize: '2rem', background: 'linear-gradient(135deg, #6366f1, #a855f7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>
+                <div className="user-avatar-large" style={{ width: '72px', height: '72px', fontSize: '2rem', background: 'linear-gradient(135deg, #2563eb, #38bdf8)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>
                   {profile.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
 
@@ -81,7 +81,7 @@ export const UserProfilePage = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                     <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>{profile.name}</h1>
                     {profile.username && (
-                      <span className="user-handle-pill" style={{ color: 'var(--accent-primary, #818cf8)', fontWeight: 600, fontSize: '1.05rem' }}>
+                      <span className="user-handle-pill" style={{ color: 'var(--accent-primary, #3b82f6)', fontWeight: 600, fontSize: '1.05rem' }}>
                         @{profile.username}
                       </span>
                     )}
@@ -95,7 +95,7 @@ export const UserProfilePage = () => {
                   </div>
 
                   <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', color: 'var(--text-secondary)', fontSize: '0.95rem', margin: '0 0 1rem 0' }}>
-                    <GraduationCap size={16} color="#6366f1" />
+                    <GraduationCap size={16} color="#3b82f6" />
                     <span>{profile.degree || 'Student'}</span>
                     <span>•</span>
                     <span>{profile.college || 'University'}</span>
@@ -135,7 +135,7 @@ export const UserProfilePage = () => {
             {/* About / Bio */}
             <div className="dash-card" style={{ marginBottom: '1.5rem', padding: '1.5rem' }}>
               <div className="dash-card-header" style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <BookOpen size={18} color="#6366f1" />
+                <BookOpen size={18} color="#3b82f6" />
                 <h3 style={{ fontSize: '1.1rem', margin: 0 }}>About</h3>
               </div>
               <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0, fontSize: '0.95rem' }}>
@@ -158,7 +158,7 @@ export const UserProfilePage = () => {
             {/* Skills */}
             <div className="dash-card" style={{ marginBottom: '1.5rem', padding: '1.5rem' }}>
               <div className="dash-card-header" style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Code2 size={18} color="#a855f7" />
+                <Code2 size={18} color="#3b82f6" />
                 <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Skills & Expertise ({(profile.skills || []).length})</h3>
               </div>
               <div className="pill-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -177,7 +177,7 @@ export const UserProfilePage = () => {
             {/* Interests */}
             <div className="dash-card" style={{ padding: '1.5rem' }}>
               <div className="dash-card-header" style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Sparkles size={18} color="#06b6d4" />
+                <Sparkles size={18} color="#3b82f6" />
                 <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Areas of Interest ({(profile.interests || []).length})</h3>
               </div>
               <div className="pill-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>

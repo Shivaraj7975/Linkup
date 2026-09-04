@@ -979,7 +979,7 @@ export const OnboardingPage = () => {
                   <div className="pill-grid">
                     {searchResultsSkills.length === 0 ? (
                       <p className="no-pills-text">
-                        No matching skill found in database for "{skillSearch}". Click <strong style={{ color: 'var(--accent-primary, #818cf8)' }}>Add</strong> above or press Enter to create it.
+                        No matching skill found in database for "{skillSearch}". Click <strong style={{ color: 'var(--accent-primary, #3b82f6)' }}>Add</strong> above or press Enter to create it.
                       </p>
                     ) : (
                       <>
@@ -1120,7 +1120,7 @@ export const OnboardingPage = () => {
                   <div className="pill-grid grid-lg">
                     {searchResultsInterests.length === 0 ? (
                       <p className="no-pills-text">
-                        No matching interest domain found for "{interestSearch}". Click <strong style={{ color: 'var(--accent-primary, #818cf8)' }}>Add</strong> above or press Enter to create it.
+                        No matching interest domain found for "{interestSearch}". Click <strong style={{ color: 'var(--accent-primary, #3b82f6)' }}>Add</strong> above or press Enter to create it.
                       </p>
                     ) : (
                       <>

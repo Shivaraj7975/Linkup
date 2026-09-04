@@ -46,7 +46,7 @@ export const PublicProfileModal = ({ userId, onClose }) => {
       <div className="modal-card edit-profile-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '640px' }}>
         <div className="modal-header">
           <div className="modal-title-group">
-            <GraduationCap size={20} color="#6366f1" />
+            <GraduationCap size={20} color="#3b82f6" />
             <h2>Student Candidate Profile</h2>
           </div>
           <button onClick={onClose} className="modal-close-btn">
@@ -57,7 +57,7 @@ export const PublicProfileModal = ({ userId, onClose }) => {
         <div className="modal-body auth-form">
           {loading ? (
             <div className="page-loader" style={{ padding: '3rem 0' }}>
-              <Loader2 size={32} className="spin" color="#6366f1" />
+              <Loader2 size={32} className="spin" color="#3b82f6" />
               <p>Loading candidate profile...</p>
             </div>
           ) : error ? (
@@ -74,7 +74,7 @@ export const PublicProfileModal = ({ userId, onClose }) => {
                   <div className="user-title-row">
                     <h3 style={{ fontSize: '1.35rem', fontWeight: 700 }}>{profile.name}</h3>
                     {profile.username && (
-                      <span className="user-handle-pill" style={{ color: 'var(--accent-primary, #818cf8)', fontWeight: 600, fontSize: '0.95rem' }}>
+                      <span className="user-handle-pill" style={{ color: 'var(--accent-primary, #3b82f6)', fontWeight: 600, fontSize: '0.95rem' }}>
                         @{profile.username}
                       </span>
                     )}
@@ -129,7 +129,7 @@ export const PublicProfileModal = ({ userId, onClose }) => {
               {/* Bio */}
               <div className="dash-card" style={{ marginBottom: '1rem' }}>
                 <div className="dash-card-header">
-                  <BookOpen size={16} color="#6366f1" />
+                  <BookOpen size={16} color="#3b82f6" />
                   <h4 style={{ fontSize: '1rem' }}>About</h4>
                 </div>
                 <p className="bio-text" style={{ fontSize: '0.9rem' }}>
@@ -152,7 +152,7 @@ export const PublicProfileModal = ({ userId, onClose }) => {
               {/* Skills */}
               <div className="dash-card" style={{ marginBottom: '1rem' }}>
                 <div className="dash-card-header">
-                  <Code2 size={16} color="#a855f7" />
+                  <Code2 size={16} color="#3b82f6" />
                   <h4 style={{ fontSize: '1rem' }}>Skills ({(profile.skills || []).length})</h4>
                 </div>
                 <div className="pill-tags">
@@ -171,7 +171,7 @@ export const PublicProfileModal = ({ userId, onClose }) => {
               {/* Interests */}
               <div className="dash-card">
                 <div className="dash-card-header">
-                  <Sparkles size={16} color="#06b6d4" />
+                  <Sparkles size={16} color="#3b82f6" />
                   <h4 style={{ fontSize: '1rem' }}>Areas of Interest ({(profile.interests || []).length})</h4>
                 </div>
                 <div className="pill-tags">

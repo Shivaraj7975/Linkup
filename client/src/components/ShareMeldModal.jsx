@@ -73,7 +73,7 @@ export const ShareMeldModal = ({ meld, onClose }) => {
       >
         <div className="modal-header">
           <div className="modal-title-group">
-            <Share2 size={20} color="#6366f1" />
+            <Share2 size={20} color="#3b82f6" />
             <h2>Share MELD</h2>
           </div>
           <button onClick={onClose} className="modal-close-btn" type="button" aria-label="Close modal">
@@ -247,9 +247,9 @@ export const ShareMeldModal = ({ meld, onClose }) => {
                 href={emailUrl}
                 className="btn btn-ghost btn-sm"
                 style={{
-                  background: 'rgba(99, 102, 241, 0.1)',
-                  color: '#a5b4fc',
-                  border: '1px solid rgba(99, 102, 241, 0.25)',
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  color: '#93c5fd',
+                  border: '1px solid rgba(59, 130, 246, 0.25)',
                   justifyContent: 'center',
                   gap: '0.45rem',
                   padding: '0.55rem',
@@ -265,9 +265,9 @@ export const ShareMeldModal = ({ meld, onClose }) => {
                   className="btn btn-ghost btn-sm"
                   onClick={handleNativeShare}
                   style={{
-                    background: 'rgba(236, 72, 153, 0.1)',
-                    color: '#ec4899',
-                    border: '1px solid rgba(236, 72, 153, 0.25)',
+                    background: 'rgba(59, 130, 246, 0.1)',
+                    color: '#3b82f6',
+                    border: '1px solid rgba(59, 130, 246, 0.25)',
                     justifyContent: 'center',
                     gap: '0.45rem',
                     padding: '0.55rem',

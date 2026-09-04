@@ -23,7 +23,7 @@ body {
   background: var(--gradient-glow);
 }
 
-/* ===== Background Ambient Glows (GPU Accelerated) ===== */
+/* ===== Background Ambient Glows (Subtle Deep Blue) ===== */
 .ambient-glow-1 {
   position: fixed;
   top: -150px;
@@ -31,8 +31,8 @@ body {
   transform: translate3d(-50%, 0, 0);
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.06) 40%, transparent 70%);
-  filter: blur(60px);
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.07) 0%, rgba(37, 99, 235, 0.03) 40%, transparent 70%);
+  filter: blur(70px);
   pointer-events: none;
   z-index: 0;
   will-change: transform;
@@ -47,8 +47,8 @@ body {
   transform: translate3d(0, 0, 0);
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.08) 0%, transparent 70%);
-  filter: blur(60px);
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.04) 0%, transparent 70%);
+  filter: blur(70px);
   pointer-events: none;
   z-index: 0;
   will-change: transform;
@@ -66,9 +66,7 @@ body {
   z-index: 1;
 }
 
-
 /* ===== PAGE LOADER & KEYFRAME ANIMATIONS ===== */
-/* ===== Page Loader ===== */
 .page-loader {
   display: flex;
   flex-direction: column;
@@ -88,13 +86,12 @@ body {
   animation: spin 0.8s linear infinite;
 }
 
-/* ===== Animations ===== */
+/* ===== Keyframe Animations ===== */
 @keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translateY(20px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -106,7 +103,6 @@ body {
     opacity: 0;
     transform: translateY(-20px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -122,4 +118,3 @@ body {
 .spin {
   animation: spin 0.8s linear infinite;
 }
-

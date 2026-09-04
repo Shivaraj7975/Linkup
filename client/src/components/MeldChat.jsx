@@ -238,7 +238,7 @@ export const MeldChat = ({ meldId, currentUser }) => {
                 <div style={{
                   padding: '0.6rem 1rem',
                   borderRadius: 'var(--radius-md, 8px)',
-                  backgroundColor: isMe ? 'var(--accent-primary, #6366f1)' : 'var(--bg-card-hover, rgba(255,255,255,0.05))',
+                  backgroundColor: isMe ? 'var(--accent-primary, #3b82f6)' : 'var(--bg-card-hover, rgba(255,255,255,0.05))',
                   color: isMe ? '#fff' : 'var(--text-primary)',
                   borderBottomRightRadius: isMe ? '0' : 'var(--radius-md, 8px)',
                   borderBottomLeftRadius: !isMe ? '0' : 'var(--radius-md, 8px)',

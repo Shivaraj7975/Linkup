@@ -112,7 +112,7 @@ export const DashboardPage = () => {
           >
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
-                <FolderGit2 size={24} color="#6366f1" />
+                <FolderGit2 size={24} color="#3b82f6" />
                 <h1 style={{ fontSize: '1.85rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                   My Melds
                 </h1>
@@ -198,7 +198,7 @@ export const DashboardPage = () => {
           {/* Tab Content */}
           {loading ? (
             <div className="page-loader" style={{ padding: '4rem 0', minHeight: 'auto' }}>
-              <Loader2 size={36} className="spin" color="#6366f1" style={{ margin: '0 auto 1rem auto' }} />
+              <Loader2 size={36} className="spin" color="#3b82f6" style={{ margin: '0 auto 1rem auto' }} />
               <p style={{ color: 'var(--text-secondary)' }}>Loading your Melds...</p>
             </div>
           ) : error ? (
@@ -438,7 +438,7 @@ export const DashboardPage = () => {
                             padding: '0.5rem 0.75rem',
                             background: 'rgba(0,0,0,0.25)',
                             borderRadius: 'var(--radius-sm)',
-                            borderLeft: '3px solid #6366f1',
+                            borderLeft: '3px solid #3b82f6',
                             fontSize: '0.8rem',
                             color: 'var(--text-secondary)',
                             fontStyle: 'italic',

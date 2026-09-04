@@ -268,7 +268,7 @@ export const MeldDetailsPage = () => {
                   backgroundColor: 'var(--bg-card, rgba(30, 41, 59, 0.5))'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <MessageSquare size={18} style={{ color: 'var(--accent-primary, #6366f1)' }} />
+                    <MessageSquare size={18} style={{ color: 'var(--accent-primary, #3b82f6)' }} />
                     <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Team Discussion</h3>
                   </div>
                   <span className="badge badge-status status-closed" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}>
@@ -285,20 +285,20 @@ export const MeldDetailsPage = () => {
                   justifyContent: 'center',
                   padding: '2.5rem 1.5rem',
                   textAlign: 'center',
-                  background: 'radial-gradient(ellipse at center, rgba(99, 102, 241, 0.06) 0%, transparent 70%)'
+                  background: 'radial-gradient(ellipse at center, rgba(59, 130, 246, 0.06) 0%, transparent 70%)'
                 }}>
                   <div style={{
                     width: '64px',
                     height: '64px',
                     borderRadius: '50%',
-                    backgroundColor: 'rgba(99, 102, 241, 0.12)',
-                    border: '1px solid rgba(99, 102, 241, 0.25)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                    border: '1px solid rgba(59, 130, 246, 0.25)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'var(--accent-primary, #818cf8)',
+                    color: 'var(--accent-primary, #60a5fa)',
                     marginBottom: '1.25rem',
-                    boxShadow: '0 0 24px rgba(99, 102, 241, 0.15)'
+                    boxShadow: '0 0 24px rgba(59, 130, 246, 0.15)'
                   }}>
                     <Lock size={28} />
                   </div>
@@ -381,7 +381,7 @@ export const MeldDetailsPage = () => {
                         type="button"
                         className="btn btn-primary btn-lg"
                         onClick={() => setShowJoinModal(true)}
-                        style={{ gap: '0.5rem', padding: '0.75rem 1.75rem', boxShadow: '0 4px 16px rgba(99, 102, 241, 0.4)' }}
+                        style={{ gap: '0.5rem', padding: '0.75rem 1.75rem', boxShadow: '0 4px 16px rgba(59, 130, 246, 0.4)' }}
                       >
                         <UserPlus size={18} />
                         <span>Join MELD to Involve in Text</span>

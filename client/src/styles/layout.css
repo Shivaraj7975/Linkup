@@ -41,7 +41,7 @@
   align-items: center;
   justify-content: center;
   color: #fff;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, );
 }
 
 .nav-actions {
@@ -131,7 +131,7 @@
   top: 0;
   width: 32px;
   height: 3px;
-  background: linear-gradient(90deg, #6366f1, #22d3ee);
+  background: linear-gradient(90deg, #2563eb, #38bdf8);
   border-radius: 0 0 4px 4px;
 }
 
@@ -168,7 +168,7 @@
   font-size: 2rem;
   font-weight: 800;
   color: #fff;
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, );
   flex-shrink: 0;
 }
 
@@ -237,7 +237,7 @@
   gap: 0.4rem;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #a5b4fc;
+  color: #93c5fd;
   text-decoration: none;
   transition: color 0.2s;
   word-break: break-word;
@@ -277,8 +277,8 @@
 
 .dash-card:hover {
   transform: translateY(-1px);
-  border-color: rgba(99, 102, 241, 0.3);
-  box-shadow: 0 4px 20px -5px rgba(99, 102, 241, 0.15);
+  border-color: rgba(59, 130, 246, );
+  box-shadow: 0 4px 20px -5px rgba(59, 130, 246, );
 }
 
 .dash-card-header {

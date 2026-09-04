@@ -108,7 +108,7 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
         {/* Header */}
         <div className="modal-header">
           <div className="modal-title-group">
-            <UserPlus size={20} color="#6366f1" />
+            <UserPlus size={20} color="#3b82f6" />
             <h2>Invite Friends to MELD</h2>
           </div>
           <button onClick={onClose} className="modal-close-btn" type="button" aria-label="Close modal">
@@ -199,7 +199,7 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
                           width: '38px',
                           height: '38px',
                           borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #6366f1, #22d3ee)',
+                          background: 'linear-gradient(135deg, #2563eb, #38bdf8)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -251,7 +251,7 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
                             ✓ In Team
                           </span>
                         ) : isAlreadyInvited ? (
-                          <span className="pill pill-info pill-xs" style={{ fontSize: '0.75rem', padding: '0.3rem 0.65rem', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc' }}>
+                          <span className="pill pill-info pill-xs" style={{ fontSize: '0.75rem', padding: '0.3rem 0.65rem', background: 'rgba(59, 130, 246, 0.15)', color: '#93c5fd' }}>
                             ✓ Invited
                           </span>
                         ) : (
@@ -286,8 +286,8 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
           {/* Section 2: Direct Invite Link */}
           <div style={{
             padding: '1rem',
-            background: 'rgba(99, 102, 241, 0.05)',
-            border: '1px solid rgba(99, 102, 241, 0.15)',
+            background: 'rgba(59, 130, 246, 0.05)',
+            border: '1px solid rgba(59, 130, 246, 0.15)',
             borderRadius: 'var(--radius-md)',
           }}>
             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>

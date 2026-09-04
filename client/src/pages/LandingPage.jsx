@@ -89,19 +89,19 @@ export const LandingPage = () => {
 
           {/* INLINE TECH & ROLE BADGES STRIP */}
           <div className="hero-tech-strip" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
-            <span className="tech-pill"><Gamepad2 size={14} color="#a855f7" /> Gaming & Esports</span>
+            <span className="tech-pill"><Gamepad2 size={14} color="#3b82f6" /> Gaming & Esports</span>
             <span className="tech-pill"><Plane size={14} color="#f59e0b" /> Trips & Travel</span>
             <span className="tech-pill"><Trophy size={14} color="#10b981" /> Sports & Fitness</span>
             <span className="tech-pill"><PartyPopper size={14} color="#3b82f6" /> Events & Hangouts</span>
-            <span className="tech-pill"><Music size={14} color="#ec4899" /> Music & Creative</span>
-            <span className="tech-pill"><Code2 size={14} color="#818cf8" /> Dev Projects</span>
+            <span className="tech-pill"><Music size={14} color="#3b82f6" /> Music & Creative</span>
+            <span className="tech-pill"><Code2 size={14} color="#3b82f6" /> Dev Projects</span>
             <span className="tech-pill"><UserCheck size={14} color="#34d399" /> Verified Students</span>
           </div>
 
           {/* CLEAN DYNAMIC STATS BANNER */}
           <div className="landing-stats-row" style={{ marginTop: '3.5rem' }}>
             <div className="landing-stat-item">
-              <Cpu size={30} color="#a855f7" />
+              <Cpu size={30} color="#3b82f6" />
               <div>
                 <div style={{ fontWeight: 800, fontSize: '1.15rem', color: '#fff' }}>Smart AI Engine</div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Automated Candidate Scoring</div>
@@ -117,7 +117,7 @@ export const LandingPage = () => {
             </div>
 
             <div className="landing-stat-item">
-              <Mail size={30} color="#6366f1" />
+              <Mail size={30} color="#3b82f6" />
               <div>
                 <div style={{ fontWeight: 800, fontSize: '1.15rem', color: '#fff' }}>Direct Invitations</div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Send & Manage Team Invites</div>
@@ -188,7 +188,7 @@ export const LandingPage = () => {
 
           <div className="feature-grid" style={{ maxWidth: '1100px', margin: '0 auto' }}>
             <div className="feature-card">
-              <div className="feature-icon" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }}>
+              <div className="feature-icon" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' }}>
                 <Cpu size={24} />
               </div>
               <h3>Multi-Model AI Matching</h3>
@@ -204,7 +204,7 @@ export const LandingPage = () => {
             </div>
 
             <div className="feature-card">
-              <div className="feature-icon" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
+              <div className="feature-icon" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#3b82f6' }}>
                 <Mail size={24} />
               </div>
               <h3>Direct Team Invitations</h3>
@@ -270,9 +270,9 @@ export const LandingPage = () => {
                 Showcase your skills, university background, and availability. Get discovered by project leads building real-world software, AI tools, and capstone projects.
               </p>
               <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', color: '#cbd5e1', fontSize: '0.95rem' }}>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle2 size={16} color="#818cf8" /> Receive direct invitations in your Invitations hub</li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle2 size={16} color="#818cf8" /> Accept or decline project requests anytime</li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle2 size={16} color="#818cf8" /> Easily leave teams if project goals change</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle2 size={16} color="#3b82f6" /> Receive direct invitations in your Invitations hub</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle2 size={16} color="#3b82f6" /> Accept or decline project requests anytime</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle2 size={16} color="#3b82f6" /> Easily leave teams if project goals change</li>
               </ul>
             </div>
           </div>
@@ -302,7 +302,7 @@ export const LandingPage = () => {
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', margin: 0 }}>
                     {faq.q}
                   </h3>
-                  {openFaq === index ? <ChevronUp size={20} color="#a855f7" /> : <ChevronDown size={20} color="#94a3b8" />}
+                  {openFaq === index ? <ChevronUp size={20} color="#3b82f6" /> : <ChevronDown size={20} color="#94a3b8" />}
                 </div>
                 {openFaq === index && (
                   <p style={{ color: 'var(--text-secondary)', marginTop: '0.75rem', fontSize: '0.95rem', lineHeight: '1.6' }}>
