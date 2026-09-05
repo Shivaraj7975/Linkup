@@ -59,7 +59,7 @@
 
 /* Mobile Top Actions */
 .mobile-top-actions {
-  display: none;
+  display: none !important;
 }
 
 /* Mobile Fixed Bottom Navigation Bar */
