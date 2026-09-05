@@ -403,7 +403,7 @@ export const MeldDetailsPage = () => {
                     <input
                       type="text"
                       className="input"
-                      placeholder="Join this MELD to involve in the text chat..."
+                      placeholder="Join this MELD to participate in team chat..."
                       disabled={true}
                       style={{
                         flex: 1,
@@ -565,6 +565,22 @@ export const MeldDetailsPage = () => {
                       <Sparkles size={18} />
                       <span>Find Team</span>
                     </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setShowInviteModal(true)}
+                    >
+                      <UserPlus size={18} />
+                      <span>Invite</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      onClick={() => setShowShareModal(true)}
+                    >
+                      <Share2 size={18} />
+                      <span>Share</span>
+                    </button>
                     <Link to={`/melds/${id}/manage`} className="btn btn-ghost">
                       <Settings size={18} />
                       <span>Requests</span>
@@ -580,19 +596,30 @@ export const MeldDetailsPage = () => {
                   </div>
                 ) : isMember ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
-                    <div className="badge-banner banner-success" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <div className="badge-banner banner-success" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '0.5rem' }}>
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         <CheckCircle2 size={20} />
                         <span>You are a member of this team!</span>
                       </div>
-                      <button 
-                        className="btn btn-ghost btn-sm"
-                        style={{ color: '#ef4444' }}
-                        onClick={handleLeaveLinkup}
-                        disabled={leaving}
-                      >
-                        <span>{leaving ? 'Leaving...' : 'Leave MELD'}</span>
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-xs"
+                          onClick={() => setShowShareModal(true)}
+                          style={{ gap: '0.3rem' }}
+                        >
+                          <Share2 size={14} />
+                          <span>Share</span>
+                        </button>
+                        <button 
+                          className="btn btn-ghost btn-sm"
+                          style={{ color: '#ef4444' }}
+                          onClick={handleLeaveLinkup}
+                          disabled={leaving}
+                        >
+                          <span>{leaving ? 'Leaving...' : 'Leave MELD'}</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : userJoinRequestStatus === 'PENDING' ? (
@@ -802,7 +829,7 @@ export const MeldDetailsPage = () => {
                     id="joinMessage"
                     className="textarea"
                     rows={4}
-                    placeholder="Hi! I'm really excited about this project. I have experience with React and UI design..."
+                    placeholder="Introduce yourself and share how you'd like to contribute..."
                     value={joinMessage}
                     onChange={(e) => setJoinMessage(e.target.value)}
                     required

@@ -9,7 +9,6 @@ import {
   Linkedin,
   Mail,
   ExternalLink,
-  Sparkles,
 } from 'lucide-react';
 
 export const ShareMeldModal = ({ meld, onClose }) => {
@@ -17,22 +16,24 @@ export const ShareMeldModal = ({ meld, onClose }) => {
 
   if (!meld) return null;
 
+  const meldId = meld.id || meld._id;
   const meldUrl = typeof window !== 'undefined' 
-    ? `${window.location.origin}/melds/${meld.id}`
-    : `/melds/${meld.id}`;
+    ? `${window.location.origin}/melds/${meldId}`
+    : `/melds/${meldId}`;
+  const shareUrl = meldUrl;
 
   const shareTitle = meld.title || 'Join this project on MELD!';
   const shareText = `Check out "${meld.title}" on MELD — The Student Team-Building Platform! Join the crew:`;
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(meldUrl);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
     } catch {
       // Fallback
       const textArea = document.createElement('textarea');
-      textArea.value = meldUrl;
+      textArea.value = shareUrl;
       document.body.appendChild(textArea);
       textArea.select();
       document.execCommand('copy');
@@ -48,7 +49,7 @@ export const ShareMeldModal = ({ meld, onClose }) => {
         await navigator.share({
           title: shareTitle,
           text: shareText,
-          url: meldUrl,
+          url: shareUrl,
         });
       } catch {
         // User cancelled or share failed
@@ -58,11 +59,11 @@ export const ShareMeldModal = ({ meld, onClose }) => {
     }
   };
 
-  const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(`${shareText} ${meldUrl}`)}`;
-  const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(meldUrl)}&text=${encodeURIComponent(shareText)}`;
-  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(meldUrl)}&hashtags=MELD,Project,StudentBuilders`;
-  const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(meldUrl)}`;
-  const emailUrl = `mailto:?subject=${encodeURIComponent(`Invitation to collaborate on ${meld.title}`)}&body=${encodeURIComponent(`Hi,\n\nI'd like to invite you to check out "${meld.title}" on MELD.\n\nProject Link:\n${meldUrl}\n\nLet's build something awesome together!`)}`;
+  const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`;
+  const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}&hashtags=MELD,Project,StudentBuilders`;
+  const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+  const emailUrl = `mailto:?subject=${encodeURIComponent(`Invitation to collaborate on ${meld.title}`)}&body=${encodeURIComponent(`Hi,\n\nI'd like to invite you to check out "${meld.title}" on MELD.\n\nProject Link:\n${shareUrl}\n\nLet's build something awesome together!`)}`;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -73,7 +74,7 @@ export const ShareMeldModal = ({ meld, onClose }) => {
       >
         <div className="modal-header">
           <div className="modal-title-group">
-            <Share2 size={20} color="#3b82f6" />
+            <Share2 size={20} color="var(--accent-primary, #3b82f6)" />
             <h2>Share MELD</h2>
           </div>
           <button onClick={onClose} className="modal-close-btn" type="button" aria-label="Close modal">
@@ -85,29 +86,37 @@ export const ShareMeldModal = ({ meld, onClose }) => {
           {/* MELD Summary Card */}
           <div style={{
             padding: '1rem',
-            background: 'rgba(255, 255, 255, 0.03)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--glass-border)',
             borderRadius: 'var(--radius-md, 8px)',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-              <span className="badge badge-category" style={{ fontSize: '0.72rem' }}>{meld.category}</span>
-              <span className="badge badge-status status-open" style={{ fontSize: '0.72rem' }}>{meld.currentStatus}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+              {meld.category && (
+                <span className="badge badge-category" style={{ fontSize: '0.72rem' }}>{meld.category}</span>
+              )}
+              {meld.currentStatus && (
+                <span className={`badge badge-status ${meld.currentStatus === 'OPEN' ? 'status-open' : meld.currentStatus === 'FULL' ? 'status-full' : 'status-closed'}`} style={{ fontSize: '0.72rem' }}>
+                  {meld.currentStatus}
+                </span>
+              )}
             </div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 0.35rem 0', color: '#fff' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 0.35rem 0', color: 'var(--text-primary)' }}>
               {meld.title}
             </h3>
-            <p style={{
-              fontSize: '0.82rem',
-              color: 'var(--text-secondary, #94a3b8)',
-              margin: 0,
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              lineHeight: 1.5,
-            }}>
-              {meld.description}
-            </p>
+            {meld.description && (
+              <p style={{
+                fontSize: '0.82rem',
+                color: 'var(--text-secondary)',
+                margin: 0,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                lineHeight: 1.5,
+              }}>
+                {meld.description}
+              </p>
+            )}
           </div>
 
           {/* Direct Copy Link Section */}
@@ -118,71 +127,58 @@ export const ShareMeldModal = ({ meld, onClose }) => {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              background: 'rgba(0, 0, 0, 0.3)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: 'var(--radius-md, 8px)',
-              padding: '0.35rem 0.5rem 0.35rem 0.85rem',
               gap: '0.5rem',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: 'var(--radius-sm, 6px)',
+              padding: '0.35rem 0.5rem 0.35rem 0.85rem',
             }}>
-              <input
-                type="text"
-                readOnly
-                value={meldUrl}
-                style={{
-                  flex: 1,
-                  background: 'transparent',
-                  border: 'none',
-                  outline: 'none',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.85rem',
-                  fontFamily: 'monospace',
-                }}
-                onClick={(e) => e.target.select()}
-              />
+              <span style={{
+                flex: 1,
+                fontSize: '0.85rem',
+                color: 'var(--text-primary)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                fontFamily: 'monospace',
+              }}>
+                {shareUrl}
+              </span>
               <button
                 type="button"
-                className={`btn btn-sm ${copied ? 'btn-success' : 'btn-primary'}`}
+                className={`btn btn-sm ${copied ? 'btn-ghost' : 'btn-primary'}`}
+                style={{
+                  padding: '0.4rem 0.85rem',
+                  fontSize: '0.8rem',
+                  gap: '0.35rem',
+                }}
                 onClick={handleCopyLink}
-                style={{ minWidth: '95px', gap: '0.35rem', padding: '0.4rem 0.75rem' }}
               >
-                {copied ? (
-                  <>
-                    <Check size={14} />
-                    <span>Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy size={14} />
-                    <span>Copy Link</span>
-                  </>
-                )}
+                {copied ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                <span>{copied ? 'Copied!' : 'Copy'}</span>
               </button>
             </div>
-            {copied && (
-              <span style={{ display: 'block', marginTop: '0.35rem', fontSize: '0.78rem', color: 'var(--accent-teal, #10b981)' }}>
-                ✓ Link copied to clipboard! Share it with friends or classmates.
-              </span>
-            )}
           </div>
 
-          {/* Social Share Grid */}
+          {/* Share Channels */}
           <div>
             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.65rem' }}>
-              Share to Platforms
+              Share directly via
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.6rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.6rem' }}>
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="btn btn-ghost btn-sm"
                 style={{
-                  background: 'rgba(37, 211, 102, 0.1)',
-                  color: '#25D366',
-                  border: '1px solid rgba(37, 211, 102, 0.25)',
+                  background: 'rgba(37, 211, 102, 0.12)',
+                  color: '#16a34a',
+                  border: '1px solid rgba(37, 211, 102, 0.3)',
                   justifyContent: 'center',
                   gap: '0.45rem',
                   padding: '0.55rem',
+                  fontWeight: 600,
                 }}
               >
                 <MessageCircle size={16} />
@@ -195,12 +191,13 @@ export const ShareMeldModal = ({ meld, onClose }) => {
                 rel="noreferrer"
                 className="btn btn-ghost btn-sm"
                 style={{
-                  background: 'rgba(0, 136, 204, 0.1)',
-                  color: '#0088cc',
-                  border: '1px solid rgba(0, 136, 204, 0.25)',
+                  background: 'rgba(0, 136, 204, 0.12)',
+                  color: '#0284c7',
+                  border: '1px solid rgba(0, 136, 204, 0.3)',
                   justifyContent: 'center',
                   gap: '0.45rem',
                   padding: '0.55rem',
+                  fontWeight: 600,
                 }}
               >
                 <Send size={16} />
@@ -213,12 +210,13 @@ export const ShareMeldModal = ({ meld, onClose }) => {
                 rel="noreferrer"
                 className="btn btn-ghost btn-sm"
                 style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  color: '#fff',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  background: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--glass-border)',
                   justifyContent: 'center',
                   gap: '0.45rem',
                   padding: '0.55rem',
+                  fontWeight: 600,
                 }}
               >
                 <span style={{ fontWeight: 800, fontSize: '0.9rem' }}>𝕏</span>
@@ -231,12 +229,13 @@ export const ShareMeldModal = ({ meld, onClose }) => {
                 rel="noreferrer"
                 className="btn btn-ghost btn-sm"
                 style={{
-                  background: 'rgba(10, 102, 194, 0.1)',
+                  background: 'rgba(10, 102, 194, 0.12)',
                   color: '#0a66c2',
-                  border: '1px solid rgba(10, 102, 194, 0.25)',
+                  border: '1px solid rgba(10, 102, 194, 0.3)',
                   justifyContent: 'center',
                   gap: '0.45rem',
                   padding: '0.55rem',
+                  fontWeight: 600,
                 }}
               >
                 <Linkedin size={16} />
@@ -247,12 +246,13 @@ export const ShareMeldModal = ({ meld, onClose }) => {
                 href={emailUrl}
                 className="btn btn-ghost btn-sm"
                 style={{
-                  background: 'rgba(59, 130, 246, 0.1)',
-                  color: '#93c5fd',
-                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                  background: 'rgba(37, 99, 235, 0.12)',
+                  color: 'var(--accent-primary, #2563eb)',
+                  border: '1px solid rgba(37, 99, 235, 0.3)',
                   justifyContent: 'center',
                   gap: '0.45rem',
                   padding: '0.55rem',
+                  fontWeight: 600,
                 }}
               >
                 <Mail size={16} />
@@ -265,12 +265,13 @@ export const ShareMeldModal = ({ meld, onClose }) => {
                   className="btn btn-ghost btn-sm"
                   onClick={handleNativeShare}
                   style={{
-                    background: 'rgba(59, 130, 246, 0.1)',
-                    color: '#3b82f6',
-                    border: '1px solid rgba(59, 130, 246, 0.25)',
+                    background: 'var(--bg-secondary)',
+                    color: 'var(--accent-primary, #2563eb)',
+                    border: '1px solid var(--glass-border)',
                     justifyContent: 'center',
                     gap: '0.45rem',
                     padding: '0.55rem',
+                    fontWeight: 600,
                   }}
                 >
                   <ExternalLink size={16} />

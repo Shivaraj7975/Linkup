@@ -403,7 +403,7 @@ const searchUsersForInvite = async (searchQuery, currentUserId, meldId = null) =
       SELECT u.id, u.name, u.username, u.created_at, sp.college, sp.degree, sp.year_of_study,
              COALESCE(sv.status, 'UNVERIFIED') AS verification_status,
              COALESCE(ARRAY_AGG(s.name) FILTER (WHERE s.name IS NOT NULL), '{}') AS skills,
-             ${meldId ? `EXISTS(SELECT 1 FROM meld_members mm WHERE mm.meld_id = $2 AND mm.user_id = u.id) AS is_member,
+             ${meldId ? `EXISTS(SELECT 1 FROM meld_members mm WHERE mm.meld_id = $2 AND mm.user_id = u.id AND mm.status = 'ACTIVE') AS is_member,
              EXISTS(SELECT 1 FROM meld_invitations mi WHERE mi.meld_id = $2 AND mi.invitee_id = u.id AND mi.status = 'PENDING') AS is_invited` : `false AS is_member, false AS is_invited`}
       FROM users u
       LEFT JOIN student_profiles sp ON u.id = sp.user_id
@@ -424,7 +424,7 @@ const searchUsersForInvite = async (searchQuery, currentUserId, meldId = null) =
     SELECT u.id, u.name, u.username, u.created_at, sp.college, sp.degree, sp.year_of_study,
            COALESCE(sv.status, 'UNVERIFIED') AS verification_status,
            COALESCE(ARRAY_AGG(s.name) FILTER (WHERE s.name IS NOT NULL), '{}') AS skills,
-           ${meldId ? `EXISTS(SELECT 1 FROM meld_members mm WHERE mm.meld_id = $3 AND mm.user_id = u.id) AS is_member,
+           ${meldId ? `EXISTS(SELECT 1 FROM meld_members mm WHERE mm.meld_id = $3 AND mm.user_id = u.id AND mm.status = 'ACTIVE') AS is_member,
            EXISTS(SELECT 1 FROM meld_invitations mi WHERE mi.meld_id = $3 AND mi.invitee_id = u.id AND mi.status = 'PENDING') AS is_invited` : `false AS is_member, false AS is_invited`}
     FROM users u
     LEFT JOIN student_profiles sp ON u.id = sp.user_id

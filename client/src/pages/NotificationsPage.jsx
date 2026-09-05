@@ -193,7 +193,7 @@ const NotificationsPage = () => {
           {/* PAGE HEADER */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
             <div>
-              <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.6rem', margin: 0 }}>
+              <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.6rem', margin: 0 }}>
                 <Bell size={26} className="text-accent" />
                 <span>Notifications</span>
                 {unreadCount > 0 && (
@@ -288,7 +288,7 @@ const NotificationsPage = () => {
           ) : filteredNotifications.length === 0 ? (
             <div style={{ padding: '3.5rem 1.5rem', textAlign: 'center', background: 'rgba(0,0,0,0.15)', borderRadius: 'var(--radius-lg)' }}>
               <Inbox size={48} style={{ color: 'var(--text-muted)', marginBottom: '1rem', opacity: 0.5 }} />
-              <h3 style={{ color: '#fff', fontSize: '1.15rem', fontWeight: 700, margin: '0 0 0.5rem 0' }}>
+              <h3 style={{ color: 'var(--text-primary)', fontSize: '1.15rem', fontWeight: 700, margin: '0 0 0.5rem 0' }}>
                 {activeTab === 'UNREAD'
                   ? 'No unread notifications'
                   : activeTab === 'UPDATES'
@@ -306,15 +306,13 @@ const NotificationsPage = () => {
               {filteredNotifications.map((notif) => (
                 <div
                   key={notif.id}
-                  className="interactive-card"
+                  className={`interactive-card notification-card-item ${notif.is_read ? 'is-read' : 'is-unread'}`}
                   style={{
                     display: 'flex',
                     alignItems: 'flex-start',
                     gap: '1rem',
                     padding: '1.15rem 1.25rem',
                     borderRadius: 'var(--radius-lg)',
-                    background: notif.is_read ? 'rgba(30, 41, 59, 0.4)' : 'rgba(59, 130, 246, 0.08)',
-                    border: notif.is_read ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid rgba(59, 130, 246, 0.25)',
                     cursor: notif.link ? 'pointer' : 'default',
                     transition: 'var(--transition-smooth)',
                     position: 'relative',
@@ -341,7 +339,7 @@ const NotificationsPage = () => {
                   {/* NOTIFICATION CONTENT */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                      <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 700, color: notif.is_read ? '#cbd5e1' : '#fff' }}>
+                      <h4 className="notification-title" style={{ margin: 0, fontSize: '0.98rem', fontWeight: 700 }}>
                         {notif.title}
                       </h4>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>

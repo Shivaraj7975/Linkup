@@ -11,13 +11,17 @@ import {
   Mail,
   ShieldAlert,
   Bell,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { fetchNotificationsApi } from '../services/api';
 import { getSocket } from '../services/socket';
 
 export const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -87,6 +91,16 @@ export const Navbar = () => {
                 <span className="badge badge-primary" style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }}>
                   Account Setup Required
                 </span>
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="btn btn-ghost btn-sm theme-toggle-btn"
+                  title={theme === 'light' ? 'Switch to Dark Theme' : 'Switch to Light Theme'}
+                  aria-label="Toggle theme"
+                  style={{ padding: '0.45rem 0.65rem' }}
+                >
+                  {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                </button>
                 <button
                   type="button"
                   onClick={logout}
@@ -173,6 +187,18 @@ export const Navbar = () => {
                       </Link>
                     )}
 
+                    {/* Theme Switch Option before Profile */}
+                    <button
+                      type="button"
+                      onClick={toggleTheme}
+                      className="btn btn-ghost btn-sm theme-toggle-btn"
+                      title={theme === 'light' ? 'Switch to Dark Theme' : 'Switch to Light Theme'}
+                      aria-label="Toggle theme"
+                      style={{ padding: '0.45rem 0.65rem' }}
+                    >
+                      {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                    </button>
+
                     <Link
                       to="/profile"
                       className={`btn btn-ghost btn-sm ${location.pathname === '/profile' ? 'active-nav-link' : ''}`}
@@ -183,6 +209,16 @@ export const Navbar = () => {
                   </>
                 ) : (
                   <>
+                    <button
+                      type="button"
+                      onClick={toggleTheme}
+                      className="btn btn-ghost btn-sm theme-toggle-btn"
+                      title={theme === 'light' ? 'Switch to Dark Theme' : 'Switch to Light Theme'}
+                      aria-label="Toggle theme"
+                      style={{ padding: '0.45rem 0.65rem' }}
+                    >
+                      {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                    </button>
                     <Link to="/login" className="btn btn-ghost btn-sm">Login</Link>
                     <Link to="/register" className="btn btn-primary btn-sm">Get Started</Link>
                   </>
@@ -191,8 +227,19 @@ export const Navbar = () => {
             )}
           </nav>
 
-          {/* Mobile Top Actions (Profile or Login) */}
-          <div className="mobile-top-actions">
+          {/* Mobile Top Actions (Theme Toggle & Profile or Login) */}
+          <div className="mobile-top-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            {/* Mobile Theme Toggle Button */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="btn btn-ghost mobile-nav-btn theme-toggle-btn"
+              title={theme === 'light' ? 'Switch to Dark Theme' : 'Switch to Light Theme'}
+              aria-label="Toggle theme"
+            >
+              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+
             {isProfileIncomplete ? (
               <button
                 type="button"

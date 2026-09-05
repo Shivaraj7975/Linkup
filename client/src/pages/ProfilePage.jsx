@@ -873,7 +873,7 @@ export const ProfilePage = () => {
                   <input
                     id="edit-college-input"
                     type="text"
-                    placeholder="Type university name to search verified registry..."
+                    placeholder="Search university or college..."
                     value={form.college}
                     autoComplete="off"
                     autoFocus={false}
@@ -1061,7 +1061,7 @@ export const ProfilePage = () => {
                     <Search size={16} className="search-icon input-left-icon" />
                     <input
                       type="text"
-                      placeholder="Search skills or type custom skill..."
+                      placeholder="Search or add skills..."
                       value={skillSearch}
                       onChange={(e) => setSkillSearch(e.target.value)}
                       onKeyDown={handleKeyDownSkill}
@@ -1178,7 +1178,7 @@ export const ProfilePage = () => {
                     <Search size={16} className="search-icon input-left-icon" />
                     <input
                       type="text"
-                      placeholder="Search domains or type custom interest..."
+                      placeholder="Search or add interests..."
                       value={interestSearch}
                       onChange={(e) => setInterestSearch(e.target.value)}
                       onKeyDown={handleKeyDownInterest}

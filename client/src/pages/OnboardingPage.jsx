@@ -697,7 +697,7 @@ export const OnboardingPage = () => {
                       <input
                         id="username-input"
                         type="text"
-                        placeholder="e.g. shivaraj123, alex_smith99"
+                        placeholder="e.g. alexsmith, dev_sarah"
                         value={form.username}
                         onChange={(e) => handleUsernameChange(e.target.value)}
                         maxLength={30}
@@ -748,7 +748,7 @@ export const OnboardingPage = () => {
                       <input
                         id="college-input"
                         type="text"
-                        placeholder="Type university name to search verified registry..."
+                        placeholder="Search university or college..."
                         value={form.college}
                         onChange={(e) => {
                           handleChange('college', e.target.value);
@@ -1189,7 +1189,7 @@ export const OnboardingPage = () => {
                     <label>Short Bio *</label>
                     <textarea
                       rows={4}
-                      placeholder="Tell potential teammates about your experience, past projects, or what kind of teams you want to join..."
+                      placeholder="Share a short summary of your background, interests, and what you're excited to build..."
                       value={form.bio}
                       onChange={(e) => handleChange('bio', e.target.value)}
                       className="bio-textarea"

@@ -140,7 +140,7 @@ export const ForgotPasswordPage = () => {
                   <input
                     id="identifier"
                     type="text"
-                    placeholder="you@gmail.com or @username"
+                    placeholder="Email or @username"
                     value={identifier}
                     onChange={(e) => {
                       setIdentifier(e.target.value);

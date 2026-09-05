@@ -215,7 +215,7 @@ export const InvitationsPage = () => {
                         </div>
                         <div className="applicant-college" style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.2rem' }}>
                           <span>{isJoinRequest ? 'Applicant:' : 'Invited by:'}</span>
-                          <strong style={{ color: '#fff' }}>{inv.inviter_name}</strong>
+                          <strong style={{ color: 'var(--text-primary)' }}>{inv.inviter_name}</strong>
                           {inv.inviter_username && (
                             <span style={{ color: 'var(--accent-cyan, #22d3ee)' }}>@{inv.inviter_username}</span>
                           )}
@@ -241,9 +241,11 @@ export const InvitationsPage = () => {
                       <div style={{
                         marginTop: '0.85rem',
                         padding: '0.65rem 0.85rem',
-                        background: 'rgba(0,0,0,0.25)',
+                        background: 'var(--bg-secondary)',
                         borderRadius: 'var(--radius-sm)',
                         borderLeft: '3px solid var(--accent-primary)',
+                        border: '1px solid var(--glass-border)',
+                        borderLeftWidth: '3px',
                         fontSize: '0.82rem',
                         color: 'var(--text-secondary)',
                         fontStyle: 'italic',
@@ -347,7 +349,7 @@ export const InvitationsPage = () => {
                   <Send size={18} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: '#f8fafc' }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
                     Outgoing Invites & Requests
                   </h3>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
@@ -476,9 +478,10 @@ export const InvitationsPage = () => {
                         style={{
                           marginTop: '1rem',
                           padding: '0.75rem',
-                          background: 'rgba(0,0,0,0.25)',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--glass-border)',
                           borderRadius: 'var(--radius-sm)',
-                          borderLeft: '2px solid var(--accent-primary)',
+                          borderLeft: '3px solid var(--accent-primary)',
                         }}
                       >
                         <div
@@ -488,11 +491,12 @@ export const InvitationsPage = () => {
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
                             marginBottom: '0.2rem',
+                            fontWeight: 600,
                           }}
                         >
                           MELD Project:
                         </div>
-                        <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#f1f5f9' }}>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                           {inv.title || 'MELD Project'}
                         </div>
                       </div>
@@ -525,7 +529,7 @@ export const InvitationsPage = () => {
                         <Link
                           to={`/melds/${inv.linkup_id}`}
                           className="btn btn-ghost btn-sm"
-                          style={{ gap: '0.35rem', color: '#93c5fd' }}
+                          style={{ gap: '0.35rem', color: 'var(--accent-primary, #2563eb)' }}
                         >
                           <ExternalLink size={14} />
                           <span>View MELD</span>

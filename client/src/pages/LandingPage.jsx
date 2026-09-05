@@ -102,7 +102,7 @@ export const LandingPage = () => {
             <div className="landing-stat-item">
               <Cpu size={30} color="#3b82f6" />
               <div>
-                <div style={{ fontWeight: 800, fontSize: '1.15rem', color: '#fff' }}>Smart AI Engine</div>
+                <div style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--text-primary)' }}>Smart AI Engine</div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Automated Candidate Scoring</div>
               </div>
             </div>
@@ -110,7 +110,7 @@ export const LandingPage = () => {
             <div className="landing-stat-item">
               <ShieldCheck size={30} color="#22c55e" />
               <div>
-                <div style={{ fontWeight: 800, fontSize: '1.15rem', color: '#fff' }}>100% Student Verified</div>
+                <div style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--text-primary)' }}>100% Student Verified</div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Institutional .edu OTP Verification</div>
               </div>
             </div>
@@ -118,7 +118,7 @@ export const LandingPage = () => {
             <div className="landing-stat-item">
               <Mail size={30} color="#3b82f6" />
               <div>
-                <div style={{ fontWeight: 800, fontSize: '1.15rem', color: '#fff' }}>Direct Invitations</div>
+                <div style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--text-primary)' }}>Direct Invitations</div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Send & Manage Team Invites</div>
               </div>
             </div>
@@ -131,7 +131,7 @@ export const LandingPage = () => {
             <Rocket size={14} />
             <span>Step-By-Step Workflow</span>
           </div>
-          <h2 style={{ fontSize: '2.25rem', fontWeight: 800, color: '#fff', marginBottom: '0.75rem' }}>
+          <h2 style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
             How MELD Assembles Teams
           </h2>
           <p style={{ color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto 2.5rem', fontSize: '1rem' }}>
@@ -141,7 +141,7 @@ export const LandingPage = () => {
           <div className="landing-workflow-grid">
             <div className="workflow-card">
               <div className="workflow-step-num">1</div>
-              <h3 style={{ fontSize: '1.15rem', color: '#fff', marginBottom: '0.5rem' }}>Create a MELD</h3>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Create a MELD</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
                 Define your project category, required skills, duration, and open member capacity.
               </p>
@@ -149,7 +149,7 @@ export const LandingPage = () => {
 
             <div className="workflow-card">
               <div className="workflow-step-num">2</div>
-              <h3 style={{ fontSize: '1.15rem', color: '#fff', marginBottom: '0.5rem' }}>AI Matching Engine</h3>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>AI Matching Engine</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
                 Our intelligent AI engine evaluates candidates' skill compatibility, college background, and availability.
               </p>
@@ -157,7 +157,7 @@ export const LandingPage = () => {
 
             <div className="workflow-card">
               <div className="workflow-step-num">3</div>
-              <h3 style={{ fontSize: '1.15rem', color: '#fff', marginBottom: '0.5rem' }}>Send Invitations</h3>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Send Invitations</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
                 Send direct invitations from candidate match cards and track pending request responses.
               </p>
@@ -165,7 +165,7 @@ export const LandingPage = () => {
 
             <div className="workflow-card">
               <div className="workflow-step-num">4</div>
-              <h3 style={{ fontSize: '1.15rem', color: '#fff', marginBottom: '0.5rem' }}>Build & Launch</h3>
+              <h3 style={{ fontSize: '1.15rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Build & Launch</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
                 Collaborate with verified team members and track progress on your dashboard.
               </p>
@@ -180,7 +180,7 @@ export const LandingPage = () => {
               <Zap size={14} />
               <span>Platform Capabilities</span>
             </div>
-            <h2 style={{ fontSize: '2.25rem', fontWeight: 800, color: '#fff' }}>
+            <h2 style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>
               Engineered for Hackathons, Capstones & Startups
             </h2>
           </div>
@@ -244,13 +244,13 @@ export const LandingPage = () => {
                 <FolderGit2 size={14} />
                 <span>For Project Creators</span>
               </div>
-              <h3 style={{ fontSize: '1.65rem', fontWeight: 800, color: '#fff', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>
                 Stop Asking in Random Chat Groups
               </h3>
               <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '1.5rem' }}>
                 Posting project ideas in generic messaging channels leads to unresponsive matches. MELD gives you a structured platform to define roles, run AI matching, and invite qualified candidates.
               </p>
-              <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', color: '#cbd5e1', fontSize: '0.95rem' }}>
+              <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle2 size={16} color="#34d399" /> Filter candidates by specific skill sets</li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle2 size={16} color="#34d399" /> View Verified Student badges before inviting</li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle2 size={16} color="#34d399" /> Automatic status updates when team reaches full capacity</li>
@@ -262,13 +262,13 @@ export const LandingPage = () => {
                 <UserCheck size={14} />
                 <span>For Student Builders</span>
               </div>
-              <h3 style={{ fontSize: '1.65rem', fontWeight: 800, color: '#fff', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>
                 Get Invited to Exciting Student Projects
               </h3>
               <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '1.5rem' }}>
                 Showcase your skills, university background, and availability. Get discovered by project leads building real-world software, AI tools, and capstone projects.
               </p>
-              <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', color: '#cbd5e1', fontSize: '0.95rem' }}>
+              <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle2 size={16} color="#3b82f6" /> Receive direct invitations in your Invitations hub</li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle2 size={16} color="#3b82f6" /> Accept or decline project requests anytime</li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><CheckCircle2 size={16} color="#3b82f6" /> Easily leave teams if project goals change</li>
@@ -284,7 +284,7 @@ export const LandingPage = () => {
               <HelpCircle size={14} />
               <span>Got Questions?</span>
             </div>
-            <h2 style={{ fontSize: '2.25rem', fontWeight: 800, color: '#fff' }}>
+            <h2 style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>
               Frequently Asked Questions
             </h2>
           </div>
@@ -297,7 +297,7 @@ export const LandingPage = () => {
                 onClick={() => toggleFaq(index)}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', margin: 0 }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                     {faq.q}
                   </h3>
                   {openFaq === index ? <ChevronUp size={20} color="#3b82f6" /> : <ChevronDown size={20} color="#94a3b8" />}
@@ -314,7 +314,7 @@ export const LandingPage = () => {
 
         {/* CTA BANNER */}
         <section className="landing-cta-banner">
-          <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#fff', marginBottom: '1rem' }}>
+          <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem' }}>
             Ready to Build Your Next Big Project?
           </h2>
           <p style={{ color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto 2.25rem', fontSize: '1.1rem' }}>

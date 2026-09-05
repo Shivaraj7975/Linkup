@@ -95,7 +95,7 @@ export const LoginPage = () => {
                 id="login-identifier"
                 type="text"
                 name="identifier"
-                placeholder="you@gmail.com or @username"
+                placeholder="Email or @username"
                 value={form.identifier}
                 onChange={handleChange}
                 className={errors.identifier ? 'input-error' : ''}

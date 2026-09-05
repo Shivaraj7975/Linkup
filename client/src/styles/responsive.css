@@ -884,3 +884,32 @@
     bottom: calc(65px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* ===== LIGHT THEME MOBILE OVERRIDES ===== */
+@media (max-width: 900px) {
+  [data-theme="light"] .navbar-container {
+    background: rgba(255, 255, 255, 0.94) !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  [data-theme="light"] .mobile-bottom-nav {
+    background: rgba(255, 255, 255, 0.96) !important;
+    border-top: 1px solid #e2e8f0 !important;
+  }
+
+  [data-theme="light"] .mobile-nav-btn:not(.btn-primary) {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #334155 !important;
+  }
+
+  [data-theme="light"] .mobile-nav-btn:not(.btn-primary):hover {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  [data-theme="light"] .chat-input-sticky {
+    box-shadow: 0 -4px 10px rgba(15, 23, 42, 0.05);
+  }
+}

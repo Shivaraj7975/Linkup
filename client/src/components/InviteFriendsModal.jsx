@@ -27,7 +27,7 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
   const [modalSuccess, setModalSuccess] = useState('');
   const searchDebounceRef = useRef(null);
 
-  const meldId = meld?.id;
+  const meldId = meld?.id || meld?._id;
   const meldUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/melds/${meldId}?ref=invite`
     : `/melds/${meldId}?ref=invite`;
@@ -108,8 +108,8 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
         {/* Header */}
         <div className="modal-header">
           <div className="modal-title-group">
-            <UserPlus size={20} color="#3b82f6" />
-            <h2>Invite Friends to MELD</h2>
+            <UserPlus size={20} color="var(--accent-primary, #3b82f6)" />
+            <h2>Invite Members to MELD</h2>
           </div>
           <button onClick={onClose} className="modal-close-btn" type="button" aria-label="Close modal">
             <X size={20} />
@@ -142,13 +142,19 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
               <input
                 type="text"
                 className="input"
-                placeholder="Type name, @username, or university..."
+                placeholder="Search by name, @username, or college..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ paddingLeft: '2.5rem', borderRadius: 'var(--radius-md)' }}
+                style={{
+                  paddingLeft: '2.5rem',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--glass-border)',
+                  color: 'var(--text-primary)',
+                }}
                 autoComplete="off"
               />
-              {loading && <Loader2 size={18} className="input-icon-btn spin" style={{ right: '0.75rem' }} />}
+              {loading && <Loader2 size={18} className="input-icon-btn spin" style={{ right: '0.75rem', color: 'var(--accent-primary)' }} />}
             </div>
           </div>
 
@@ -156,21 +162,21 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
           <div style={{
             maxHeight: '260px',
             overflowY: 'auto',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            border: '1px solid var(--glass-border)',
             borderRadius: 'var(--radius-md)',
-            background: 'rgba(0, 0, 0, 0.2)',
+            background: 'var(--bg-secondary)',
             padding: '0.5rem',
           }}>
             {loading && users.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)' }}>
-                <Loader2 size={24} className="spin" style={{ margin: '0 auto 0.5rem auto' }} />
+                <Loader2 size={24} className="spin" style={{ margin: '0 auto 0.5rem auto', color: 'var(--accent-primary)' }} />
                 <span>Searching students...</span>
               </div>
             ) : users.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)' }}>
                 <Users size={28} style={{ opacity: 0.4, margin: '0 auto 0.5rem auto' }} />
-                <p style={{ margin: 0, fontSize: '0.9rem' }}>No matching students found.</p>
-                <span style={{ fontSize: '0.8rem' }}>Try searching by first name, username, or college.</span>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-primary)' }}>No matching students found.</p>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Try searching by first name, username, or college.</span>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -187,9 +193,9 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         padding: '0.75rem 1rem',
-                        background: 'rgba(255, 255, 255, 0.03)',
+                        background: 'var(--bg-card)',
                         borderRadius: 'var(--radius-sm, 6px)',
-                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                        border: '1px solid var(--glass-border)',
                         gap: '0.75rem',
                       }}
                     >
@@ -218,23 +224,25 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
                             {u.username && (
                               <span style={{
                                 fontSize: '0.75rem',
-                                color: 'var(--accent-cyan, #22d3ee)',
-                                background: 'rgba(34, 211, 238, 0.1)',
-                                padding: '0.1rem 0.4rem',
+                                color: 'var(--accent-primary, #2563eb)',
+                                background: 'rgba(37, 99, 235, 0.1)',
+                                border: '1px solid rgba(37, 99, 235, 0.2)',
+                                padding: '0.1rem 0.45rem',
                                 borderRadius: 'var(--radius-full)',
-                                fontFamily: 'monospace'
+                                fontFamily: 'monospace',
+                                fontWeight: 600,
                               }}>
                                 @{u.username}
                               </span>
                             )}
                             {u.verification_status === 'VERIFIED' && (
-                              <BadgeCheck size={14} className="verified-icon" title="Verified Student" />
+                              <BadgeCheck size={14} className="verified-icon" color="#22d3ee" title="Verified Student" />
                             )}
                           </div>
                           <span style={{
                             display: 'block',
                             fontSize: '0.78rem',
-                            color: 'var(--text-muted)',
+                            color: 'var(--text-secondary)',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -251,7 +259,7 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
                             ✓ In Team
                           </span>
                         ) : isAlreadyInvited ? (
-                          <span className="pill pill-info pill-xs" style={{ fontSize: '0.75rem', padding: '0.3rem 0.65rem', background: 'rgba(59, 130, 246, 0.15)', color: '#93c5fd' }}>
+                          <span className="pill pill-info pill-xs" style={{ fontSize: '0.75rem', padding: '0.3rem 0.65rem' }}>
                             ✓ Invited
                           </span>
                         ) : (
@@ -286,8 +294,8 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
           {/* Section 2: Direct Invite Link */}
           <div style={{
             padding: '1rem',
-            background: 'rgba(59, 130, 246, 0.05)',
-            border: '1px solid rgba(59, 130, 246, 0.15)',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--glass-border)',
             borderRadius: 'var(--radius-md)',
           }}>
             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
@@ -296,8 +304,8 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              background: 'rgba(0, 0, 0, 0.3)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--glass-border)',
               borderRadius: 'var(--radius-md)',
               padding: '0.35rem 0.5rem 0.35rem 0.85rem',
               gap: '0.5rem',
@@ -319,13 +327,13 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
               />
               <button
                 type="button"
-                className={`btn btn-sm ${copiedLink ? 'btn-success' : 'btn-primary'}`}
+                className={`btn btn-sm ${copiedLink ? 'btn-ghost' : 'btn-primary'}`}
                 onClick={handleCopyInviteLink}
                 style={{ minWidth: '95px', gap: '0.35rem', padding: '0.4rem 0.75rem' }}
               >
                 {copiedLink ? (
                   <>
-                    <Check size={14} />
+                    <Check size={14} color="#10b981" />
                     <span>Copied!</span>
                   </>
                 ) : (
@@ -338,22 +346,23 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
             </div>
 
             {/* Quick Social Share */}
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="btn btn-ghost btn-xs"
                 style={{
-                  background: 'rgba(37, 211, 102, 0.1)',
-                  color: '#25D366',
-                  border: '1px solid rgba(37, 211, 102, 0.25)',
+                  background: 'rgba(37, 211, 102, 0.12)',
+                  color: '#16a34a',
+                  border: '1px solid rgba(37, 211, 102, 0.3)',
                   gap: '0.35rem',
                   padding: '0.35rem 0.65rem',
+                  fontWeight: 600,
                 }}
               >
                 <MessageCircle size={14} />
-                <span>Share via WhatsApp</span>
+                <span>WhatsApp</span>
               </a>
 
               <a
@@ -362,11 +371,12 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
                 rel="noreferrer"
                 className="btn btn-ghost btn-xs"
                 style={{
-                  background: 'rgba(0, 136, 204, 0.1)',
-                  color: '#0088cc',
-                  border: '1px solid rgba(0, 136, 204, 0.25)',
+                  background: 'rgba(0, 136, 204, 0.12)',
+                  color: '#0284c7',
+                  border: '1px solid rgba(0, 136, 204, 0.3)',
                   gap: '0.35rem',
                   padding: '0.35rem 0.65rem',
+                  fontWeight: 600,
                 }}
               >
                 <Send size={14} />

@@ -360,7 +360,7 @@ export const EditMeldPage = () => {
               <input
                 type="text"
                 className="input"
-                placeholder="Search skills or type custom skill..."
+                placeholder="Search or add skill..."
                 value={skillSearch}
                 onChange={(e) => setSkillSearch(e.target.value)}
                 onKeyDown={handleKeyDownSkill}

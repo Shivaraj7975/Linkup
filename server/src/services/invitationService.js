@@ -22,8 +22,8 @@ const inviteUserToLinkup = async (linkupId, inviterId, inviteeId) => {
   const invitee = await query(`SELECT id FROM users WHERE id = $1`, [inviteeId]);
   if (invitee.rows.length === 0) throw new Error('Invitee not found.');
 
-  // Check if already a member
-  const memberCheck = await query(`SELECT id FROM meld_members WHERE meld_id = $1 AND user_id = $2`, [linkupId, inviteeId]);
+  // Check if already an active member
+  const memberCheck = await query(`SELECT id FROM meld_members WHERE meld_id = $1 AND user_id = $2 AND status = 'ACTIVE'`, [linkupId, inviteeId]);
   if (memberCheck.rows.length > 0) throw new Error('User is already a member.');
 
   // Create or update invitation
@@ -175,7 +175,7 @@ const respondToInvitation = async (invitationId, userId, action) => {
       }
 
       const mRes = await client.query(
-        `SELECT COUNT(*)::int as count FROM meld_members WHERE meld_id = $1`,
+        `SELECT COUNT(*)::int as count FROM meld_members WHERE meld_id = $1 AND status = 'ACTIVE'`,
         [invitation.meld_id]
       );
       const currentCount = mRes.rows[0].count;
@@ -184,11 +184,11 @@ const respondToInvitation = async (invitationId, userId, action) => {
         throw new Error('Linkup has reached its maximum member capacity.');
       }
 
-      // Add to members
+      // Add to members (or reactivate if existing record)
       await client.query(
         `INSERT INTO meld_members (meld_id, user_id, role, status)
          VALUES ($1, $2, 'Member', 'ACTIVE')
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT (meld_id, user_id) DO UPDATE SET status = 'ACTIVE', role = 'Member', joined_at = CURRENT_TIMESTAMP`,
         [invitation.meld_id, userId]
       );
 

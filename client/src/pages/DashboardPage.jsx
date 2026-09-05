@@ -191,7 +191,7 @@ export const DashboardPage = () => {
             {joinedLinkups.length === 0 ? (
               <div className="dash-card text-center" style={{ padding: '3.5rem 1.5rem' }}>
                 <Users size={48} color="#64748b" style={{ marginBottom: '1rem' }} />
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#fff' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
                   No Joined Melds
                 </h3>
                 <p style={{ color: 'var(--text-secondary)', maxWidth: '460px', margin: '0 auto 1.5rem', lineHeight: 1.5 }}>
@@ -228,7 +228,7 @@ export const DashboardPage = () => {
                       </div>
                     )}
 
-                    <div className="linkup-card-footer" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '0.85rem', marginTop: 'auto' }}>
+                    <div className="linkup-card-footer" style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '0.85rem', marginTop: 'auto' }}>
                       <div className="creator-snippet">
                         <div className="creator-avatar">
                           {l.creator_name?.charAt(0)?.toUpperCase() || 'C'}
@@ -262,7 +262,7 @@ export const DashboardPage = () => {
             {createdLinkups.length === 0 ? (
               <div className="dash-card text-center" style={{ padding: '3.5rem 1.5rem' }}>
                 <Rocket size={48} color="#64748b" style={{ marginBottom: '1rem' }} />
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#fff' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
                   No Created Melds
                 </h3>
                 <p style={{ color: 'var(--text-secondary)', maxWidth: '460px', margin: '0 auto 1.5rem', lineHeight: 1.5 }}>
@@ -307,7 +307,7 @@ export const DashboardPage = () => {
                         gap: '0.6rem',
                         marginTop: 'auto',
                         paddingTop: '0.85rem',
-                        borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+                        borderTop: '1px solid var(--glass-border)',
                       }}
                     >
                       <button
@@ -349,10 +349,50 @@ export const DashboardPage = () => {
         ) : (
           /* SENT JOIN REQUESTS TAB */
           <div>
+            {/* Explanatory Guide Banner */}
+            <div
+              className="info-guide-banner"
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.85rem',
+                padding: '0.9rem 1.15rem',
+                marginBottom: '1.25rem',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--glass-border)',
+                boxShadow: 'var(--shadow-sm)',
+              }}
+            >
+              <div
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  background: 'rgba(37, 99, 235, 0.12)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  marginTop: '1px',
+                }}
+              >
+                <Send size={16} color="var(--accent-primary, #2563eb)" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
+                  What are Join Requests?
+                </div>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                  These are applications <strong>you submitted</strong> asking to join other student projects. The project creator will review and accept or decline. Looking for team invites you received from others? Check your <Link to="/invitations" style={{ color: 'var(--accent-primary, #2563eb)', fontWeight: 600, textDecoration: 'underline' }}>Invitations</Link>.
+                </p>
+              </div>
+            </div>
+
             {pendingOrDeclinedRequests.length === 0 ? (
               <div className="dash-card text-center" style={{ padding: '3.5rem 1.5rem' }}>
                 <Send size={48} color="#64748b" style={{ marginBottom: '1rem' }} />
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#fff' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
                   No Join Requests Sent
                 </h3>
                 <p style={{ color: 'var(--text-secondary)', maxWidth: '460px', margin: '0 auto 1.5rem', lineHeight: 1.5 }}>
@@ -380,22 +420,44 @@ export const DashboardPage = () => {
                       <div className="card-top-row">
                         <span className="badge badge-category">{meld.category || 'General'}</span>
                         {isPending && (
-                          <span className="badge badge-warning" style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <span
+                            className="badge badge-warning"
+                            style={{
+                              background: 'rgba(245, 158, 11, 0.15)',
+                              color: '#d97706',
+                              border: '1px solid rgba(245, 158, 11, 0.3)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              fontWeight: 600,
+                            }}
+                          >
                             <Clock3 size={12} /> Pending Approval
                           </span>
                         )}
                         {isRejected && (
-                          <span className="badge badge-error" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <span
+                            className="badge badge-error"
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              color: '#dc2626',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              fontWeight: 600,
+                            }}
+                          >
                             <XCircle size={12} /> Declined
                           </span>
                         )}
                       </div>
 
                       <h3 className="linkup-card-title">{meld.title}</h3>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                        Creator: <strong style={{ color: '#fff' }}>{meld.creator?.name}</strong>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                        Creator: <strong style={{ color: 'var(--text-primary)' }}>{meld.creator?.name}</strong>
                         {meld.creator?.username && (
-                          <span style={{ color: 'var(--accent-cyan, #22d3ee)', marginLeft: '0.25rem' }}>
+                          <span style={{ color: 'var(--accent-primary, #2563eb)', marginLeft: '0.25rem', fontWeight: 600 }}>
                             @{meld.creator.username}
                           </span>
                         )}
@@ -407,16 +469,32 @@ export const DashboardPage = () => {
                       </p>
 
                       {req.message && (
-                        <div style={{
-                          padding: '0.5rem 0.75rem',
-                          background: 'rgba(0,0,0,0.25)',
-                          borderRadius: 'var(--radius-sm)',
-                          borderLeft: '3px solid #3b82f6',
-                          fontSize: '0.8rem',
-                          color: 'var(--text-secondary)',
-                          fontStyle: 'italic',
-                          margin: '0.5rem 0',
-                        }}>
+                        <div
+                          style={{
+                            padding: '0.65rem 0.85rem',
+                            background: 'var(--bg-secondary)',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid var(--glass-border)',
+                            borderLeft: '3px solid var(--accent-primary, #2563eb)',
+                            fontSize: '0.82rem',
+                            color: 'var(--text-secondary)',
+                            fontStyle: 'italic',
+                            margin: '0.65rem 0 0.85rem 0',
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: '0.7rem',
+                              textTransform: 'uppercase',
+                              color: 'var(--text-muted)',
+                              fontStyle: 'normal',
+                              marginBottom: '0.25rem',
+                              fontWeight: 600,
+                              letterSpacing: '0.04em',
+                            }}
+                          >
+                            Your Application Note:
+                          </div>
                           "{req.message}"
                         </div>
                       )}
@@ -427,7 +505,7 @@ export const DashboardPage = () => {
                           gap: '0.5rem',
                           marginTop: 'auto',
                           paddingTop: '0.85rem',
-                          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+                          borderTop: '1px solid var(--glass-border)',
                           alignItems: 'center',
                         }}
                       >

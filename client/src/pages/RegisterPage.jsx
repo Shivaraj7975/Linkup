@@ -241,7 +241,7 @@ export const RegisterPage = () => {
                   id="register-email"
                   type="email"
                   name="email"
-                  placeholder="you@gmail.com"
+                  placeholder="e.g. alex@gmail.com"
                   value={form.email}
                   onChange={handleChange}
                   className={errors.email ? 'input-error' : ''}
@@ -262,7 +262,7 @@ export const RegisterPage = () => {
                   id="register-college-email"
                   type="email"
                   name="collegeEmail"
-                  placeholder="e.g. alex@stanford.edu or student@rvce.edu.in"
+                  placeholder="e.g. alex@university.edu"
                   value={form.collegeEmail}
                   onChange={handleChange}
                   className={errors.collegeEmail ? 'input-error' : ''}

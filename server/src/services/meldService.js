@@ -1046,7 +1046,7 @@ const getMySentJoinRequests = async (userId) => {
     `SELECT jr.id, jr.meld_id, jr.message, jr.status, jr.created_at, jr.updated_at,
             m.title as meld_title, m.category as meld_category, m.description as meld_description,
             m.current_status as meld_status, m.max_members,
-            (SELECT COUNT(*)::int FROM meld_members mm WHERE mm.meld_id = m.id) as current_member_count,
+            (SELECT COUNT(*)::int FROM meld_members mm WHERE mm.meld_id = m.id AND mm.status = 'ACTIVE') as current_member_count,
             u.id as creator_id, u.name as creator_name, u.username as creator_username,
             COALESCE(sp.college, 'University Student') as creator_college,
             COALESCE(sv.status, 'UNVERIFIED') as creator_verification_status
