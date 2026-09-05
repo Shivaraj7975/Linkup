@@ -191,55 +191,28 @@ export const MeldDetailsPage = () => {
     <div className="app-layout">
       <Navbar />
 
-      <main className="container page-content">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+      <main className={`container page-content ${activeTab === 'chat' ? 'chat-page-mode' : ''}`}>
+        <div style={{ marginBottom: activeTab === 'chat' ? '0.5rem' : '1rem' }}>
           <button onClick={() => navigate('/discover')} className="btn btn-ghost btn-sm">
             <ArrowLeft size={16} />
             <span>Back to Discover</span>
           </button>
-
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => setShowShareModal(true)}
-              style={{ gap: '0.4rem' }}
-              title="Share MELD link"
-            >
-              <Share2 size={16} />
-              <span>Share Link</span>
-            </button>
-            {(isCreator || isMember) && (
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                onClick={() => setShowInviteModal(true)}
-                style={{ gap: '0.4rem' }}
-                title="Invite friends to this MELD"
-              >
-                <UserPlus size={16} />
-                <span>Invite Friends</span>
-              </button>
-            )}
-          </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="tabs margin-bottom-lg" style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+        <div className={`tabs ${activeTab === 'chat' ? 'margin-bottom-sm' : 'margin-bottom-lg'}`} style={{ display: 'flex', gap: '0.5rem' }}>
           <button
-            className={`btn btn-ghost ${activeTab === 'overview' ? 'text-accent' : ''}`}
-            style={{ borderBottom: activeTab === 'overview' ? '2px solid var(--accent-primary)' : 'none', borderRadius: '0' }}
+            className={`btn btn-sm ${activeTab === 'overview' ? 'btn-primary' : 'btn-ghost'}`}
             onClick={() => setActiveTab('overview')}
           >
             Overview
           </button>
           
           <button
-            className={`btn btn-ghost ${activeTab === 'chat' ? 'text-accent' : ''}`}
-            style={{ borderBottom: activeTab === 'chat' ? '2px solid var(--accent-primary)' : 'none', borderRadius: '0' }}
+            className={`btn btn-sm ${activeTab === 'chat' ? 'btn-primary' : 'btn-ghost'}`}
             onClick={() => setActiveTab('chat')}
           >
-            <MessageSquare size={16} style={{ marginRight: '0.4rem' }} />
+            <MessageSquare size={15} style={{ marginRight: '0.35rem' }} />
             Text
           </button>
         </div>
@@ -249,14 +222,14 @@ export const MeldDetailsPage = () => {
             {isCreator || isMember ? (
               <MeldChat meldId={id} currentUser={user} />
             ) : (
-              <div style={{
+              <div className="card glass-card meld-chat-card" style={{
                 display: 'flex',
                 flexDirection: 'column',
-                height: '650px',
-                backgroundColor: 'var(--bg-card, rgba(30, 41, 59, 0.5))',
+                backgroundColor: 'var(--bg-card)',
                 borderRadius: 'var(--radius-lg, 12px)',
-                border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
-                overflow: 'hidden'
+                border: '1px solid var(--border-color)',
+                overflow: 'hidden',
+                padding: '0'
               }}>
                 {/* Header */}
                 <div style={{
@@ -324,7 +297,7 @@ export const MeldDetailsPage = () => {
                         style={{ gap: '0.4rem' }}
                       >
                         <Share2 size={16} />
-                        <span>Share MELD with Friends</span>
+                        <span>Share</span>
                       </button>
                     </div>
                   ) : userJoinRequestStatus === 'REJECTED' ? (
@@ -340,14 +313,14 @@ export const MeldDetailsPage = () => {
                         style={{ gap: '0.4rem' }}
                       >
                         <Share2 size={16} />
-                        <span>Share MELD</span>
+                        <span>Share</span>
                       </button>
                     </div>
                   ) : !isAuthenticated ? (
                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                       <Link to="/login" className="btn btn-primary" style={{ gap: '0.5rem', padding: '0.65rem 1.5rem' }}>
                         <UserPlus size={18} />
-                        <span>Log in to Join MELD</span>
+                        <span>Join MELD</span>
                       </Link>
                       <button
                         type="button"
@@ -356,7 +329,7 @@ export const MeldDetailsPage = () => {
                         style={{ gap: '0.4rem' }}
                       >
                         <Share2 size={16} />
-                        <span>Share MELD</span>
+                        <span>Share</span>
                       </button>
                     </div>
                   ) : currentStatus !== 'OPEN' ? (
@@ -372,7 +345,7 @@ export const MeldDetailsPage = () => {
                         style={{ gap: '0.4rem' }}
                       >
                         <Share2 size={16} />
-                        <span>Share MELD</span>
+                        <span>Share</span>
                       </button>
                     </div>
                   ) : (
@@ -381,19 +354,20 @@ export const MeldDetailsPage = () => {
                         type="button"
                         className="btn btn-primary btn-lg"
                         onClick={() => setShowJoinModal(true)}
-                        style={{ gap: '0.5rem', padding: '0.75rem 1.75rem', boxShadow: '0 4px 16px rgba(59, 130, 246, 0.4)' }}
+                        style={{ gap: '0.5rem', padding: '0.75rem 1.75rem' }}
                       >
                         <UserPlus size={18} />
-                        <span>Join MELD to Involve in Text</span>
+                        <span>Join MELD</span>
                       </button>
                       <button
                         type="button"
                         className="btn btn-secondary btn-lg"
                         onClick={() => setShowShareModal(true)}
-                        style={{ gap: '0.4rem' }}
+                        title="Share MELD"
+                        aria-label="Share MELD"
+                        style={{ padding: '0.75rem 1rem' }}
                       >
                         <Share2 size={18} />
-                        <span>Share MELD</span>
                       </button>
                     </div>
                   )}
@@ -464,18 +438,57 @@ export const MeldDetailsPage = () => {
             <div className="card glass-card margin-bottom-lg">
               {/* Header Row */}
               <div className="card-top-row margin-bottom-sm">
-                <span className="badge badge-category">{category}</span>
-                <span
-                  className={`badge badge-status ${
-                    currentStatus === 'OPEN'
-                      ? 'status-open'
-                      : currentStatus === 'FULL'
-                      ? 'status-full'
-                      : 'status-closed'
-                  }`}
-                >
-                  {currentStatus}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span className="badge badge-category">{category}</span>
+                  <span
+                    className={`badge badge-status ${
+                      currentStatus === 'OPEN'
+                        ? 'status-open'
+                        : currentStatus === 'FULL'
+                        ? 'status-full'
+                        : 'status-closed'
+                    }`}
+                  >
+                    {currentStatus}
+                  </span>
+                </div>
+
+                {/* Top Quick Actions (Invite - Creator Only, Share - Everyone, Edit - Creator Only) */}
+                <div className="card-top-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {isCreator && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setShowInviteModal(true)}
+                      title="Invite friends"
+                      aria-label="Invite friends"
+                      style={{ padding: '0.45rem 0.65rem' }}
+                    >
+                      <UserPlus size={16} />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setShowShareModal(true)}
+                    title="Share MELD"
+                    aria-label="Share MELD"
+                    style={{ padding: '0.45rem 0.65rem' }}
+                  >
+                    <Share2 size={16} />
+                  </button>
+                  {isCreator && (
+                    <Link
+                      to={`/melds/${id}/edit`}
+                      className="btn btn-secondary btn-sm"
+                      title="Edit MELD"
+                      aria-label="Edit MELD"
+                      style={{ padding: '0.45rem 0.65rem' }}
+                    >
+                      <Pencil size={16} />
+                    </Link>
+                  )}
+                </div>
               </div>
 
               <h1 className="details-title">{title}</h1>
@@ -550,33 +563,11 @@ export const MeldDetailsPage = () => {
                       onClick={() => setShowMatchModal(true)}
                     >
                       <Sparkles size={18} />
-                      <span>Find My Team</span>
+                      <span>Find Team</span>
                     </button>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => setShowInviteModal(true)}
-                      style={{ gap: '0.4rem' }}
-                    >
-                      <UserPlus size={18} />
-                      <span>Invite Friends</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      onClick={() => setShowShareModal(true)}
-                      style={{ gap: '0.4rem' }}
-                    >
-                      <Share2 size={18} />
-                      <span>Share MELD</span>
-                    </button>
-                    <Link to={`/melds/${id}/edit`} className="btn btn-secondary" style={{ gap: '0.4rem' }}>
-                      <Pencil size={18} />
-                      <span>Edit Meld Details</span>
-                    </Link>
                     <Link to={`/melds/${id}/manage`} className="btn btn-ghost">
                       <Settings size={18} />
-                      <span>Manage Join Requests</span>
+                      <span>Requests</span>
                     </Link>
                     <button
                       onClick={handleDeleteLinkup}
@@ -584,7 +575,7 @@ export const MeldDetailsPage = () => {
                       className="btn btn-danger btn-ghost"
                     >
                       <Trash2 size={18} />
-                      <span>Delete MELD</span>
+                      <span>Delete</span>
                     </button>
                   </div>
                 ) : isMember ? (
@@ -603,43 +594,12 @@ export const MeldDetailsPage = () => {
                         <span>{leaving ? 'Leaving...' : 'Leave MELD'}</span>
                       </button>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-sm"
-                        onClick={() => setShowInviteModal(true)}
-                        style={{ gap: '0.4rem' }}
-                      >
-                        <UserPlus size={16} />
-                        <span>Invite Friends</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => setShowShareModal(true)}
-                        style={{ gap: '0.4rem' }}
-                      >
-                        <Share2 size={16} />
-                        <span>Share MELD</span>
-                      </button>
-                    </div>
                   </div>
                 ) : userJoinRequestStatus === 'PENDING' ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
                     <div className="badge-banner banner-info" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <Clock3 size={20} />
                       <span>Your join request is PENDING creator approval.</span>
-                    </div>
-                    <div>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => setShowShareModal(true)}
-                        style={{ gap: '0.4rem' }}
-                      >
-                        <Share2 size={18} />
-                        <span>Share MELD</span>
-                      </button>
                     </div>
                   </div>
                 ) : userJoinRequestStatus === 'REJECTED' ? (
@@ -648,33 +608,13 @@ export const MeldDetailsPage = () => {
                       <AlertCircle size={20} />
                       <span>Your join request was previously declined by the creator.</span>
                     </div>
-                    <div>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => setShowShareModal(true)}
-                        style={{ gap: '0.4rem' }}
-                      >
-                        <Share2 size={18} />
-                        <span>Share MELD</span>
-                      </button>
-                    </div>
                   </div>
                 ) : !isAuthenticated ? (
-                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     <Link to="/login" className="btn btn-primary">
                       <UserPlus size={18} />
                       <span>Log in to Request to Join</span>
                     </Link>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => setShowShareModal(true)}
-                      style={{ gap: '0.4rem' }}
-                    >
-                      <Share2 size={18} />
-                      <span>Share MELD</span>
-                    </button>
                   </div>
                 ) : currentStatus !== 'OPEN' ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
@@ -682,32 +622,12 @@ export const MeldDetailsPage = () => {
                       <AlertCircle size={20} />
                       <span>This Linkup is currently {currentStatus}. Applications are closed.</span>
                     </div>
-                    <div>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => setShowShareModal(true)}
-                        style={{ gap: '0.4rem' }}
-                      >
-                        <Share2 size={18} />
-                        <span>Share MELD</span>
-                      </button>
-                    </div>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     <button onClick={() => setShowJoinModal(true)} className="btn btn-primary btn-lg">
                       <UserPlus size={20} />
                       <span>Request to Join Team</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-lg"
-                      onClick={() => setShowShareModal(true)}
-                      style={{ gap: '0.4rem' }}
-                    >
-                      <Share2 size={18} />
-                      <span>Share MELD</span>
                     </button>
                   </div>
                 )}
@@ -719,52 +639,70 @@ export const MeldDetailsPage = () => {
               <h3 className="block-title margin-bottom-md">
                 Team Members ({members.length} / {maxMembers})
               </h3>
-              <div className="members-grid">
-                {members.map((m) => (
-                  <div
-                    key={m.id || m.userId}
-                    className="member-card interactive-card"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => navigate(`/users/${m.userId || m.id}`)}
-                    title={`Click to view ${m.name}'s profile`}
-                  >
-                    <div className="member-avatar">
-                      {m.name ? m.name.charAt(0).toUpperCase() : 'M'}
-                    </div>
-                    <div className="member-info">
-                      <div className="member-name-row">
-                        <span className="member-name">{m.name}</span>
-                        {m.verificationStatus === 'VERIFIED' && (
-                          <BadgeCheck size={14} className="verified-icon" title="Verified Student" />
-                        )}
-                      </div>
-                      <span className="member-college">{m.college}</span>
-                      <span className="member-role-badge">{m.role}</span>
-                      {m.skills && m.skills.length > 0 && (
-                        <div className="member-skills-list">
-                          {m.skills.slice(0, 3).map((sk) => (
-                            <span key={sk} className="pill pill-xs">
-                              {sk}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', marginTop: '0.4rem', gap: '0.25rem', width: 'fit-content' }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/users/${m.userId || m.id}`);
-                        }}
+              {(() => {
+                const nonCreatorMembers = members.filter(
+                  (m) =>
+                    m.role?.toLowerCase() !== 'creator' &&
+                    m.userId !== (creator?.userId || creator?.id || linkup?.creator_id || linkup?.creatorId)
+                );
+
+                if (nonCreatorMembers.length === 0) {
+                  return (
+                    <p className="text-muted" style={{ margin: 0, fontStyle: 'italic', fontSize: '0.9rem' }}>
+                      No other team members yet.
+                    </p>
+                  );
+                }
+
+                return (
+                  <div className="members-grid">
+                    {nonCreatorMembers.map((m) => (
+                      <div
+                        key={m.id || m.userId}
+                        className="member-card interactive-card"
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => navigate(`/users/${m.userId || m.id}`)}
+                        title={`Click to view ${m.name}'s profile`}
                       >
-                        <User size={12} />
-                        <span>View Profile</span>
-                      </button>
-                    </div>
+                        <div className="member-avatar">
+                          {m.name ? m.name.charAt(0).toUpperCase() : 'M'}
+                        </div>
+                        <div className="member-info">
+                          <div className="member-name-row">
+                            <span className="member-name">{m.name}</span>
+                            {m.verificationStatus === 'VERIFIED' && (
+                              <BadgeCheck size={14} className="verified-icon" title="Verified Student" />
+                            )}
+                          </div>
+                          <span className="member-college">{m.college}</span>
+                          <span className="member-role-badge">{m.role}</span>
+                          {m.skills && m.skills.length > 0 && (
+                            <div className="member-skills-list">
+                              {m.skills.slice(0, 3).map((sk) => (
+                                <span key={sk} className="pill pill-xs">
+                                  {sk}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm"
+                            style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', marginTop: '0.4rem', gap: '0.25rem', width: 'fit-content' }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/users/${m.userId || m.id}`);
+                            }}
+                          >
+                            <User size={12} />
+                            <span>View Profile</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
             </div>
           </div>
 
@@ -809,12 +747,6 @@ export const MeldDetailsPage = () => {
                 </button>
               </div>
 
-              {creator.bio && (
-                <div className="sidebar-block">
-                  <h4 className="sidebar-heading">About Creator</h4>
-                  <p className="creator-bio">{creator.bio}</p>
-                </div>
-              )}
 
               {creator.skills && creator.skills.length > 0 && (
                 <div className="sidebar-block">
@@ -927,7 +859,7 @@ export const MeldDetailsPage = () => {
         />
       )}
 
-      {showInviteModal && (
+      {showInviteModal && isCreator && (
         <InviteFriendsModal
           meld={linkup}
           onClose={() => setShowInviteModal(false)}

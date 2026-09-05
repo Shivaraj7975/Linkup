@@ -5,55 +5,41 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background-color: var(--bg-primary);
   color: #fff;
   font-family: var(--font-family);
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  position: relative;
 }
 
 #root {
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   position: relative;
-  background: var(--gradient-glow);
+  background-color: var(--bg-primary);
 }
 
-/* ===== Background Ambient Glows (Subtle Deep Blue) ===== */
-.ambient-glow-1 {
-  position: fixed;
-  top: -150px;
-  left: 50%;
-  transform: translate3d(-50%, 0, 0);
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.07) 0%, rgba(37, 99, 235, 0.03) 40%, transparent 70%);
-  filter: blur(70px);
-  pointer-events: none;
-  z-index: 0;
-  will-change: transform;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-}
-
+/* ===== Background Ambient Elements (Disabled for minimal look) ===== */
+.ambient-glow-1,
 .ambient-glow-2 {
-  position: fixed;
-  bottom: -100px;
-  right: -100px;
-  transform: translate3d(0, 0, 0);
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.04) 0%, transparent 70%);
-  filter: blur(70px);
-  pointer-events: none;
-  z-index: 0;
-  will-change: transform;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
+  display: none;
 }
 
 /* ===== Container ===== */
@@ -87,28 +73,6 @@ body {
 }
 
 /* ===== Keyframe Animations ===== */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);

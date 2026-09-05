@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Link2,
@@ -10,18 +10,53 @@ import {
   LogIn,
   Mail,
   ShieldAlert,
+  Bell,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { fetchNotificationsApi } from '../services/api';
+import { getSocket } from '../services/socket';
 
 export const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (isAuthenticated) {
+      fetchNotificationsApi()
+        .then((data) => {
+          if (isMounted) setUnreadCount(data.unreadCount || 0);
+        })
+        .catch((err) => console.warn('Failed to load notification badge count:', err.message));
+
+      // Listen for live socket notification events
+      const socket = getSocket();
+      if (socket) {
+        const handleNotifCreated = () => {
+          if (isMounted) {
+            setUnreadCount((prev) => prev + 1);
+          }
+        };
+        socket.on('notification_created', handleNotifCreated);
+        return () => {
+          isMounted = false;
+          socket.off('notification_created', handleNotifCreated);
+        };
+      }
+    } else {
+      setUnreadCount(0);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, location.pathname]);
 
   const navItems = [
     { label: 'Discover', shortLabel: 'Discover', path: '/discover', icon: Compass },
     { label: 'My Melds', shortLabel: 'My Melds', path: '/my-melds', icon: FolderGit2 },
     { label: 'Create Meld', shortLabel: 'Create', path: '/create-meld', icon: PlusCircle },
-    { label: 'Invitations & Requests', shortLabel: 'Requests', path: '/invitations', icon: Mail },
+    { label: 'Invitations', shortLabel: 'Invitations', path: '/invitations', icon: Mail },
     { label: 'Profile', shortLabel: 'Profile', path: '/profile', icon: User },
   ];
 
@@ -98,6 +133,35 @@ export const Navbar = () => {
                       <span>Invitations</span>
                     </Link>
 
+                    <Link
+                      to="/notifications"
+                      className={`btn btn-ghost btn-sm ${location.pathname === '/notifications' ? 'active-nav-link' : ''}`}
+                      style={{ position: 'relative' }}
+                      title="Notifications"
+                    >
+                      <Bell size={15} />
+                      <span>Notifications</span>
+                      {unreadCount > 0 && (
+                        <span
+                          style={{
+                            position: 'absolute',
+                            top: '-2px',
+                            right: '-2px',
+                            background: '#ef4444',
+                            color: '#fff',
+                            borderRadius: '50%',
+                            padding: '0.12rem 0.35rem',
+                            fontSize: '0.65rem',
+                            fontWeight: 800,
+                            lineHeight: 1,
+                            boxShadow: '0 0 6px rgba(239, 68, 68, 0.6)',
+                          }}
+                        >
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
+                    </Link>
+
                     {user?.role === 'ADMIN' && (
                       <Link
                         to="/admin"
@@ -133,36 +197,56 @@ export const Navbar = () => {
               <button
                 type="button"
                 onClick={logout}
-                className="btn btn-ghost btn-sm"
-                style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem', gap: '0.3rem' }}
+                className="btn btn-ghost mobile-nav-btn"
               >
-                <LogOut size={14} />
+                <LogOut size={16} />
                 <span>Logout</span>
               </button>
             ) : isAuthenticated ? (
               <>
+                <Link
+                  to="/notifications"
+                  className={`btn btn-ghost mobile-nav-btn ${location.pathname === '/notifications' ? 'active-nav-link' : ''}`}
+                  style={{ position: 'relative' }}
+                  title="Notifications"
+                >
+                  <Bell size={18} />
+                  {unreadCount > 0 && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        right: '4px',
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: '#ef4444',
+                        boxShadow: '0 0 6px rgba(239, 68, 68, 0.8)',
+                      }}
+                    />
+                  )}
+                </Link>
+
                 {user?.role === 'ADMIN' && (
                   <Link
                     to="/admin"
-                    className="btn btn-ghost btn-sm"
-                    style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem', color: '#f43f5e', borderColor: 'rgba(244, 63, 94, 0.4)', gap: '0.3rem' }}
+                    className="btn btn-ghost mobile-nav-btn"
+                    style={{ color: '#f43f5e', borderColor: 'rgba(244, 63, 94, 0.4)' }}
                   >
-                    <ShieldAlert size={14} color="#f43f5e" />
+                    <ShieldAlert size={16} color="#f43f5e" />
                     <span>Admin</span>
                   </Link>
                 )}
                 <Link
                   to="/profile"
-                  className={`btn btn-ghost btn-sm ${location.pathname === '/profile' ? 'active-nav-link' : ''}`}
-                  style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', gap: '0.4rem' }}
+                  className={`btn btn-ghost mobile-nav-btn ${location.pathname === '/profile' ? 'active-nav-link' : ''}`}
                 >
-                  <User size={16} />
-                  <span>Profile</span>
+                  <User size={18} />
                 </Link>
               </>
             ) : (
-              <Link to="/login" className="btn btn-primary btn-sm" style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}>
-                <LogIn size={14} />
+              <Link to="/login" className="btn btn-primary mobile-nav-btn">
+                <LogIn size={16} />
                 <span>Login</span>
               </Link>
             )}

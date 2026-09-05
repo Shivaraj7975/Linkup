@@ -21,6 +21,8 @@ import {
   AlertCircle,
   Github,
   Linkedin,
+  Instagram,
+  Youtube,
   Clock,
   BookOpen,
   Pencil,
@@ -38,6 +40,7 @@ import {
   Trash2,
   LogOut,
   Plus,
+  User,
 } from 'lucide-react';
 
 const isCollegeEmailValid = (email) => {
@@ -123,7 +126,7 @@ const FEATURED_SECTOR_INTEREST_NAMES = [
 
 export const ProfilePage = () => {
   const { user, fetchCurrentUser, logout } = useAuth();
-  
+
   // Page Profile State
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -140,6 +143,7 @@ export const ProfilePage = () => {
 
   // Form State for editing
   const [form, setForm] = useState({
+    name: '',
     college: '',
     city: '',
     state: '',
@@ -151,6 +155,9 @@ export const ProfilePage = () => {
     availability: 'Flexible',
     github_url: '',
     linkedin_url: '',
+    instagram_url: '',
+    youtube_url: '',
+    website_url: '',
     skills: [],
     interests: [],
   });
@@ -282,6 +289,7 @@ export const ProfilePage = () => {
 
       const p = profileData?.profile || {};
       setForm({
+        name: profileData?.user?.name || user?.name || '',
         college: p.college || '',
         city: p.city || '',
         state: p.state || '',
@@ -293,6 +301,9 @@ export const ProfilePage = () => {
         availability: p.availability || 'Flexible',
         github_url: p.github_url || '',
         linkedin_url: p.linkedin_url || '',
+        instagram_url: p.instagram_url || '',
+        youtube_url: p.youtube_url || '',
+        website_url: p.website_url || '',
         skills: profileData?.skills || [],
         interests: profileData?.interests || [],
       });
@@ -452,6 +463,10 @@ export const ProfilePage = () => {
     setEditError('');
 
     // Validation
+    if (!form.name || !form.name.trim()) {
+      setEditError('Please enter your full name.');
+      return;
+    }
     if (!collegeSelectedFromApi || !form.college.trim()) {
       setEditError('Please search and select your college or university from the verified registry dropdown.');
       return;
@@ -480,6 +495,7 @@ export const ProfilePage = () => {
     setSaving(true);
     try {
       await updateProfile({
+        name: form.name.trim(),
         college: form.college.trim(),
         city: form.city.trim(),
         state: form.state.trim(),
@@ -491,6 +507,9 @@ export const ProfilePage = () => {
         availability: form.availability,
         github_url: form.github_url.trim(),
         linkedin_url: form.linkedin_url.trim(),
+        instagram_url: form.instagram_url.trim(),
+        youtube_url: form.youtube_url.trim(),
+        website_url: form.website_url.trim(),
         skills: form.skills,
         interests: form.interests,
       });
@@ -530,8 +549,8 @@ export const ProfilePage = () => {
   const slicedFeaturedSkills = allFeaturedSkillsPool.slice(0, featuredSkillLimit);
   const searchResultsSkills = isSearchingSkills
     ? dbSkills.filter((s) =>
-        s.name.toLowerCase().includes(skillSearch.trim().toLowerCase())
-      )
+      s.name.toLowerCase().includes(skillSearch.trim().toLowerCase())
+    )
     : slicedFeaturedSkills;
 
   const isSearchingInterests = interestSearch.trim().length > 0;
@@ -541,8 +560,8 @@ export const ProfilePage = () => {
   const slicedFeaturedInterests = allFeaturedInterestsPool.slice(0, featuredInterestLimit);
   const searchResultsInterests = isSearchingInterests
     ? dbInterests.filter((i) =>
-        i.name.toLowerCase().includes(interestSearch.trim().toLowerCase())
-      )
+      i.name.toLowerCase().includes(interestSearch.trim().toLowerCase())
+    )
     : (slicedFeaturedInterests.length > 0 ? slicedFeaturedInterests : dbInterests.slice(0, featuredInterestLimit));
 
   return (
@@ -553,338 +572,322 @@ export const ProfilePage = () => {
       <Navbar />
 
       <main className="container dashboard-layout">
-          {pageSuccess && (
-            <div className="alert alert-success" style={{ marginBottom: '1.5rem' }}>
-              <CheckCircle2 size={16} /> {pageSuccess}
-            </div>
-          )}
+        {pageSuccess && (
+          <div className="alert alert-success" style={{ marginBottom: '1.5rem' }}>
+            <CheckCircle2 size={16} /> {pageSuccess}
+          </div>
+        )}
 
-          {/* PROFILE HEADER CARD */}
-          <div className="dashboard-banner profile-header-card">
-            <div className="user-avatar-large">
-              {user?.name?.charAt(0)?.toUpperCase() || 'S'}
-            </div>
-
-            <div className="user-header-info">
-              <div className="user-title-row">
-                <h1>{user?.name}</h1>
-                {(profileData?.user?.username || user?.username) && (
-                  <span className="user-handle-pill" style={{ color: 'var(--accent-primary, #3b82f6)', fontWeight: 600, fontSize: '1.05rem', marginLeft: '0.5rem' }}>
-                    @{profileData?.user?.username || user?.username}
-                  </span>
-                )}
+        {/* PROFILE HEADER CARD */}
+        <div className="dashboard-banner profile-header-card">
+          {/* Top Row: Left (Avatar on top, Name below) and Right (Edit/Logout on top, Username & Email below) */}
+          <div className="profile-header-top-row">
+            <div className="profile-header-left">
+              <div className="user-avatar-large">
+                {user?.name?.charAt(0)?.toUpperCase() || 'S'}
+              </div>
+              <div className="profile-name-group">
+                <h1 className="profile-display-name">{user?.name}</h1>
                 <span className={`verification-badge ${verification.status?.toLowerCase()}`}>
                   {verification.status === 'VERIFIED' ? (
-                    <><CheckCircle2 size={14} /> Verified Student</>
+                    <><CheckCircle2 size={13} /> Verified</>
                   ) : (
-                    <><AlertCircle size={14} /> Unverified Student</>
+                    <><AlertCircle size={13} /> Unverified</>
                   )}
                 </span>
               </div>
+            </div>
 
-              <p className="user-subtitle-line">
-                <GraduationCap size={16} />
-                <span>{p.degree || 'Student'}</span>
-                <span className="dot-divider">•</span>
-                <span>{p.college || 'University'}</span>
-                {(p.city || p.state || p.country) && (
-                  <>
-                    <span className="dot-divider">•</span>
-                    <span>
-                      📍 {[p.city, p.state, p.country].filter(Boolean).join(', ')}
-                    </span>
-                  </>
-                )}
-                {p.year_of_study && (
-                  <>
-                    <span className="dot-divider">•</span>
-                    <span>{p.year_of_study}</span>
-                  </>
-                )}
-              </p>
+            <div className="profile-header-right">
+              <div className="profile-header-actions">
+                <button onClick={handleOpenEdit} className="btn-icon-header" title="Edit Profile" aria-label="Edit Profile">
+                  <Pencil size={16} />
+                </button>
+                <button onClick={logout} className="btn-icon-header danger" title="Logout" aria-label="Logout">
+                  <LogOut size={16} />
+                </button>
+              </div>
 
-              {(p.github_url || p.linkedin_url || p.college_email || user?.email) && (
-                <div className="social-links-row">
-                  {user?.email && (
-                    <span className="social-link" style={{ color: 'var(--text-secondary)' }} title="Primary Login Email">
-                      <Mail size={16} /> {user.email} (Primary)
-                    </span>
-                  )}
+              <div className="profile-account-meta">
+                {(profileData?.user?.username || user?.username) && (
+                  <span className="user-handle-pill">
+                    @{profileData?.user?.username || user?.username}
+                  </span>
+                )}
+                {user?.email && (
+                  <span className="profile-email-tag" title="Primary Login Email">
+                    <Mail size={13} /> {user.email}
+                  </span>
+                )}
+              </div>
+
+              {/* Social / Portfolio Links - Logo Symbols Only */}
+              {(p.github_url || p.linkedin_url || p.instagram_url || p.youtube_url || p.website_url) && (
+                <div className="social-icons-group">
                   {p.github_url && (
-                    <a href={p.github_url} target="_blank" rel="noreferrer" className="social-link">
-                      <Github size={16} /> GitHub
+                    <a href={p.github_url} target="_blank" rel="noreferrer" className="social-symbol-btn" title="GitHub" aria-label="GitHub">
+                      <Github size={16} />
                     </a>
                   )}
                   {p.linkedin_url && (
-                    <a href={p.linkedin_url} target="_blank" rel="noreferrer" className="social-link">
-                      <Linkedin size={16} /> LinkedIn
+                    <a href={p.linkedin_url} target="_blank" rel="noreferrer" className="social-symbol-btn" title="LinkedIn" aria-label="LinkedIn">
+                      <Linkedin size={16} />
                     </a>
                   )}
-                  {p.college_email && (
-                    <span className="social-link" style={{ color: 'var(--text-secondary)' }} title="Linked College Email">
-                      <GraduationCap size={16} /> {p.college_email}
-                    </span>
+                  {p.instagram_url && (
+                    <a href={p.instagram_url} target="_blank" rel="noreferrer" className="social-symbol-btn" title="Instagram" aria-label="Instagram">
+                      <Instagram size={16} />
+                    </a>
+                  )}
+                  {p.youtube_url && (
+                    <a href={p.youtube_url} target="_blank" rel="noreferrer" className="social-symbol-btn" title="YouTube" aria-label="YouTube">
+                      <Youtube size={16} />
+                    </a>
+                  )}
+                  {p.website_url && (
+                    <a href={p.website_url} target="_blank" rel="noreferrer" className="social-symbol-btn" title="Portfolio / Website" aria-label="Portfolio / Website">
+                      <Globe size={16} />
+                    </a>
                   )}
                 </div>
               )}
             </div>
-
-            {/* EDIT PROFILE & LOGOUT BUTTONS */}
-            <div className="profile-header-actions" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <button onClick={handleOpenEdit} className="btn btn-primary">
-                <Pencil size={16} />
-                <span>Edit Profile</span>
-              </button>
-              <button onClick={logout} className="btn btn-ghost" style={{ color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                <LogOut size={16} />
-                <span>Logout</span>
-              </button>
-            </div>
           </div>
 
-          {/* MAIN PROFILE GRID */}
-          <div className="dashboard-grid">
-            {/* Left Main Column */}
-            <div className="dashboard-main-col">
-              {/* STUDENT VERIFICATION & COLLEGE EMAIL CARD */}
-              <div className="dash-card">
-                <div className="dash-card-header flex-center-between">
-                  <div className="flex-center gap-xs">
-                    <ShieldCheck size={18} color={verification.status === 'VERIFIED' ? '#22d3ee' : '#f59e0b'} />
-                    <h2>Student Verification</h2>
-                  </div>
-                  <span className={`verification-badge ${verification.status?.toLowerCase()}`}>
-                    {verification.status === 'VERIFIED' ? (
-                      <><CheckCircle2 size={14} /> Verified Student</>
-                    ) : (
-                      <><AlertCircle size={14} /> Unverified Student</>
-                    )}
-                  </span>
-                </div>
-
-                {collegeActionError && (
-                  <div className="alert alert-error margin-bottom-sm flex-center gap-2xs">
-                    <AlertCircle size={15} /> <span>{collegeActionError}</span>
-                  </div>
-                )}
-                {collegeActionSuccess && (
-                  <div className="alert alert-success margin-bottom-sm flex-center gap-2xs">
-                    <CheckCircle2 size={15} /> <span>{collegeActionSuccess}</span>
-                  </div>
-                )}
-
-                {p.college_email && verification.status === 'VERIFIED' ? (
-                  <div className="flex-center-between p-sm rounded-lg" style={{ background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.15)', flexWrap: 'wrap', gap: '0.75rem' }}>
-                    <div className="flex-center gap-sm">
-                      <GraduationCap size={20} className="text-cyan" />
-                      <div>
-                        <div className="font-semibold text-cyan">Linked College Email</div>
-                        <div className="text-sm text-muted">{p.college_email}</div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleUnlinkCollege}
-                      disabled={unlinkingCollege}
-                      className="btn btn-danger btn-ghost btn-sm flex-center gap-2xs"
-                      title="Remove linked college email"
-                    >
-                      <Trash2 size={14} />
-                      <span>{unlinkingCollege ? 'Unlinking...' : 'Unlink College ID'}</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="p-md rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.08)', marginTop: '0.5rem' }}>
-                    <p className="text-sm text-muted" style={{ marginBottom: '1rem', lineHeight: '1.5' }}>
-                      Link your institutional email to verify your student status and receive top priority in AI candidate matching!
-                    </p>
-
-                    {collegeStep === 1 ? (
-                      <form onSubmit={handleSendCollegeOtp} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <div style={{ flex: 1, minWidth: '220px' }}>
-                          <input
-                            type="email"
-                            placeholder="student@university.edu"
-                            value={collegeInput}
-                            onChange={(e) => setCollegeInput(e.target.value)}
-                            className="input-field"
-                            style={{ height: '44px' }}
-                          />
-                        </div>
-                        <button type="submit" className="btn btn-primary" style={{ height: '44px', padding: '0 1.25rem', whiteSpace: 'nowrap' }} disabled={sendingCollegeOtp}>
-                          {sendingCollegeOtp ? (
-                            <><Loader2 size={16} className="spin" /> Sending...</>
-                          ) : (
-                            <><Mail size={16} /> Send OTP Code</>
-                          )}
-                        </button>
-                      </form>
-                    ) : (
-                      <form onSubmit={handleVerifyAndLinkCollege} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <div style={{ flex: 1, minWidth: '160px', maxWidth: '240px' }}>
-                          <input
-                            type="text"
-                            maxLength={6}
-                            placeholder="6-Digit OTP Code"
-                            value={collegeOtpInput}
-                            onChange={(e) => setCollegeOtpInput(e.target.value)}
-                            className="input-field text-center font-bold"
-                            style={{ height: '44px', letterSpacing: '0.25rem', fontSize: '1.05rem' }}
-                          />
-                        </div>
-                        <button type="submit" className="btn btn-success" style={{ height: '44px', padding: '0 1.25rem', whiteSpace: 'nowrap' }} disabled={linkingCollege}>
-                          {linkingCollege ? (
-                            <><Loader2 size={16} className="spin" /> Verifying...</>
-                          ) : (
-                            <><CheckCircle2 size={16} /> Verify & Link</>
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setCollegeStep(1)}
-                          className="btn btn-ghost"
-                          style={{ height: '44px' }}
-                        >
-                          Cancel
-                        </button>
-                      </form>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* ABOUT CARD */}
-              <div className="dash-card">
-                <div className="dash-card-header">
-                  <BookOpen size={18} color="#3b82f6" />
-                  <h2>About</h2>
-                </div>
-                <p className="bio-text">{p.bio || 'No bio provided yet.'}</p>
-              </div>
-
-              {/* SKILLS CARD */}
-              <div className="dash-card">
-                <div className="dash-card-header">
-                  <Code2 size={18} color="#3b82f6" />
-                  <h2>Skills ({skills.length})</h2>
-                </div>
-                <div className="pill-tags">
-                  {skills.length === 0 ? (
-                    <p className="no-pills-text">No skills added yet.</p>
-                  ) : (
-                    skills.map((sk) => (
-                      <span key={sk.id} className="tag-pill active">
-                        {sk.name}
-                      </span>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* INTERESTS CARD */}
-              <div className="dash-card">
-                <div className="dash-card-header">
-                  <Sparkles size={18} color="#3b82f6" />
-                  <h2>Areas of Interest ({interests.length})</h2>
-                </div>
-                <div className="pill-tags">
-                  {interests.length === 0 ? (
-                    <p className="no-pills-text">No interests selected yet.</p>
-                  ) : (
-                    interests.map((it) => (
-                      <span key={it.id} className="tag-pill cyan">
-                        <Sparkles size={13} style={{ marginRight: 2 }} />
-                        {it.name}
-                      </span>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Side Column */}
-            <div className="dashboard-side-col">
-              {/* AVAILABILITY CARD */}
-              <div className="dash-card">
-                <div className="dash-card-header">
-                  <Clock size={18} color="#10b981" />
-                  <h2>Availability</h2>
-                </div>
-                <div className="availability-status">
-                  <span className="avail-dot" />
-                  <span>{p.availability || 'Flexible'}</span>
-                </div>
-              </div>
-
-              {/* LINKS CARD */}
-              <div className="dash-card">
-                <div className="dash-card-header">
-                  <Globe size={18} color="#3b82f6" />
-                  <h2>Portfolio & Links</h2>
-                </div>
-                <div className="links-list-group">
-                  {p.github_url ? (
-                    <a href={p.github_url} target="_blank" rel="noreferrer" className="link-item-row">
-                      <Github size={18} />
-                      <span className="link-text">{p.github_url.replace(/^https?:\/\//, '')}</span>
-                    </a>
-                  ) : (
-                    <p className="no-pills-text">No GitHub link provided.</p>
-                  )}
-                  {p.linkedin_url ? (
-                    <a href={p.linkedin_url} target="_blank" rel="noreferrer" className="link-item-row">
-                      <Linkedin size={18} />
-                      <span className="link-text">{p.linkedin_url.replace(/^https?:\/\//, '')}</span>
-                    </a>
-                  ) : (
-                    <p className="no-pills-text">No LinkedIn link provided.</p>
-                  )}
-                </div>
-              </div>
-            </div>
+          {/* Bottom Row: College & Academic Details */}
+          <div className="profile-academic-details-row">
+            <span className="profile-meta-item">
+              <GraduationCap size={15} className="text-accent" />
+              <span>{p.degree || 'Student'}{p.year_of_study ? ` • ${p.year_of_study}` : ''}</span>
+            </span>
+            {p.college && (
+              <span className="profile-meta-item">
+                <Building2 size={15} className="text-accent" />
+                <span>{p.college}</span>
+              </span>
+            )}
+            {(p.city || p.state || p.country) && (
+              <span className="profile-meta-item text-muted">
+                <MapPin size={14} />
+                <span>{[p.city, p.state, p.country].filter(Boolean).join(', ')}</span>
+              </span>
+            )}
+            {p.college_email && (
+              <span className="profile-meta-item text-muted" title="Linked College Email">
+                <ShieldCheck size={14} color="#22d3ee" />
+                <span>{p.college_email}</span>
+              </span>
+            )}
           </div>
-        </main>
+        </div>
 
-        {/* EDIT PROFILE MODAL */}
-        {isEditing && (
-          <div className="modal-overlay" onClick={() => setIsEditing(false)}>
-            <div className="modal-card edit-profile-modal" onClick={(e) => e.stopPropagation()} tabIndex={-1}>
-              <div className="modal-header">
-                <div className="modal-title-group">
-                  <Pencil size={20} color="#3b82f6" />
-                  <h2>Edit Student Profile</h2>
-                </div>
-                <button onClick={() => setIsEditing(false)} className="modal-close-btn" type="button" aria-label="Close modal">
-                  <X size={20} />
-                </button>
+        {/* 1. STUDENT VERIFICATION & COLLEGE EMAIL CARD (Only visible when unverified) */}
+        {verification.status !== 'VERIFIED' && (
+          <div className="dash-card" style={{ marginBottom: '2rem' }}>
+            <div className="dash-card-header flex-center-between">
+              <div className="flex-center gap-xs">
+                <ShieldCheck size={18} color="#f59e0b" />
+                <h2>Student Verification</h2>
               </div>
+              <span className="verification-badge unverified">
+                <AlertCircle size={14} /> Unverified Student
+              </span>
+            </div>
 
-              <form onSubmit={handleSaveProfile} className="modal-body auth-form">
-                {editError && <div className="alert alert-error">{editError}</div>}
+            {collegeActionError && (
+              <div className="alert alert-error margin-bottom-sm flex-center gap-2xs">
+                <AlertCircle size={15} /> <span>{collegeActionError}</span>
+              </div>
+            )}
+            {collegeActionSuccess && (
+              <div className="alert alert-success margin-bottom-sm flex-center gap-2xs">
+                <CheckCircle2 size={15} /> <span>{collegeActionSuccess}</span>
+              </div>
+            )}
 
-                {/* College Autocomplete Search */}
-                <div className="form-group">
-                  <label htmlFor="edit-college-input">College or University *</label>
-                  <div className="input-wrapper icon-left" ref={dropdownRef}>
-                    <Building2 size={18} className="input-left-icon" />
+            <div className="p-md rounded-lg" style={{ marginTop: '0.5rem' }}>
+              <p className="text-sm text-muted" style={{ marginBottom: '1rem', lineHeight: '1.5' }}>
+                Link your institutional email to verify your student status and receive top priority in AI candidate matching!
+              </p>
+
+              {collegeStep === 1 ? (
+                <form onSubmit={handleSendCollegeOtp} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: '220px' }}>
                     <input
-                      id="edit-college-input"
-                      type="text"
-                      placeholder="Type university name to search verified registry..."
-                      value={form.college}
-                      autoComplete="off"
-                      autoFocus={false}
-                      onChange={(e) => {
-                        isUserTypingCollegeRef.current = true;
-                        setForm((prev) => ({ ...prev, college: e.target.value }));
-                        setCollegeSelectedFromApi(false);
-                      }}
-                      onFocus={() => {
-                        if (isUserTypingCollegeRef.current && uniSuggestions.length > 0 && !collegeSelectedFromApi) {
-                          setShowUniDropdown(true);
-                        }
-                      }}
+                      type="email"
+                      placeholder="student@university.edu"
+                      value={collegeInput}
+                      onChange={(e) => setCollegeInput(e.target.value)}
+                      className="input-field"
+                      style={{ height: '44px' }}
                     />
+                  </div>
+                  <button type="submit" className="btn btn-primary" style={{ height: '44px', padding: '0 1.25rem', whiteSpace: 'nowrap' }} disabled={sendingCollegeOtp}>
+                    {sendingCollegeOtp ? (
+                      <><Loader2 size={16} className="spin" /> Sending...</>
+                    ) : (
+                      <><Mail size={16} /> Send OTP Code</>
+                    )}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyAndLinkCollege} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: '160px', maxWidth: '240px' }}>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      placeholder="6-Digit OTP Code"
+                      value={collegeOtpInput}
+                      onChange={(e) => setCollegeOtpInput(e.target.value)}
+                      className="input-field text-center font-bold"
+                      style={{ height: '44px', letterSpacing: '0.25rem', fontSize: '1.05rem' }}
+                    />
+                  </div>
+                  <button type="submit" className="btn btn-success" style={{ height: '44px', padding: '0 1.25rem', whiteSpace: 'nowrap' }} disabled={linkingCollege}>
+                    {linkingCollege ? (
+                      <><Loader2 size={16} className="spin" /> Verifying...</>
+                    ) : (
+                      <><CheckCircle2 size={16} /> Verify & Link</>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCollegeStep(1)}
+                    className="btn btn-ghost"
+                    style={{ height: '44px' }}
+                  >
+                    Cancel
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 2. COMBINED DETAILS CARD (About, Skills, Interests, Availability in 2x2 grid) */}
+        <div className="dash-card profile-combined-card">
+          <div className="profile-combined-grid">
+            {/* 1. ABOUT SECTION */}
+            <div className="profile-section-item">
+              <div className="profile-section-header">
+                <BookOpen size={18} color="#3b82f6" />
+                <h2>About</h2>
+              </div>
+              <p className="bio-text" style={{ color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0, fontSize: '0.95rem', wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' }}>
+                {p.bio || 'No bio provided yet.'}
+              </p>
+            </div>
+
+            {/* 2. SKILLS SECTION */}
+            <div className="profile-section-item">
+              <div className="profile-section-header">
+                <Code2 size={18} color="#3b82f6" />
+                <h2>Skills & Expertise ({skills.length})</h2>
+              </div>
+              <div className="pill-tags">
+                {skills.length === 0 ? (
+                  <p className="no-pills-text">No skills added yet.</p>
+                ) : (
+                  skills.map((sk) => (
+                    <span key={sk.id} className="tag-pill active">
+                      {sk.name}
+                    </span>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* 3. AREAS OF INTEREST SECTION */}
+            <div className="profile-section-item">
+              <div className="profile-section-header">
+                <Sparkles size={18} color="#3b82f6" />
+                <h2>Areas of Interest ({interests.length})</h2>
+              </div>
+              <div className="pill-tags">
+                {interests.length === 0 ? (
+                  <p className="no-pills-text">No interests selected yet.</p>
+                ) : (
+                  interests.map((it) => (
+                    <span key={it.id} className="tag-pill cyan">
+                      <Sparkles size={13} style={{ marginRight: 2 }} />
+                      {it.name}
+                    </span>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* 4. AVAILABILITY SECTION */}
+            <div className="profile-section-item">
+              <div className="profile-section-header">
+                <Clock size={18} color="#10b981" />
+                <h2>Availability</h2>
+              </div>
+              <div className="availability-status">
+                <span className="avail-dot" />
+                <span>{p.availability || 'Flexible'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* EDIT PROFILE MODAL */}
+      {isEditing && (
+        <div className="modal-overlay" onClick={() => setIsEditing(false)}>
+          <div className="modal-card edit-profile-modal" onClick={(e) => e.stopPropagation()} tabIndex={-1}>
+            <div className="modal-header">
+              <div className="modal-title-group">
+                <Pencil size={20} color="#3b82f6" />
+                <h2>Edit Student Profile</h2>
+              </div>
+              <button onClick={() => setIsEditing(false)} className="modal-close-btn" type="button" aria-label="Close modal">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="modal-body auth-form">
+              {editError && <div className="alert alert-error">{editError}</div>}
+
+              {/* Full Name */}
+              <div className="form-group">
+                <label htmlFor="edit-name-input">Full Name *</label>
+                <div className="input-wrapper icon-left">
+                  <User size={18} className="input-left-icon" />
+                  <input
+                    id="edit-name-input"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={form.name}
+                    required
+                    onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* College Autocomplete Search */}
+              <div className="form-group">
+                <label htmlFor="edit-college-input">College or University *</label>
+                <div className="input-wrapper icon-left" ref={dropdownRef}>
+                  <Building2 size={18} className="input-left-icon" />
+                  <input
+                    id="edit-college-input"
+                    type="text"
+                    placeholder="Type university name to search verified registry..."
+                    value={form.college}
+                    autoComplete="off"
+                    autoFocus={false}
+                    onChange={(e) => {
+                      isUserTypingCollegeRef.current = true;
+                      setForm((prev) => ({ ...prev, college: e.target.value }));
+                      setCollegeSelectedFromApi(false);
+                    }}
+                    onFocus={() => {
+                      if (isUserTypingCollegeRef.current && uniSuggestions.length > 0 && !collegeSelectedFromApi) {
+                        setShowUniDropdown(true);
+                      }
+                    }}
+                  />
                   {uniLoading && <Loader2 size={18} className="input-icon-btn spin" />}
 
                   {showUniDropdown && uniSuggestions.length > 0 && (
@@ -1256,7 +1259,7 @@ export const ProfilePage = () => {
                 </div>
               </div>
 
-              {/* Social Links */}
+              {/* Social & Portfolio Links */}
               <div className="country-input-row">
                 <div className="form-group">
                   <label>GitHub URL</label>
@@ -1282,6 +1285,47 @@ export const ProfilePage = () => {
                       onChange={(e) => setForm((prev) => ({ ...prev, linkedin_url: e.target.value }))}
                     />
                   </div>
+                </div>
+              </div>
+
+              <div className="country-input-row">
+                <div className="form-group">
+                  <label>Instagram URL</label>
+                  <div className="input-wrapper icon-left">
+                    <Instagram size={16} className="input-left-icon" />
+                    <input
+                      type="url"
+                      placeholder="https://instagram.com/yourusername"
+                      value={form.instagram_url}
+                      onChange={(e) => setForm((prev) => ({ ...prev, instagram_url: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>YouTube URL</label>
+                  <div className="input-wrapper icon-left">
+                    <Youtube size={16} className="input-left-icon" />
+                    <input
+                      type="url"
+                      placeholder="https://youtube.com/@yourchannel"
+                      value={form.youtube_url}
+                      onChange={(e) => setForm((prev) => ({ ...prev, youtube_url: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Portfolio / Personal Website</label>
+                <div className="input-wrapper icon-left">
+                  <Globe size={16} className="input-left-icon" />
+                  <input
+                    type="url"
+                    placeholder="https://yourportfolio.com"
+                    value={form.website_url}
+                    onChange={(e) => setForm((prev) => ({ ...prev, website_url: e.target.value }))}
+                  />
                 </div>
               </div>
 

@@ -290,7 +290,12 @@ const inviteUser = async (req, res, next) => {
     const result = await inviteUserToLinkup(linkupId, req.user.id, inviteeId);
     return res.json({ success: true, message: 'Invitation sent.', ...result });
   } catch (error) {
-    if (error.message.includes('not found') || error.message.includes('already a member') || error.message.includes('not open')) {
+    if (
+      error.message.includes('not found') ||
+      error.message.includes('already a member') ||
+      error.message.includes('not open') ||
+      error.message.includes('Only the creator')
+    ) {
       return res.status(400).json({ success: false, message: error.message });
     }
     next(error);

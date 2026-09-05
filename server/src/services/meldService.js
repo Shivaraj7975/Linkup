@@ -2,6 +2,7 @@ const { pool, query } = require('../config/db');
 const { getPublicStudentProfileByUserId } = require('./profileService');
 const { filterCandidateStudents, getFallbackDeterministicMatches } = require('./matchingService');
 const { matchCandidates, buildCompactPayload } = require('./ai/aiMatchingService');
+const notificationService = require('./notificationService');
 const crypto = require('crypto');
 
 const inFlightLocks = new Map();
@@ -341,10 +342,10 @@ const getLinkupById = async (id, currentUserId = null) => {
 };
 
 /**
- * Update Linkup (Creator ONLY)
+ * Update Linkup (Creator ONLY with strict backend validation)
  */
 const updateLinkup = async (id, creatorId, data) => {
-  const existing = await query('SELECT creator_id FROM melds WHERE id = $1', [id]);
+  const existing = await query('SELECT id, creator_id, max_members, current_status FROM melds WHERE id = $1', [id]);
   if (existing.rows.length === 0) throw new Error('Linkup not found.');
   if (existing.rows[0].creator_id !== creatorId) throw new Error('Unauthorized. Only creator can edit Linkup.');
 
@@ -359,6 +360,70 @@ const updateLinkup = async (id, creatorId, data) => {
     currentStatus,
   } = data;
 
+  // 1. Validate Title
+  if (title !== undefined) {
+    if (typeof title !== 'string' || title.trim().length < 3 || title.trim().length > 100) {
+      throw new Error('Title is required and must be between 3 and 100 characters.');
+    }
+  }
+
+  // 2. Validate Description
+  if (description !== undefined) {
+    if (typeof description !== 'string' || description.trim().length < 10 || description.trim().length > 2000) {
+      throw new Error('Description is required and must be between 10 and 2000 characters.');
+    }
+  }
+
+  // 3. Validate Category
+  if (category !== undefined) {
+    if (typeof category !== 'string' || category.trim().length === 0 || category.trim().length > 50) {
+      throw new Error('Valid project category is required.');
+    }
+  }
+
+  // 4. Query current active membership count to prevent shrinking below active team size
+  const memberCountRes = await query(
+    `SELECT COUNT(*)::int as active_count FROM meld_members WHERE meld_id = $1 AND status = 'ACTIVE'`,
+    [id]
+  );
+  const currentActiveMembers = memberCountRes.rows[0].active_count;
+
+  // 5. Validate maxMembers
+  let validatedMaxMembers = existing.rows[0].max_members;
+  if (maxMembers !== undefined && maxMembers !== null) {
+    const parsedMax = parseInt(maxMembers, 10);
+    if (isNaN(parsedMax) || parsedMax < 2 || parsedMax > 50) {
+      throw new Error('Maximum members must be an integer between 2 and 50.');
+    }
+    if (parsedMax < currentActiveMembers) {
+      throw new Error(`Maximum members (${parsedMax}) cannot be lower than the current active member count (${currentActiveMembers}).`);
+    }
+    validatedMaxMembers = parsedMax;
+  }
+
+  // 6. Validate & Normalize currentStatus
+  const VALID_STATUSES = ['OPEN', 'FULL', 'IN_PROGRESS', 'COMPLETED', 'CLOSED'];
+  let validatedStatus = existing.rows[0].current_status;
+  if (currentStatus !== undefined && currentStatus !== null) {
+    const cleanStatus = String(currentStatus).trim().toUpperCase();
+    if (!VALID_STATUSES.includes(cleanStatus)) {
+      throw new Error(`Invalid status: ${currentStatus}. Must be one of: ${VALID_STATUSES.join(', ')}`);
+    }
+    // Business Rule: Do not allow OPEN when current members >= maxMembers
+    if (cleanStatus === 'OPEN' && currentActiveMembers >= validatedMaxMembers) {
+      validatedStatus = 'FULL';
+    } else {
+      validatedStatus = cleanStatus;
+    }
+  } else {
+    // Re-evaluate current status based on new capacity
+    if (currentActiveMembers >= validatedMaxMembers && validatedStatus === 'OPEN') {
+      validatedStatus = 'FULL';
+    } else if (currentActiveMembers < validatedMaxMembers && validatedStatus === 'FULL') {
+      validatedStatus = 'OPEN';
+    }
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -368,10 +433,10 @@ const updateLinkup = async (id, creatorId, data) => {
         title = COALESCE($1, title),
         description = COALESCE($2, description),
         category = COALESCE($3, category),
-        max_members = COALESCE($4, max_members),
+        max_members = $4,
         commitment_level = COALESCE($5, commitment_level),
         project_duration = COALESCE($6, project_duration),
-        current_status = COALESCE($7, current_status),
+        current_status = $7,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $8 AND creator_id = $9
       RETURNING *;
@@ -381,10 +446,10 @@ const updateLinkup = async (id, creatorId, data) => {
       title ? title.trim() : null,
       description ? description.trim() : null,
       category ? category.trim() : null,
-      maxMembers ? parseInt(maxMembers, 10) : null,
+      validatedMaxMembers,
       commitmentLevel ? commitmentLevel.trim() : null,
       projectDuration ? projectDuration.trim() : null,
-      currentStatus ? currentStatus.trim() : null,
+      validatedStatus,
       id,
       creatorId,
     ]);
@@ -442,7 +507,7 @@ const deleteLinkup = async (id, creatorId) => {
 const createJoinRequest = async (linkupId, userId, message) => {
   // 1. Fetch linkup info & current capacity
   const linkupRes = await query(
-    `SELECT id, creator_id, max_members, current_status FROM melds WHERE id = $1`,
+    `SELECT id, creator_id, title, max_members, current_status FROM melds WHERE id = $1`,
     [linkupId]
   );
   if (linkupRes.rows.length === 0) throw new Error('Linkup not found.');
@@ -458,27 +523,31 @@ const createJoinRequest = async (linkupId, userId, message) => {
     throw new Error(`Cannot submit join request. This Linkup is currently ${linkup.current_status}.`);
   }
 
-  // Check if user is already a member
+  // Check if user is already an active member
   const memberCheck = await query(
-    `SELECT id FROM meld_members WHERE meld_id = $1 AND user_id = $2`,
+    `SELECT id FROM meld_members WHERE meld_id = $1 AND user_id = $2 AND status = 'ACTIVE'`,
     [linkupId, userId]
   );
   if (memberCheck.rows.length > 0) {
     throw new Error('You are already a member of this Linkup.');
   }
 
-  // Requirement: Duplicate join requests prohibited
+  // Requirement: Duplicate pending join requests prohibited
   const existingReq = await query(
     `SELECT id, status FROM join_requests WHERE meld_id = $1 AND user_id = $2`,
     [linkupId, userId]
   );
   if (existingReq.rows.length > 0) {
-    throw new Error(`You have already submitted a join request for this Linkup (Status: ${existingReq.rows[0].status}).`);
+    if (existingReq.rows[0].status === 'PENDING') {
+      throw new Error('You have already submitted a join request for this Linkup (Status: PENDING).');
+    }
+    // If status was ACCEPTED/REJECTED previously but user is no longer a member (e.g. left team), delete old request
+    await query(`DELETE FROM join_requests WHERE id = $1`, [existingReq.rows[0].id]);
   }
 
   // Check team capacity
   const countRes = await query(
-    `SELECT COUNT(*)::int as count FROM meld_members WHERE meld_id = $1`,
+    `SELECT COUNT(*)::int as count FROM meld_members WHERE meld_id = $1 AND status = 'ACTIVE'`,
     [linkupId]
   );
   const currentCount = countRes.rows[0].count;
@@ -495,6 +564,18 @@ const createJoinRequest = async (linkupId, userId, message) => {
      RETURNING id, meld_id as linkup_id, user_id, message, status, created_at`,
     [linkupId, userId, message ? message.trim() : '']
   );
+
+  // Fetch applicant name for notification
+  const applicantRes = await query(`SELECT name FROM users WHERE id = $1`, [userId]);
+  const applicantName = applicantRes.rows[0]?.name || 'A student';
+
+  // Trigger notification for Meld creator
+  notificationService.notifyNewJoinRequest({
+    meldId: linkupId,
+    creatorId: linkup.creator_id,
+    applicantName,
+    meldTitle: linkup.title,
+  }).catch((err) => console.error('Notification error in createJoinRequest:', err.message));
 
   return reqInsert.rows[0];
 };
@@ -538,7 +619,7 @@ const getLinkupRequests = async (linkupId, creatorId) => {
 };
 
 /**
- * Accept Join Request (Creator ONLY, Transactional)
+ * Accept Join Request (Creator ONLY, Transactional with Row-Level Locking)
  */
 const acceptJoinRequest = async (requestId, creatorId) => {
   const client = await pool.connect();
@@ -547,7 +628,7 @@ const acceptJoinRequest = async (requestId, creatorId) => {
 
     // 1. Fetch join request & check existence
     const reqRes = await client.query(
-      `SELECT jr.id, jr.meld_id as linkup_id, jr.user_id, jr.status, l.creator_id, l.max_members, l.current_status
+      `SELECT jr.id, jr.meld_id as linkup_id, jr.user_id, jr.status, l.creator_id, l.title as meld_title
        FROM join_requests jr
        JOIN melds l ON jr.meld_id = l.id
        WHERE jr.id = $1`,
@@ -557,59 +638,100 @@ const acceptJoinRequest = async (requestId, creatorId) => {
     if (reqRes.rows.length === 0) throw new Error('Join request not found.');
     const reqInfo = reqRes.rows[0];
 
-    // 2. Verify creator ownership
+    // 2. Verify creator authorization
     if (reqInfo.creator_id !== creatorId) {
-      throw new Error('Unauthorized. Only the Linkup creator can accept join requests.');
+      throw new Error('Unauthorized. Only the MELD creator can accept join requests.');
     }
 
+    // 3. State Machine Check: Only PENDING requests may be accepted
     if (reqInfo.status === 'ACCEPTED') {
       throw new Error('This join request has already been accepted.');
     }
+    if (reqInfo.status === 'REJECTED') {
+      throw new Error('Cannot accept a join request that has already been rejected.');
+    }
+    if (reqInfo.status !== 'PENDING') {
+      throw new Error(`Cannot accept join request with status: ${reqInfo.status}`);
+    }
 
-    // 3. Check capacity
+    // 4. Lock the MELD row FOR UPDATE to prevent concurrency races on capacity
+    const meldLockRes = await client.query(
+      `SELECT id, creator_id, max_members, current_status, title FROM melds WHERE id = $1 FOR UPDATE`,
+      [reqInfo.linkup_id]
+    );
+    if (meldLockRes.rows.length === 0) {
+      throw new Error('MELD project not found.');
+    }
+    const meld = meldLockRes.rows[0];
+
+    // 5. Re-check MELD status
+    if (meld.current_status === 'CLOSED') {
+      throw new Error('Cannot accept candidate. The MELD project is closed.');
+    }
+
+    // 6. Count current active members
     const memberCountRes = await client.query(
-      `SELECT COUNT(*)::int as count FROM meld_members WHERE meld_id = $1`,
+      `SELECT COUNT(*)::int as count FROM meld_members WHERE meld_id = $1 AND status = 'ACTIVE'`,
       [reqInfo.linkup_id]
     );
     const currentMemberCount = memberCountRes.rows[0].count;
-    if (currentMemberCount >= reqInfo.max_members) {
+
+    // 7. Reject if current count >= max_members
+    if (currentMemberCount >= meld.max_members) {
       await client.query(`UPDATE melds SET current_status = 'FULL' WHERE id = $1`, [reqInfo.linkup_id]);
       throw new Error('Cannot accept candidate. The team is already at maximum capacity.');
     }
 
-    // 4. Add candidate to meld_members
+    // 8. Insert/activate the member
     await client.query(
       `INSERT INTO meld_members (meld_id, user_id, role, status)
        VALUES ($1, $2, 'Member', 'ACTIVE')
-       ON CONFLICT (meld_id, user_id) DO NOTHING`,
+       ON CONFLICT (meld_id, user_id) 
+       DO UPDATE SET status = 'ACTIVE', joined_at = CURRENT_TIMESTAMP`,
       [reqInfo.linkup_id, reqInfo.user_id]
     );
 
-    // 5. Update request status to ACCEPTED
+    // 9. Update join request to ACCEPTED
     await client.query(
       `UPDATE join_requests SET status = 'ACCEPTED', updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
       [requestId]
     );
 
-    // 6. Recalculate member count and auto-update status to FULL if max capacity reached
+    // Also update any pending invitation for this candidate to ACCEPTED
+    await client.query(
+      `UPDATE meld_invitations SET status = 'ACCEPTED', updated_at = CURRENT_TIMESTAMP 
+       WHERE meld_id = $1 AND invitee_id = $2 AND status = 'PENDING'`,
+      [reqInfo.linkup_id, reqInfo.user_id]
+    );
+
+    // 10. Recalculate member count and auto-update status to FULL if capacity reached
     const newMemberCountRes = await client.query(
-      `SELECT COUNT(*)::int as count FROM meld_members WHERE meld_id = $1`,
+      `SELECT COUNT(*)::int as count FROM meld_members WHERE meld_id = $1 AND status = 'ACTIVE'`,
       [reqInfo.linkup_id]
     );
     const newCount = newMemberCountRes.rows[0].count;
+    const isFull = newCount >= meld.max_members;
 
-    if (newCount >= reqInfo.max_members) {
+    if (isFull) {
       await client.query(`UPDATE melds SET current_status = 'FULL' WHERE id = $1`, [reqInfo.linkup_id]);
     }
 
     await client.query('COMMIT');
+
+    // Trigger notification for candidate (non-blocking)
+    notificationService.notifyAcceptedJoinRequest({
+      meldId: reqInfo.linkup_id,
+      candidateId: reqInfo.user_id,
+      meldTitle: meld.title || reqInfo.meld_title,
+    }).catch((err) => console.error('Notification error:', err.message));
+
     return {
       requestId,
       linkupId: reqInfo.linkup_id,
       candidateId: reqInfo.user_id,
       status: 'ACCEPTED',
       currentMemberCount: newCount,
-      isFull: newCount >= reqInfo.max_members,
+      isFull,
     };
   } catch (error) {
     await client.query('ROLLBACK');
@@ -620,11 +742,11 @@ const acceptJoinRequest = async (requestId, creatorId) => {
 };
 
 /**
- * Reject Join Request (Creator ONLY)
+ * Reject Join Request (Creator ONLY, Strict State Machine)
  */
 const rejectJoinRequest = async (requestId, creatorId) => {
   const reqRes = await query(
-    `SELECT jr.id, jr.meld_id as linkup_id, l.creator_id 
+    `SELECT jr.id, jr.meld_id as linkup_id, jr.status, l.creator_id 
      FROM join_requests jr 
      JOIN melds l ON jr.meld_id = l.id 
      WHERE jr.id = $1`,
@@ -632,8 +754,21 @@ const rejectJoinRequest = async (requestId, creatorId) => {
   );
 
   if (reqRes.rows.length === 0) throw new Error('Join request not found.');
-  if (reqRes.rows[0].creator_id !== creatorId) {
+  const req = reqRes.rows[0];
+
+  if (req.creator_id !== creatorId) {
     throw new Error('Unauthorized. Only the Linkup creator can reject join requests.');
+  }
+
+  // State Machine Check: Only PENDING requests may be rejected
+  if (req.status === 'ACCEPTED') {
+    throw new Error('Cannot reject a join request that has already been accepted.');
+  }
+  if (req.status === 'REJECTED') {
+    throw new Error('This join request has already been rejected.');
+  }
+  if (req.status !== 'PENDING') {
+    throw new Error(`Cannot reject join request with status: ${req.status}`);
   }
 
   await query(
@@ -667,6 +802,16 @@ const removeTeamMember = async (linkupId, memberUserId, creatorId) => {
   if (delRes.rows.length === 0) {
     throw new Error('Team member not found.');
   }
+
+  // Clean up join requests and invitations for the removed member
+  await query(
+    `DELETE FROM join_requests WHERE meld_id = $1 AND user_id = $2`,
+    [linkupId, memberUserId]
+  );
+  await query(
+    `DELETE FROM meld_invitations WHERE meld_id = $1 AND invitee_id = $2`,
+    [linkupId, memberUserId]
+  );
 
   // Re-open Linkup status if it was FULL
   if (linkup.current_status === 'FULL') {
@@ -872,6 +1017,16 @@ const leaveLinkup = async (linkupId, userId) => {
     [linkupId, userId]
   );
 
+  // Clean up any existing join requests or invitations for this user & linkup
+  await query(
+    `DELETE FROM join_requests WHERE meld_id = $1 AND user_id = $2`,
+    [linkupId, userId]
+  );
+  await query(
+    `DELETE FROM meld_invitations WHERE meld_id = $1 AND invitee_id = $2`,
+    [linkupId, userId]
+  );
+
   // If linkup was full, reopen it
   if (linkup.currentStatus === 'FULL') {
     await query(
@@ -900,7 +1055,7 @@ const getMySentJoinRequests = async (userId) => {
      JOIN users u ON m.creator_id = u.id
      LEFT JOIN student_profiles sp ON u.id = sp.user_id
      LEFT JOIN student_verifications sv ON u.id = sv.user_id
-     WHERE jr.user_id = $1
+     WHERE jr.user_id = $1 AND jr.status != 'ACCEPTED'
      ORDER BY jr.created_at DESC`,
     [userId]
   );

@@ -80,4 +80,41 @@ npm run dev
 | `GET` | `/api/auth/me` | Protected | Get current authenticated user |
 | `GET` | `/api/profile` | Protected | Get full student profile & status |
 | `PUT` | `/api/profile` | Protected | Upsert student profile data |
-| `GET` | `/api/users/:userId` | Public | Get sanitized student profile for Discovery |
+| `GET` | `/api/users/:userId` | Protected | Get public student profile for Discovery |
+| `GET` | `/api/melds` | Optional Auth | Discover & filter MELD project teams |
+| `POST` | `/api/melds` | Protected | Create a new MELD team |
+| `GET` | `/api/melds/:id` | Optional Auth | View detailed MELD project info & members |
+| `POST` | `/api/melds/:id/join` | Protected | Submit candidate join request |
+| `GET` | `/api/melds/:id/matches` | Protected | Run AI Matchmaking algorithm for candidates |
+| `GET` | `/api/invitations` | Protected | Fetch incoming/outgoing invites & join requests |
+| `POST` | `/api/invitations/:id/respond` | Protected | Accept or decline team invitations |
+| `GET` | `/api/notifications` | Protected | Fetch in-app notifications and unread count |
+| `PUT` | `/api/notifications/read-all` | Protected | Mark all notifications as read |
+
+---
+
+## 📦 Version History & Release Notes
+
+### **v1.1.0 (Latest Release)** — *Collaboration Hub & Notification Center*
+- **🔔 Real-Time In-App Notification Center (`/notifications`)**:
+  - Live alerts for join requests, team invitations, application acceptances, and deduplicated team chat messages.
+  - Tab filters: *All*, *Unread*, *Team Updates*, and *Messages*.
+  - 1-click *Mark as Read*, *Mark All as Read*, and *Clear All* functionality.
+  - Unread notification counter badges integrated across Desktop and Mobile navigation headers.
+- **📩 Unified Invitations & Requests Management (`/invitations`)**:
+  - Centralized dashboard for both candidate project join requests and creator team invitations.
+  - Received / Sent tabs with real-time Accept, Decline, and Request Withdrawal actions.
+- **🛡️ Strict Creator-Only Invitation Security**:
+  - Enforced server-side and client-side permissions: only Meld creators can invite members; all team members and peers can share public links.
+- **✉️ Dual-Email OTP Distinction**:
+  - Verification emails now explicitly specify whether the OTP is for Personal registration or College student verification.
+- **🔄 Lifecycle & Collaboration Fixes**:
+  - Resolved re-join capability for candidates re-applying after leaving a Meld.
+
+### **v1.0.3** — *UI Aesthetics & Modern Dark Blue Theme*
+- Cohesive modern dark theme with tailored cyan/blue accents and glassmorphic card design tokens.
+- Fully responsive layout overhaul for Mobile, Tablet, and Desktop displays.
+
+### **v1.0.2** — *Share & Invitation Foundations*
+- Modal dialogs for sharing Meld project links and searching platform peers to invite.
+- Modularized CSS architecture across `base`, `layout`, `components`, `pages`, and `responsive` stylesheets.

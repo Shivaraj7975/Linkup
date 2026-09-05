@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import {
   ArrowRight,
-  Users,
   Zap,
   ShieldCheck,
   Sparkles,
@@ -62,17 +61,17 @@ export const LandingPage = () => {
 
       <main className="container page-content">
         {/* CLEAN HERO SECTION */}
-        <section className="hero-section" style={{ padding: '3rem 1rem 3.5rem', textAlign: 'center' }}>
-          <div className="hero-pill" style={{ animation: 'pulseGlow 3s infinite ease-in-out' }}>
+        <section className="hero-section">
+          <div className="hero-pill">
             <Sparkles size={16} />
             <span>MELD Platform • AI-Powered Teammate & Activity Discovery</span>
           </div>
 
-          <h1 className="hero-title" style={{ maxWidth: '880px', margin: '0 auto 1.5rem' }}>
+          <h1 className="hero-title">
             Gather the Crew for Projects, Gaming, Trips & Student Life
           </h1>
 
-          <p className="hero-subtitle" style={{ margin: '0 auto 2.5rem' }}>
+          <p className="hero-subtitle">
             Whether building a software project, assembling an esports squad, planning a weekend trek, or finding workout partners—connect with verified campus peers instantly.
           </p>
 
@@ -88,7 +87,7 @@ export const LandingPage = () => {
           </div>
 
           {/* INLINE TECH & ROLE BADGES STRIP */}
-          <div className="hero-tech-strip" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div className="hero-tech-strip">
             <span className="tech-pill"><Gamepad2 size={14} color="#3b82f6" /> Gaming & Esports</span>
             <span className="tech-pill"><Plane size={14} color="#f59e0b" /> Trips & Travel</span>
             <span className="tech-pill"><Trophy size={14} color="#10b981" /> Sports & Fitness</span>
@@ -99,7 +98,7 @@ export const LandingPage = () => {
           </div>
 
           {/* CLEAN DYNAMIC STATS BANNER */}
-          <div className="landing-stats-row" style={{ marginTop: '3.5rem' }}>
+          <div className="landing-stats-row">
             <div className="landing-stat-item">
               <Cpu size={30} color="#3b82f6" />
               <div>
@@ -186,7 +185,7 @@ export const LandingPage = () => {
             </h2>
           </div>
 
-          <div className="feature-grid" style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div className="feature-grid">
             <div className="feature-card">
               <div className="feature-icon" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' }}>
                 <Cpu size={24} />
@@ -239,7 +238,7 @@ export const LandingPage = () => {
 
         {/* BUILT FOR CREATORS vs BUILDERS */}
         <section style={{ margin: '6rem 0 6rem' }}>
-          <div className="grid-2-col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+          <div className="landing-audience-grid">
             <div className="glass-card" style={{ padding: '2.5rem' }}>
               <div className="badge badge-accent margin-bottom-xs" style={{ display: 'inline-flex' }}>
                 <FolderGit2 size={14} />
@@ -279,7 +278,7 @@ export const LandingPage = () => {
         </section>
 
         {/* FREQUENTLY ASKED QUESTIONS (FAQ) */}
-        <section style={{ margin: '6rem 0 6rem', maxWidth: '850px', marginLeft: 'auto', marginRight: 'auto' }}>
+        <section className="landing-faq-wrapper">
           <div className="text-center margin-bottom-lg">
             <div className="badge badge-accent margin-bottom-xs" style={{ display: 'inline-flex' }}>
               <HelpCircle size={14} />
@@ -294,8 +293,7 @@ export const LandingPage = () => {
             {faqs.map((faq, index) => (
               <div
                 key={index}
-                className="glass-card"
-                style={{ padding: '1.25rem 1.75rem', cursor: 'pointer', transition: 'var(--transition-smooth)' }}
+                className="faq-card"
                 onClick={() => toggleFaq(index)}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -315,17 +313,7 @@ export const LandingPage = () => {
         </section>
 
         {/* CTA BANNER */}
-        <section
-          className="dash-card page-header-hero"
-          style={{
-            padding: '4rem 2rem',
-            textAlign: 'center',
-            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 75, 0.85) 100%)',
-            border: '1px solid var(--glass-border-active)',
-            borderRadius: 'var(--radius-xl)',
-            margin: '6rem 0 4rem',
-          }}
-        >
+        <section className="landing-cta-banner">
           <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#fff', marginBottom: '1rem' }}>
             Ready to Build Your Next Big Project?
           </h2>

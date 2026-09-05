@@ -20,6 +20,7 @@ import { ManageMeldPage } from './pages/ManageMeldPage';
 import { EditMeldPage } from './pages/EditMeldPage';
 import { UserProfilePage } from './pages/UserProfilePage';
 import { InvitationsPage } from './pages/InvitationsPage';
+import NotificationsPage from './pages/NotificationsPage';
 import { AdminPage } from './pages/AdminPage';
 
 function App() {
@@ -72,6 +73,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <InvitationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
               </ProtectedRoute>
             }
           />

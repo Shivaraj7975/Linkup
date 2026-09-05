@@ -133,6 +133,22 @@ const findUserByEmail = async (email) => {
 };
 
 /**
+ * Find user by email OR username (including password_hash for authentication)
+ */
+const findUserByIdentifier = async (identifier) => {
+  if (!identifier || typeof identifier !== 'string') return null;
+  const clean = identifier.trim().replace(/^@/, '').toLowerCase();
+  const text = `
+    SELECT id, name, username, email, role, password_hash 
+    FROM users 
+    WHERE LOWER(email) = LOWER($1) 
+       OR (username IS NOT NULL AND LOWER(username) = LOWER($2))
+  `;
+  const res = await query(text, [clean, clean]);
+  return res.rows[0] || null;
+};
+
+/**
  * Find user by ID (excluding password_hash)
  */
 const findUserById = async (id) => {
@@ -171,6 +187,7 @@ module.exports = {
   isUsernameAvailable,
   createUserWithVerification,
   findUserByEmail,
+  findUserByIdentifier,
   findUserById,
   isProfileComplete,
   updateUserPassword,

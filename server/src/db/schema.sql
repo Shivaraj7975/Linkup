@@ -191,8 +191,23 @@ CREATE TABLE otp_verifications (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 15. NOTIFICATIONS Table
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    link VARCHAR(255),
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Performance Indexes
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX idx_notifications_is_read ON notifications(is_read);
+CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
 CREATE INDEX idx_student_profiles_user_id ON student_profiles(user_id);
 CREATE INDEX idx_student_profiles_college ON student_profiles(college);
 CREATE INDEX idx_student_profiles_city ON student_profiles(city);
@@ -248,3 +263,6 @@ CREATE INDEX IF NOT EXISTS idx_meld_messages_meld_created ON meld_messages (meld
 
 -- Unique index for case-insensitive username lookup
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_lower ON users (LOWER(username));
+
+-- Unique partial index for deduplicating chat notifications per user per Meld chat link
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications_chat_dedup ON notifications (user_id, type, link) WHERE type = 'NEW_CHAT_MESSAGE';

@@ -119,7 +119,7 @@ export const DiscoverMeldsPage = () => {
 
       <main className="container page-content">
         {/* HEADER HERO */}
-        <div className="page-header-hero text-center margin-bottom-lg" style={{ padding: '1.5rem 0.5rem 1rem' }}>
+        <div className="page-header-hero text-center margin-bottom-lg">
           <div className="badge badge-accent margin-bottom-xs">
             <Sparkles size={14} />
             <span>Project Discovery</span>
@@ -129,23 +129,22 @@ export const DiscoverMeldsPage = () => {
             Don't ask around, post it and gather the crew. Find innovative student projects and join cross-functional teams.
           </p>
 
-          <div className="margin-top-sm">
-            <Link to="/create-linkup" className="btn btn-primary btn-sm" style={{ padding: '0.45rem 1rem', fontSize: '0.85rem' }}>
+          <div className="margin-top-sm" style={{ display: 'flex', justifyContent: 'center' }}>
+            <Link to="/create-linkup" className="btn btn-primary btn-sm" style={{ padding: '0.45rem 1rem', fontSize: '0.85rem', width: 'fit-content', gap: '0.35rem' }}>
               <Plus size={15} />
-              <span>Create a Meld</span>
+              <span>Create Meld</span>
             </Link>
           </div>
         </div>
 
         {/* SEARCH & FILTERS BAR */}
-        <div className="card glass-card search-filters-card margin-bottom-lg" style={{ padding: '1rem 1.25rem' }}>
-          <form onSubmit={handleSearchSubmit} className="search-form" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <div className="input-wrapper search-input-wrapper" style={{ flex: 1, minWidth: '200px' }}>
-              <Search size={16} className="input-left-icon" />
+        <div className="search-filters-card margin-bottom-lg">
+          <form onSubmit={handleSearchSubmit} className="integrated-search-form">
+            <div className="integrated-search-box">
+              <Search size={16} className="search-box-icon" />
               <input
                 type="text"
-                className="input input-sm"
-                style={{ height: '40px', fontSize: '0.875rem' }}
+                className="integrated-search-input"
                 placeholder="Search projects by title or keywords..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -153,96 +152,84 @@ export const DiscoverMeldsPage = () => {
               {searchQuery && (
                 <button
                   type="button"
-                  className="input-clear-btn"
+                  className="search-clear-btn"
                   onClick={() => {
                     setSearchQuery('');
                     fetchLinkupProjects('');
                   }}
+                  title="Clear search"
                 >
                   &times;
                 </button>
               )}
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.4rem', width: 'auto' }}>
-              <button type="submit" className="btn btn-primary btn-sm" style={{ height: '40px', padding: '0 0.9rem', fontSize: '0.85rem', gap: '0.35rem' }}>
-                <Search size={14} />
-                <span>Search</span>
-              </button>
-
-              <button
-                type="button"
-                className={`btn btn-sm ${showFilters ? 'btn-secondary' : 'btn-ghost'}`}
-                style={{ height: '40px', padding: '0 0.85rem', fontSize: '0.85rem', gap: '0.35rem' }}
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                <Filter size={14} />
-                <span>Filters</span>
-                {hasActiveFilters && (
-                  <span style={{ background: '#22d3ee', width: '6px', height: '6px', borderRadius: '50%', display: 'inline-block' }} />
-                )}
-              </button>
+              <div className="integrated-search-actions">
+                <button 
+                  type="submit" 
+                  className="search-action-btn search-submit-btn" 
+                  title="Search"
+                  aria-label="Search"
+                >
+                  <Search size={14} />
+                </button>
+                <button
+                  type="button"
+                  className={`search-action-btn search-filter-btn ${showFilters ? 'active' : ''}`}
+                  onClick={() => setShowFilters(!showFilters)}
+                  title="Toggle Filters"
+                  aria-label="Toggle Filters"
+                >
+                  <Filter size={14} />
+                </button>
+              </div>
             </div>
           </form>
 
-          {/* CONDITIONAL FILTER CONTROLS GRID */}
+          {/* ADVANCED FILTER EXPANDABLE PANEL */}
           {showFilters && (
-            <div className="filters-grid margin-top-md" style={{ paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
-              {/* Skills Filter Input */}
+            <div className="filters-expanded-panel card glass-card" style={{ marginTop: '0.75rem', padding: '1.25rem' }}>
+              {/* Category Filter */}
               <div className="filter-item">
-                <label className="filter-label">Skills</label>
-                <input
-                  type="text"
-                  className="input input-sm"
-                  placeholder="Filter by skill (e.g. React, Python)"
-                  value={skillFilter}
-                  onChange={(e) => setSkillFilter(e.target.value)}
-                />
-              </div>
-
-              {/* Category Dropdown */}
-              <div className="filter-item">
-                <label className="filter-label">Category</label>
+                <label>Category</label>
                 <select
                   className="select select-sm"
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                 >
                   {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* College Filter Input */}
+              {/* Skill Filter */}
               <div className="filter-item">
-                <label className="filter-label">College</label>
+                <label>Required Skill</label>
                 <input
                   type="text"
                   className="input input-sm"
-                  placeholder="Filter by college (e.g. MIT, Stanford)"
+                  placeholder="e.g. React, Python..."
+                  value={skillFilter}
+                  onChange={(e) => setSkillFilter(e.target.value)}
+                />
+              </div>
+
+              {/* College Filter */}
+              <div className="filter-item">
+                <label>College / University</label>
+                <input
+                  type="text"
+                  className="input input-sm"
+                  placeholder="e.g. Stanford, IIT..."
                   value={collegeFilter}
                   onChange={(e) => setCollegeFilter(e.target.value)}
                 />
               </div>
 
-              {/* Availability Filter Input */}
+              {/* Status Filter */}
               <div className="filter-item">
-                <label className="filter-label">Availability</label>
-                <input
-                  type="text"
-                  className="input input-sm"
-                  placeholder="Filter by availability (e.g. 5-10 hrs, Flexible)"
-                  value={availabilityFilter}
-                  onChange={(e) => setAvailabilityFilter(e.target.value)}
-                />
-              </div>
-
-              {/* Status Dropdown */}
-              <div className="filter-item">
-                <label className="filter-label">Status</label>
+                <label>Meld Status</label>
                 <select
                   className="select select-sm"
                   value={selectedStatus}
@@ -266,7 +253,7 @@ export const DiscoverMeldsPage = () => {
                   title="Reset all filters"
                 >
                   <RefreshCw size={13} />
-                  <span>Reset Filters</span>
+                  <span>Reset</span>
                 </button>
               </div>
             </div>

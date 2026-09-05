@@ -30,7 +30,7 @@ const getProfileByUserId = async (userId) => {
 
   // 2. Fetch student profile record
   const profileRes = await query(
-    'SELECT id, college_email, college, city, state, country, degree, year_of_study, bio, availability, github_url, linkedin_url, is_completed, onboarding_step, created_at, updated_at FROM student_profiles WHERE user_id = $1',
+    'SELECT id, college_email, college, city, state, country, degree, year_of_study, bio, availability, github_url, linkedin_url, instagram_url, youtube_url, website_url, is_completed, onboarding_step, created_at, updated_at FROM student_profiles WHERE user_id = $1',
     [userId]
   );
   const studentProfile = profileRes.rows[0] || null;
@@ -95,6 +95,7 @@ const updateStudentProfile = async (userId, data) => {
     await client.query('BEGIN');
 
     const {
+      name,
       username,
       college_email,
       college,
@@ -107,11 +108,22 @@ const updateStudentProfile = async (userId, data) => {
       availability,
       github_url,
       linkedin_url,
+      instagram_url,
+      youtube_url,
+      website_url,
       is_completed = false,
       onboarding_step = 1,
       skills = [], // Array of skill names or skill objects
       interests = [], // Array of interest IDs or interest objects
     } = data;
+
+    // Optional: Update name if provided
+    if (name && typeof name === 'string' && name.trim().length > 0) {
+      await client.query(
+        'UPDATE users SET name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [name.trim(), userId]
+      );
+    }
 
     // Optional: Update username if provided
     if (username && typeof username === 'string') {
@@ -133,8 +145,8 @@ const updateStudentProfile = async (userId, data) => {
     // 1. Upsert student_profiles
     const profileUpsertText = `
       INSERT INTO student_profiles (
-        user_id, college_email, college, city, state, country, degree, year_of_study, bio, availability, github_url, linkedin_url, is_completed, onboarding_step
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        user_id, college_email, college, city, state, country, degree, year_of_study, bio, availability, github_url, linkedin_url, instagram_url, youtube_url, website_url, is_completed, onboarding_step
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       ON CONFLICT (user_id) DO UPDATE SET
         college_email = COALESCE(EXCLUDED.college_email, student_profiles.college_email),
         college = COALESCE(EXCLUDED.college, student_profiles.college),
@@ -147,6 +159,9 @@ const updateStudentProfile = async (userId, data) => {
         availability = EXCLUDED.availability,
         github_url = EXCLUDED.github_url,
         linkedin_url = EXCLUDED.linkedin_url,
+        instagram_url = EXCLUDED.instagram_url,
+        youtube_url = EXCLUDED.youtube_url,
+        website_url = EXCLUDED.website_url,
         is_completed = CASE WHEN EXCLUDED.is_completed = TRUE THEN TRUE ELSE student_profiles.is_completed END,
         onboarding_step = GREATEST(EXCLUDED.onboarding_step, student_profiles.onboarding_step),
         updated_at = CURRENT_TIMESTAMP
@@ -166,6 +181,9 @@ const updateStudentProfile = async (userId, data) => {
       availability || '',
       github_url || '',
       linkedin_url || '',
+      instagram_url || '',
+      youtube_url || '',
+      website_url || '',
       is_completed === true,
       parseInt(onboarding_step, 10) || 1,
     ]);
@@ -259,7 +277,7 @@ const getPublicStudentProfileByUserId = async (userId) => {
 
   // 2. Fetch student profile record
   const profileRes = await query(
-    'SELECT college, city, state, country, degree, year_of_study, bio, availability, github_url, linkedin_url FROM student_profiles WHERE user_id = $1',
+    'SELECT college, city, state, country, degree, year_of_study, bio, availability, github_url, linkedin_url, instagram_url, youtube_url, website_url FROM student_profiles WHERE user_id = $1',
     [userId]
   );
   const p = profileRes.rows[0] || {};
@@ -307,6 +325,9 @@ const getPublicStudentProfileByUserId = async (userId) => {
     availability: p.availability || 'Flexible',
     githubUrl: p.github_url || '',
     linkedinUrl: p.linkedin_url || '',
+    instagramUrl: p.instagram_url || '',
+    youtubeUrl: p.youtube_url || '',
+    websiteUrl: p.website_url || '',
     verificationStatus,
   };
 };

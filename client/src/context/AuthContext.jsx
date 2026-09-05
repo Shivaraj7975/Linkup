@@ -47,8 +47,9 @@ export const AuthProvider = ({ children }) => {
     return meData.user;
   };
 
-  const login = async ({ email, password }) => {
-    const data = await loginUser(email, password);
+  const login = async ({ email, username, identifier, password }) => {
+    const loginId = identifier || email || username;
+    const data = await loginUser(loginId, password);
     localStorage.setItem('meld_token', data.token);
     setToken(data.token);
     const meData = await getCurrentUser();

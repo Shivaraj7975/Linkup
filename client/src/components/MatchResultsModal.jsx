@@ -62,7 +62,7 @@ export const MatchResultsModal = ({ linkup, meld, onClose }) => {
     setActionError('');
     try {
       setInvitingId(targetId);
-      await inviteToLinkup(linkup.id, targetId);
+      await inviteToLinkup(linkupId, targetId);
       setActionSuccess('Invitation sent successfully!');
       setTimeout(() => setActionSuccess(''), 4000);
     } catch (err) {
