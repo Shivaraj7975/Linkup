@@ -1,8 +1,12 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const chatService = require('./services/chatService');
+const notificationService = require('./services/notificationService');
 
 let io;
+// In-memory single-instance presence tracking for active meld chat rooms
+// meldId -> Set of userIds currently in the room
+const activeMeldUsers = new Map();
 
 const initSocket = (server) => {
   io = new Server(server, {
@@ -38,12 +42,14 @@ const initSocket = (server) => {
   });
 
   io.on('connection', (socket) => {
-    console.log(`Socket connected: ${socket.user.id}`);
+    const userId = socket.user.id;
+    // Auto-join personal user room for live in-app notifications
+    socket.join(`user:${userId}`);
 
     // Join a Meld room
     socket.on('join_meld', async (meldId, callback) => {
       try {
-        const isAuthorized = await chatService.isUserAuthorizedForMeldChat(meldId, socket.user.id);
+        const isAuthorized = await chatService.isUserAuthorizedForMeldChat(meldId, userId);
         
         if (!isAuthorized) {
           if (callback) callback({ success: false, message: 'Unauthorized access to meld chat' });
@@ -52,12 +58,29 @@ const initSocket = (server) => {
 
         const roomName = `meld:${meldId}`;
         socket.join(roomName);
-        console.log(`User ${socket.user.id} joined room ${roomName}`);
+
+        // Record user presence in this meld room
+        if (!activeMeldUsers.has(meldId)) {
+          activeMeldUsers.set(meldId, new Set());
+        }
+        activeMeldUsers.get(meldId).add(userId);
         
         if (callback) callback({ success: true });
       } catch (error) {
         console.error('Error in join_meld event:', error);
         if (callback) callback({ success: false, message: 'Server error joining room' });
+      }
+    });
+
+    // Leave a Meld room
+    socket.on('leave_meld', (meldId) => {
+      const roomName = `meld:${meldId}`;
+      socket.leave(roomName);
+      if (activeMeldUsers.has(meldId)) {
+        activeMeldUsers.get(meldId).delete(userId);
+        if (activeMeldUsers.get(meldId).size === 0) {
+          activeMeldUsers.delete(meldId);
+        }
       }
     });
 
@@ -78,17 +101,28 @@ const initSocket = (server) => {
         }
 
         // Verify authorization again before sending (prevents room escape)
-        const isAuthorized = await chatService.isUserAuthorizedForMeldChat(meldId, socket.user.id);
+        const isAuthorized = await chatService.isUserAuthorizedForMeldChat(meldId, userId);
         if (!isAuthorized) {
           if (callback) callback({ success: false, message: 'Unauthorized to send messages to this meld' });
           return;
         }
 
         // Persist to DB securely
-        const savedMessage = await chatService.saveMessage(meldId, socket.user.id, cleanContent);
+        const savedMessage = await chatService.saveMessage(meldId, userId, cleanContent);
 
-        // Broadcast to everyone in the room (including sender if desired, or we can use socket.to().emit)
+        // Broadcast to everyone in the room
         io.to(`meld:${meldId}`).emit('new_message', savedMessage);
+
+        // Get currently active user IDs in this chat room to avoid redundant notifications
+        const activeUsersInRoom = activeMeldUsers.has(meldId) ? Array.from(activeMeldUsers.get(meldId)) : [];
+
+        // Create in-app notifications for team members (without showing chat content)
+        notificationService.notifyNewChatMessage({
+          meldId,
+          senderId: userId,
+          senderName: savedMessage.sender_name,
+          activeUserIds: activeUsersInRoom,
+        }).catch((err) => console.error('Chat notification error:', err.message));
         
         if (callback) callback({ success: true, message: savedMessage });
       } catch (error) {
@@ -98,19 +132,34 @@ const initSocket = (server) => {
     });
 
     socket.on('disconnect', () => {
-      console.log(`Socket disconnected: ${socket.user.id}`);
+      // Remove user from all active meld rooms
+      for (const [meldId, users] of activeMeldUsers.entries()) {
+        users.delete(userId);
+        if (users.size === 0) {
+          activeMeldUsers.delete(meldId);
+        }
+      }
     });
   });
 };
 
 const getIo = () => {
-  if (!io) {
-    throw new Error('Socket.io not initialized!');
-  }
   return io;
+};
+
+const emitNotificationToUser = (userId, notificationData) => {
+  if (io && userId) {
+    io.to(`user:${userId}`).emit('notification_created', notificationData);
+  }
+};
+
+const isUserActiveInMeldChat = (meldId, userId) => {
+  return activeMeldUsers.has(meldId) && activeMeldUsers.get(meldId).has(userId);
 };
 
 module.exports = {
   initSocket,
   getIo,
+  emitNotificationToUser,
+  isUserActiveInMeldChat,
 };

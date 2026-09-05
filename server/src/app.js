@@ -70,6 +70,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 const chatRoutes = require('./routes/chatRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Register routes
 app.use('/api', healthRoutes);
@@ -78,6 +79,7 @@ app.use('/api', profileRoutes);
 app.use('/api', meldRoutes);
 app.use('/api/melds', chatRoutes);
 app.use('/api/invitations', invitationRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Root route welcome message

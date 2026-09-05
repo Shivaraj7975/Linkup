@@ -18,6 +18,33 @@ export const MeldChat = ({ meldId, currentUser }) => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const chatContainerRef = useRef(null);
+  const textareaRef = useRef(null);
+
+  const adjustTextareaHeight = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const maxHeight = 105; // 4 lines max (~20px line-height * 4 + padding)
+    const scrollHeight = el.scrollHeight;
+    if (scrollHeight > maxHeight) {
+      el.style.height = `${maxHeight}px`;
+      el.style.overflowY = 'auto';
+    } else {
+      el.style.height = `${Math.max(scrollHeight, 38)}px`;
+      el.style.overflowY = 'hidden';
+    }
+  };
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [newMessage]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
+    }
+  };
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -131,7 +158,7 @@ export const MeldChat = ({ meldId, currentUser }) => {
   }, [meldId]);
 
   const handleSendMessage = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!newMessage.trim() || !socket || !isConnected) return;
     
     if (newMessage.length > 2000) {
@@ -150,6 +177,11 @@ export const MeldChat = ({ meldId, currentUser }) => {
       } else {
         setNewMessage('');
         setError('');
+        if (textareaRef.current) {
+          textareaRef.current.style.height = '38px';
+          textareaRef.current.style.overflowY = 'hidden';
+        }
+        scrollToBottom();
       }
     });
   };
@@ -238,7 +270,7 @@ export const MeldChat = ({ meldId, currentUser }) => {
                 <div style={{
                   padding: '0.6rem 1rem',
                   borderRadius: 'var(--radius-md, 8px)',
-                  backgroundColor: isMe ? 'var(--accent-primary, #6366f1)' : 'var(--bg-card-hover, rgba(255,255,255,0.05))',
+                  backgroundColor: isMe ? 'var(--accent-primary, #3b82f6)' : 'var(--bg-card-hover, rgba(255,255,255,0.05))',
                   color: isMe ? '#fff' : 'var(--text-primary)',
                   borderBottomRightRadius: isMe ? '0' : 'var(--radius-md, 8px)',
                   borderBottomLeftRadius: !isMe ? '0' : 'var(--radius-md, 8px)',
@@ -263,22 +295,24 @@ export const MeldChat = ({ meldId, currentUser }) => {
         </div>
       )}
 
-      <form onSubmit={handleSendMessage} style={{ padding: '1rem', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '0.5rem', backgroundColor: 'var(--bg-card)', borderBottomLeftRadius: 'var(--radius-lg)', borderBottomRightRadius: 'var(--radius-lg)' }}>
-        <input
-          type="text"
-          className="input"
+      <form onSubmit={handleSendMessage} className="chat-input-form">
+        <textarea
+          ref={textareaRef}
+          rows={1}
+          className="chat-textarea"
           placeholder="Type a message..."
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
           disabled={!isConnected}
-          style={{ flex: 1, borderRadius: 'var(--radius-full)' }}
           maxLength={2000}
         />
         <button 
           type="submit" 
-          className="btn btn-primary" 
+          className="btn btn-primary chat-send-btn" 
           disabled={!newMessage.trim() || !isConnected}
-          style={{ borderRadius: 'var(--radius-full)', padding: '0.5rem 1rem' }}
+          title="Send message"
+          aria-label="Send message"
         >
           <Send size={18} />
         </button>

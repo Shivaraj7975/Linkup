@@ -19,6 +19,7 @@ import {
   ExternalLink,
   ChevronRight,
   User,
+  Server,
 } from 'lucide-react';
 import {
   getAdminStats,
@@ -222,9 +223,9 @@ export const AdminPage = () => {
           {/* STATS METRICS ROW */}
           <div className="landing-stats-row" style={{ marginTop: '2rem' }}>
             <div className="landing-stat-item">
-              <Users size={28} color="#6366f1" />
+              <Users size={28} color="#3b82f6" />
               <div>
-                <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#fff' }}>
+                <div style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--text-primary)' }}>
                   {statsLoading ? '...' : stats?.totalUsers || 0}
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Registered Users</div>
@@ -232,9 +233,9 @@ export const AdminPage = () => {
             </div>
 
             <div className="landing-stat-item">
-              <FolderGit2 size={28} color="#a855f7" />
+              <FolderGit2 size={28} color="#3b82f6" />
               <div>
-                <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#fff' }}>
+                <div style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--text-primary)' }}>
                   {statsLoading ? '...' : `${stats?.openMelds || 0} / ${stats?.totalMelds || 0}`}
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Open / Total MELDs</div>
@@ -244,7 +245,7 @@ export const AdminPage = () => {
             <div className="landing-stat-item">
               <BadgeCheck size={28} color="#22c55e" />
               <div>
-                <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#fff' }}>
+                <div style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--text-primary)' }}>
                   {statsLoading ? '...' : `${stats?.verifiedPercentage || 0}%`}
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Verified Students Ratio</div>
@@ -254,7 +255,7 @@ export const AdminPage = () => {
             <div className="landing-stat-item">
               <Mail size={28} color="#38bdf8" />
               <div>
-                <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#fff' }}>
+                <div style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--text-primary)' }}>
                   {statsLoading ? '...' : stats?.totalInvitations || 0}
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Team Invitations</div>
@@ -263,56 +264,55 @@ export const AdminPage = () => {
           </div>
         </section>
 
-        {/* ALERTS */}
+        {/* ADMIN DASHBOARD TABS NAVIGATION */}
+        <div className="segmented-tabs-bar" style={{ marginBottom: '1.5rem' }}>
+          <button
+            type="button"
+            className={`segmented-tab-btn ${activeTab === 'melds' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setActiveTab('melds')}
+          >
+            <FolderGit2 size={16} />
+            <span>MELD Projects ({stats?.totalMelds || 0})</span>
+          </button>
+
+          <button
+            type="button"
+            className={`segmented-tab-btn ${activeTab === 'users' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setActiveTab('users')}
+          >
+            <Users size={16} />
+            <span>User Accounts ({stats?.totalUsers || 0})</span>
+          </button>
+
+          <button
+            type="button"
+            className={`segmented-tab-btn ${activeTab === 'system' ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setActiveTab('system')}
+          >
+            <Server size={16} />
+            <span>AI Matcher & System</span>
+          </button>
+        </div>
+
+        {/* Global Action Alerts */}
+        {alertError && (
+          <div className="alert alert-error" style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <AlertCircle size={18} />
+            <span>{alertError}</span>
+          </div>
+        )}
         {alertSuccess && (
-          <div className="alert alert-success margin-bottom-md" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="alert alert-success" style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <CheckCircle2 size={18} />
             <span>{alertSuccess}</span>
           </div>
         )}
 
-        {alertError && (
-          <div className="alert alert-error margin-bottom-md" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <AlertCircle size={18} />
-            <span>{alertError}</span>
-          </div>
-        )}
-
-        {/* TABS NAVIGATION */}
-        <div className="admin-tabs-nav">
-          <button
-            className={`btn ${activeTab === 'melds' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ gap: '0.5rem', fontSize: '0.9rem' }}
-            onClick={() => setActiveTab('melds')}
-          >
-            <FolderGit2 size={16} />
-            <span>Manage MELDs ({melds.length})</span>
-          </button>
-
-          <button
-            className={`btn ${activeTab === 'users' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ gap: '0.5rem', fontSize: '0.9rem' }}
-            onClick={() => setActiveTab('users')}
-          >
-            <Users size={16} />
-            <span>User Accounts ({users.length})</span>
-          </button>
-
-          <button
-            className={`btn ${activeTab === 'system' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ gap: '0.5rem', fontSize: '0.9rem' }}
-            onClick={() => setActiveTab('system')}
-          >
-            <Cpu size={16} />
-            <span>AI Engine & System Health</span>
-          </button>
-        </div>
-
         {/* TAB 1: MELDS MANAGEMENT */}
         {activeTab === 'melds' && (
           <div className="card glass-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fff', margin: 0 }}>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
                 MELD Projects Control
               </h2>
 
@@ -366,18 +366,18 @@ export const AdminPage = () => {
                     {melds.map((m) => (
                       <tr key={m.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', transition: 'var(--transition-smooth)' }}>
                         <td style={{ padding: '0.85rem 1rem' }}>
-                          <div style={{ fontWeight: 700, color: '#fff' }}>{m.title}</div>
+                          <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{m.title}</div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Created {new Date(m.createdAt).toLocaleDateString()}</div>
                         </td>
                         <td style={{ padding: '0.85rem 1rem' }}>
                           <span className="pill pill-xs">{m.category}</span>
                         </td>
                         <td style={{ padding: '0.85rem 1rem' }}>
-                          <div style={{ color: '#cbd5e1' }}>{m.creatorName || 'Unknown'}</div>
+                          <div style={{ color: 'var(--text-secondary)' }}>{m.creatorName || 'Unknown'}</div>
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{m.creatorEmail}</div>
                         </td>
                         <td style={{ padding: '0.85rem 1rem' }}>
-                          <span style={{ fontWeight: 700, color: '#fff' }}>{m.memberCount}</span> / {m.maxMembers}
+                          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{m.memberCount}</span> / {m.maxMembers}
                         </td>
                         <td style={{ padding: '0.85rem 1rem' }}>
                           <select
@@ -433,7 +433,7 @@ export const AdminPage = () => {
         {activeTab === 'users' && (
           <div className="card glass-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fff', margin: 0 }}>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
                 User Accounts Control
               </h2>
 
@@ -479,13 +479,13 @@ export const AdminPage = () => {
                               {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
                             </div>
                             <div>
-                              <div style={{ fontWeight: 700, color: '#fff' }}>{u.name}</div>
+                              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{u.name}</div>
                               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</div>
                             </div>
                           </div>
                         </td>
                         <td style={{ padding: '0.85rem 1rem', maxWidth: '220px' }}>
-                          <div style={{ fontSize: '0.85rem', color: '#cbd5e1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {u.college || 'Unspecified'}
                           </div>
                           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{u.degree}</div>
@@ -515,13 +515,13 @@ export const AdminPage = () => {
                               padding: '0.2rem 0.55rem',
                               fontSize: '0.75rem',
                               fontWeight: 700,
-                              color: u.role === 'ADMIN' ? '#f43f5e' : '#818cf8',
+                              color: u.role === 'ADMIN' ? '#f43f5e' : '#60a5fa',
                               borderColor: u.role === 'ADMIN' ? 'rgba(244, 63, 94, 0.4)' : 'var(--glass-border)',
                               gap: '0.25rem',
                             }}
                             title="Click to toggle user role"
                           >
-                            {u.role === 'ADMIN' ? <ShieldAlert size={13} color="#f43f5e" /> : <User size={13} color="#818cf8" />}
+                            {u.role === 'ADMIN' ? <ShieldAlert size={13} color="#f43f5e" /> : <User size={13} color="#60a5fa" />}
                             <span>{u.role}</span>
                           </button>
                         </td>
@@ -565,21 +565,21 @@ export const AdminPage = () => {
           <div className="card glass-card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
             <div style={{ padding: '1rem' }}>
               <div className="badge badge-accent margin-bottom-xs" style={{ display: 'inline-flex', gap: '0.35rem' }}>
-                <Cpu size={14} color="#a855f7" />
+                <Cpu size={14} color="#3b82f6" />
                 <span>AI Candidate Matcher Engine</span>
               </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', marginBottom: '0.5rem' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                 Multi-Model Fallback Waterfall
               </h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: '1.5', marginBottom: '1rem' }}>
                 The candidate compatibility engine utilizes an automated 4-tier provider stack with seamless failover and cache layer.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div className="pill" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', justifyContent: 'space-between', padding: '0.5rem 0.85rem' }}>
+                <div className="pill" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', justifyContent: 'space-between', padding: '0.5rem 0.85rem' }}>
                   <span>1. Primary AI Provider</span>
                   <strong>Groq (openai/gpt-oss-20b)</strong>
                 </div>
-                <div className="pill" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', justifyContent: 'space-between', padding: '0.5rem 0.85rem' }}>
+                <div className="pill" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#60a5fa', justifyContent: 'space-between', padding: '0.5rem 0.85rem' }}>
                   <span>2. Fallback Tier 1</span>
                   <strong>NVIDIA Llama 3.1 8B</strong>
                 </div>
@@ -599,13 +599,13 @@ export const AdminPage = () => {
                 <Lock size={14} color="#38bdf8" />
                 <span>Security & Access Control</span>
               </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', marginBottom: '0.5rem' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
                 Security Audit & Active Protection
               </h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: '1.5', marginBottom: '1rem' }}>
                 Real-time security mechanisms active on this environment:
               </p>
-              <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', color: '#cbd5e1', fontSize: '0.88rem' }}>
+              <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><ShieldCheck size={16} color="#34d399" /> BCrypt salted password hashing (10 rounds)</li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><ShieldCheck size={16} color="#34d399" /> JWT token expiration session protection</li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><ShieldCheck size={16} color="#34d399" /> Admin middleware role guard (`requireAdmin`)</li>

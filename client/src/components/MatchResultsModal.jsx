@@ -62,7 +62,7 @@ export const MatchResultsModal = ({ linkup, meld, onClose }) => {
     setActionError('');
     try {
       setInvitingId(targetId);
-      await inviteToLinkup(linkup.id, targetId);
+      await inviteToLinkup(linkupId, targetId);
       setActionSuccess('Invitation sent successfully!');
       setTimeout(() => setActionSuccess(''), 4000);
     } catch (err) {
@@ -90,7 +90,7 @@ export const MatchResultsModal = ({ linkup, meld, onClose }) => {
           {/* Modal Header */}
           <div className="modal-header">
             <div className="modal-title-group">
-              <Sparkles size={22} color="#a855f7" />
+              <Sparkles size={22} color="#3b82f6" />
               <div>
                 <h2 style={{ fontSize: '1.3rem', margin: 0 }}>AI Teammate Matches</h2>
                 <span className="api-attribution" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -109,7 +109,7 @@ export const MatchResultsModal = ({ linkup, meld, onClose }) => {
             {!loading && !error && (
               <div className="match-engine-banner">
                 <div className="engine-indicator">
-                  <Sparkles size={16} color="#a855f7" />
+                  <Sparkles size={16} color="#3b82f6" />
                   <span>AI Teammate Compatibility Matcher</span>
                 </div>
 
@@ -148,7 +148,7 @@ export const MatchResultsModal = ({ linkup, meld, onClose }) => {
             {loading && (
               <div className="ai-loading-container">
                 <div className="ai-spinner-wrapper">
-                  <Sparkles size={36} className="spin" color="#a855f7" />
+                  <Sparkles size={36} className="spin" color="#3b82f6" />
                 </div>
                 <h3>Analyzing potential teammates...</h3>
                 <p>Evaluating required skills, domain interests, and availability compatibility via AI Matching Engine.</p>
@@ -249,7 +249,7 @@ export const MatchResultsModal = ({ linkup, meld, onClose }) => {
                       {/* Skills Tags */}
                       {item.candidate?.skills && item.candidate.skills.length > 0 && (
                         <div className="candidate-skills-row">
-                          <Code2 size={14} color="#a855f7" style={{ marginTop: 3 }} />
+                          <Code2 size={14} color="#3b82f6" style={{ marginTop: 3 }} />
                           <div className="pill-tags compact">
                             {item.candidate.skills.slice(0, 5).map((sk, sIdx) => (
                               <span key={sIdx} className="tag-pill active sm">
@@ -291,7 +291,7 @@ export const MatchResultsModal = ({ linkup, meld, onClose }) => {
                         <button
                           type="button"
                           className="btn btn-secondary btn-sm"
-                          style={{ marginLeft: 'auto', background: 'rgba(99, 102, 241, 0.1)', color: '#a855f7', border: '1px solid rgba(168, 85, 247, 0.3)' }}
+                          style={{ marginLeft: 'auto', background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.25)' }}
                           onClick={(e) => {
                             const targetId = item.userId || item.id || item.candidate?.userId || item.candidate?.id;
                             handleInvite(e, targetId);

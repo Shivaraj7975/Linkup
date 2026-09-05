@@ -3,8 +3,11 @@ const jwt = require('jsonwebtoken');
 const {
   createUserWithVerification,
   findUserByEmail,
+  findUserByIdentifier,
   isProfileComplete,
   updateUserPassword,
+  validateUsername,
+  isUsernameAvailable,
 } = require('../services/authService');
 const {
   isCollegeEmail,
@@ -12,6 +15,7 @@ const {
   saveOtpToDb,
   verifyOtpInDb,
   sendOtpEmail,
+  normalizePurpose,
 } = require('../services/emailService');
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -20,10 +24,17 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * Generate JWT Token helper
  */
 const generateToken = (user) => {
-  const secret = process.env.JWT_SECRET || 'linkup_jwt_super_secret_key_2026_dev';
+  const secret = process.env.NODE_ENV === 'production'
+    ? process.env.JWT_SECRET
+    : (process.env.JWT_SECRET || 'linkup_jwt_super_secret_key_2026_dev');
+
+  if (!secret) {
+    throw new Error('JWT_SECRET is required in production');
+  }
+
   const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
   return jwt.sign(
-    { id: user.id, email: user.email },
+    { id: user.id, email: user.email, username: user.username || null },
     secret,
     { expiresIn }
   );
@@ -34,19 +45,41 @@ const generateToken = (user) => {
  */
 const sendOtp = async (req, res, next) => {
   try {
-    const { email, type = 'PRIMARY' } = req.body;
+    const { email, identifier, type = 'REGISTRATION' } = req.body;
+    const target = (identifier || email || '').trim();
 
-    if (!email || !emailRegex.test(email)) {
+    if (!target) {
       return res.status(400).json({
         success: false,
-        message: 'A valid email address is required.',
+        message: 'Email or username is required.',
       });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    const purpose = normalizePurpose(type);
+    let cleanEmail = target.toLowerCase();
 
-    // Check primary email is not a college email
-    if (type === 'PRIMARY') {
+    // If password reset, resolve user by email or username
+    if (purpose === 'PASSWORD_RESET') {
+      const user = await findUserByIdentifier(target);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'No account found with this email or username.',
+        });
+      }
+      cleanEmail = user.email.toLowerCase();
+    } else {
+      // For registration or college verification, standard email regex is required
+      if (!emailRegex.test(cleanEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: 'A valid email address is required.',
+        });
+      }
+    }
+
+    // Primary email cannot be a college email
+    if (purpose === 'REGISTRATION') {
       if (isCollegeEmail(cleanEmail)) {
         return res.status(400).json({
           success: false,
@@ -55,8 +88,8 @@ const sendOtp = async (req, res, next) => {
       }
     }
 
-    // Check college domain if type is COLLEGE
-    if (type === 'COLLEGE') {
+    // College email must be valid educational domain
+    if (purpose === 'COLLEGE_VERIFICATION') {
       if (!isCollegeEmail(cleanEmail)) {
         return res.status(400).json({
           success: false,
@@ -65,17 +98,26 @@ const sendOtp = async (req, res, next) => {
       }
     }
 
+    // Generate and save OTP
     const otpCode = generateOtpCode();
-    await saveOtpToDb(cleanEmail, otpCode, type);
+    await saveOtpToDb(cleanEmail, otpCode, purpose);
 
+    // Send email
     try {
-      await sendOtpEmail({ toEmail: cleanEmail, otpCode, type });
+      await sendOtpEmail({ toEmail: cleanEmail, otpCode, type: purpose });
     } catch (emailErr) {
-      console.warn(`⚠️ Email delivery notice for ${cleanEmail}:`, emailErr.message);
+      console.error(`❌ Email delivery failure for ${cleanEmail}:`, emailErr.message);
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(502).json({
+          success: false,
+          message: 'Failed to send OTP verification email. Please check your email address and try again.',
+        });
+      }
     }
 
     return res.json({
       success: true,
+      email: cleanEmail,
       message: `OTP verification code sent to ${cleanEmail}.`,
       devOtp: process.env.NODE_ENV === 'development' ? otpCode : undefined,
     });
@@ -89,7 +131,7 @@ const sendOtp = async (req, res, next) => {
  */
 const verifyOtp = async (req, res, next) => {
   try {
-    const { email, otpCode, type = 'PRIMARY' } = req.body;
+    const { email, otpCode, type = 'REGISTRATION' } = req.body;
 
     if (!email || !otpCode) {
       return res.status(400).json({
@@ -98,7 +140,11 @@ const verifyOtp = async (req, res, next) => {
       });
     }
 
-    const isValid = await verifyOtpInDb(email, otpCode, type);
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanCode = String(otpCode).trim();
+    const purpose = normalizePurpose(type);
+
+    const isValid = await verifyOtpInDb(cleanEmail, cleanCode, purpose);
     if (!isValid) {
       return res.status(400).json({
         success: false,
@@ -117,13 +163,13 @@ const verifyOtp = async (req, res, next) => {
 };
 
 /**
- * POST /api/auth/register
+ * POST /api/auth/register (Mandatory Primary OTP Verification)
  */
 const register = async (req, res, next) => {
   try {
     const { name, email, password, primaryOtp, collegeEmail, collegeOtp } = req.body;
 
-    // 1. Validate inputs
+    // 1. Validate basic inputs
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
       return res.status(400).json({
         success: false,
@@ -134,7 +180,7 @@ const register = async (req, res, next) => {
     if (!email || !emailRegex.test(email)) {
       return res.status(400).json({
         success: false,
-        message: 'A valid email address is required.',
+        message: 'A valid personal email address is required.',
       });
     }
 
@@ -155,24 +201,29 @@ const register = async (req, res, next) => {
       });
     }
 
-    // 2. Check if user already exists
+    // 2. Mandatory Primary Email OTP Verification
+    if (!primaryOtp || typeof primaryOtp !== 'string' || primaryOtp.trim().length !== 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Personal email verification OTP code (6 digits) is required for registration.',
+      });
+    }
+
+    const isPrimaryValid = await verifyOtpInDb(cleanEmail, primaryOtp.trim(), 'REGISTRATION');
+    if (!isPrimaryValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired OTP code for personal email.',
+      });
+    }
+
+    // 3. Check if user already exists
     const existingUser = await findUserByEmail(cleanEmail);
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'User with this email already exists.',
+        message: 'A user with this email address already exists.',
       });
-    }
-
-    // 3. Verify Primary OTP if provided
-    if (primaryOtp) {
-      const isPrimaryValid = await verifyOtpInDb(cleanEmail, primaryOtp, 'PRIMARY');
-      if (!isPrimaryValid) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid or expired OTP code for primary email.',
-        });
-      }
     }
 
     // 4. Validate and verify College Email & College OTP if provided
@@ -189,8 +240,8 @@ const register = async (req, res, next) => {
         });
       }
 
-      if (collegeOtp) {
-        const isCollegeValid = await verifyOtpInDb(cleanCollegeEmail, collegeOtp, 'COLLEGE');
+      if (collegeOtp && collegeOtp.trim().length === 6) {
+        const isCollegeValid = await verifyOtpInDb(cleanCollegeEmail, collegeOtp.trim(), 'COLLEGE_VERIFICATION');
         if (!isCollegeValid) {
           return res.status(400).json({
             success: false,
@@ -239,46 +290,41 @@ const register = async (req, res, next) => {
  */
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, username, identifier, password } = req.body;
+    const loginIdentifier = (identifier || email || username || '').trim();
 
-    // 1. Validate inputs
-    if (!email || !password) {
+    if (!loginIdentifier || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email and password are required.',
+        message: 'Email/Username and password are required.',
       });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
-
-    // 2. Find user by email
-    const user = await findUserByEmail(cleanEmail);
+    const user = await findUserByIdentifier(loginIdentifier);
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password.',
+        message: 'Invalid email/username or password.',
       });
     }
 
-    // 3. Compare password hash
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password.',
+        message: 'Invalid email/username or password.',
       });
     }
 
-    // 4. Generate token
     const token = generateToken(user);
 
-    // 5. Return safe user data & token
     return res.status(200).json({
       success: true,
       token,
       user: {
         id: user.id,
         name: user.name,
+        username: user.username || null,
         email: user.email,
         role: user.role || 'USER',
       },
@@ -301,6 +347,7 @@ const getMe = async (req, res, next) => {
       user: {
         id: req.user.id,
         name: req.user.name,
+        username: req.user.username || null,
         email: req.user.email,
         role: req.user.role || 'USER',
         isProfileComplete: profileComplete,
@@ -313,41 +360,88 @@ const getMe = async (req, res, next) => {
 };
 
 /**
+ * GET /api/auth/check-username?username=xyz
+ */
+const checkUsername = async (req, res, next) => {
+  try {
+    const { username } = req.query;
+    if (!username) {
+      return res.status(200).json({
+        success: true,
+        available: false,
+        message: 'Please enter a username.',
+      });
+    }
+
+    const validation = validateUsername(username);
+    if (!validation.valid) {
+      return res.status(200).json({
+        success: true,
+        available: false,
+        message: validation.message,
+      });
+    }
+
+    const isAvail = await isUsernameAvailable(validation.cleanUsername, req.user?.id);
+    return res.status(200).json({
+      success: true,
+      available: isAvail,
+      cleanUsername: validation.cleanUsername,
+      message: isAvail ? 'Username is available!' : 'Username is already taken.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * POST /api/auth/reset-password
  */
 const resetPassword = async (req, res, next) => {
   try {
-    const { email, otpCode, newPassword } = req.body;
+    const { email, identifier, otpCode, newPassword } = req.body;
+    const targetIdentifier = (identifier || email || '').trim();
 
-    if (!email || !otpCode || !newPassword) {
+    if (!targetIdentifier || !otpCode || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: 'Email, OTP code, and new password are required.',
+        message: 'Email or username, OTP code, and new password are required.',
       });
     }
 
-    if (newPassword.length < 6) {
+    if (typeof newPassword !== 'string' || newPassword.length < 6) {
       return res.status(400).json({
         success: false,
         message: 'Password must be at least 6 characters long.',
       });
     }
 
-    // Verify OTP
-    const isValid = await verifyOtpInDb(email, otpCode, 'PRIMARY');
+    const user = await findUserByIdentifier(targetIdentifier);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with this email or username.',
+      });
+    }
+
+    const cleanEmail = user.email.toLowerCase();
+    const cleanCode = String(otpCode).trim();
+
+    // Verify OTP explicitly against canonical PASSWORD_RESET purpose
+    const isValid = await verifyOtpInDb(cleanEmail, cleanCode, 'PASSWORD_RESET');
     if (!isValid) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid or expired OTP code.',
+        message: 'Invalid or expired password reset OTP code.',
       });
     }
 
     // Hash new password
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(newPassword, salt);
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(newPassword, saltRounds);
 
     // Update password
-    await updateUserPassword(email, passwordHash);
+    await updateUserPassword(cleanEmail, passwordHash);
 
     return res.status(200).json({
       success: true,
@@ -362,6 +456,7 @@ module.exports = {
   register,
   login,
   getMe,
+  checkUsername,
   sendOtp,
   verifyOtp,
   resetPassword,

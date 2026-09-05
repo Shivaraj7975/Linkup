@@ -484,9 +484,9 @@ const filterCandidateStudents = async (linkupOrId, limit = 20) => {
     linkupObj.requiredSkills = sRes.rows;
   }
 
-  // 2. Fetch excluded user IDs (Linkup creator + existing team members)
+  // 2. Fetch excluded user IDs (Linkup creator + existing active team members)
   const memberRes = await query(
-    `SELECT DISTINCT user_id FROM meld_members WHERE meld_id = $1`,
+    `SELECT DISTINCT user_id FROM meld_members WHERE meld_id = $1 AND status = 'ACTIVE'`,
     [linkupId]
   );
   const excludedUserIds = new Set(memberRes.rows.map((r) => r.user_id));

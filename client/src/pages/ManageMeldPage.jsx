@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { InviteFriendsModal } from '../components/InviteFriendsModal';
+import { ShareMeldModal } from '../components/ShareMeldModal';
 import { getLinkupById, getLinkupRequests, acceptJoinRequest, rejectJoinRequest, removeTeamMember } from '../services/api';
 import {
   Users,
@@ -20,6 +22,8 @@ import {
   Trash2,
   User,
   Pencil,
+  UserPlus,
+  Share2,
 } from 'lucide-react';
 
 export const ManageMeldPage = () => {
@@ -34,6 +38,8 @@ export const ManageMeldPage = () => {
   const [processingId, setProcessingId] = useState(null);
   const [memberToRemove, setMemberToRemove] = useState(null);
   const [feedbackMsg, setFeedbackMsg] = useState({ type: '', text: '' });
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     loadLinkupAndRequests();
@@ -158,15 +164,35 @@ export const ManageMeldPage = () => {
       <Navbar />
 
       <main className="container page-content">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="margin-bottom-md">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }} className="margin-bottom-md">
           <button onClick={() => navigate(`/melds/${id}`)} className="btn btn-ghost btn-sm">
             <ArrowLeft size={16} />
             <span>Back to Meld Page</span>
           </button>
-          <button onClick={() => navigate(`/melds/${id}/edit`)} className="btn btn-secondary btn-sm" style={{ gap: '0.4rem' }}>
-            <Pencil size={15} />
-            <span>Edit Meld Details</span>
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => setShowInviteModal(true)}
+              className="btn btn-primary btn-sm"
+              style={{ gap: '0.35rem' }}
+            >
+              <UserPlus size={15} />
+              <span>Invite Members</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowShareModal(true)}
+              className="btn btn-secondary btn-sm"
+              style={{ gap: '0.35rem' }}
+            >
+              <Share2 size={15} />
+              <span>Share MELD</span>
+            </button>
+            <button onClick={() => navigate(`/melds/${id}/edit`)} className="btn btn-secondary btn-sm" style={{ gap: '0.4rem' }}>
+              <Pencil size={15} />
+              <span>Edit Details</span>
+            </button>
+          </div>
         </div>
 
         {/* DASHBOARD TITLE CARD */}
@@ -462,6 +488,23 @@ export const ManageMeldPage = () => {
         onCancel={() => setMemberToRemove(null)}
         isDangerous={true}
       />
+
+      {showInviteModal && (
+        <InviteFriendsModal
+          meld={linkup}
+          onClose={() => setShowInviteModal(false)}
+          onInvitationSent={(invitedUser) => {
+            setFeedbackMsg({ type: 'success', text: `Invitation sent to ${invitedUser.name}!` });
+          }}
+        />
+      )}
+
+      {showShareModal && (
+        <ShareMeldModal
+          meld={linkup}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
     </div>
   );
 };

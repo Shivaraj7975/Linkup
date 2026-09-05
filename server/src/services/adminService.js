@@ -41,7 +41,7 @@ const getAllUsers = async (search = '') => {
       sp.degree,
       (SELECT year_of_study FROM student_profiles sp WHERE sp.user_id = u.id) AS "yearOfStudy",
       COALESCE((SELECT status FROM student_verifications sv WHERE sv.user_id = u.id ORDER BY created_at DESC LIMIT 1), 'UNVERIFIED') AS "verificationStatus",
-      (SELECT COUNT(*) FROM meld_members lm WHERE lm.user_id = u.id) AS "meldsJoinedCount",
+      (SELECT COUNT(*) FROM meld_members lm WHERE lm.user_id = u.id AND lm.status = 'ACTIVE') AS "meldsJoinedCount",
       (SELECT COUNT(*) FROM melds l WHERE l.creator_id = u.id) AS "meldsCreatedCount"
     FROM users u
     LEFT JOIN student_profiles sp ON u.id = sp.user_id
@@ -94,20 +94,20 @@ const updateUserRole = async (userId, newRole) => {
 const updateUserVerification = async (userId, newStatus) => {
   const validStatus = newStatus === 'VERIFIED' ? 'VERIFIED' : 'UNVERIFIED';
 
-  const check = await query('SELECT id, college_email FROM student_verifications WHERE user_id = $1', [userId]);
+  const check = await query('SELECT id FROM student_verifications WHERE user_id = $1', [userId]);
   if (check.rows.length === 0) {
     // Insert record if missing
     await query(
-      `INSERT INTO student_verifications (user_id, status, verification_method, verified_at)
+      `INSERT INTO student_verifications (user_id, status, method, verified_at)
        VALUES ($1, $2, 'MANUAL_REVIEW', $3)`,
       [userId, validStatus, validStatus === 'VERIFIED' ? new Date() : null]
     );
   } else {
     await query(
       `UPDATE student_verifications 
-       SET status = $1, verified_at = $2, updated_at = CURRENT_TIMESTAMP
-       WHERE user_id = $3`,
-      [validStatus, validStatus === 'VERIFIED' ? new Date() : null, userId]
+       SET status = $1, method = $2, verified_at = $3, updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = $4`,
+      [validStatus, validStatus === 'VERIFIED' ? 'MANUAL_REVIEW' : null, validStatus === 'VERIFIED' ? new Date() : null, userId]
     );
   }
 
@@ -130,7 +130,7 @@ const getAllMelds = async (search = '', status = '') => {
       u.name AS "creatorName",
       u.email AS "creatorEmail",
       u.id AS "creatorId",
-      (SELECT COUNT(*) FROM meld_members lm WHERE lm.meld_id = l.id) AS "memberCount"
+      (SELECT COUNT(*) FROM meld_members lm WHERE lm.meld_id = l.id AND lm.status = 'ACTIVE') AS "memberCount"
     FROM melds l
     LEFT JOIN users u ON l.creator_id = u.id
   `;

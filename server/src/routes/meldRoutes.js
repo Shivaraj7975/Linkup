@@ -38,6 +38,13 @@ router.post('/join-requests/:requestId/accept', authenticateToken, meldControlle
 // Reject Join Request (Auth required, Creator ONLY)
 router.post('/join-requests/:requestId/reject', authenticateToken, meldController.rejectRequest);
 
+// Get Sent Join Requests by current user (Auth required)
+router.get('/user/join-requests', authenticateToken, meldController.getMyJoinRequests);
+router.get('/my-join-requests', authenticateToken, meldController.getMyJoinRequests);
+
+// Cancel/Withdraw pending Join Request by applicant (Auth required)
+router.delete('/join-requests/:requestId', authenticateToken, meldController.cancelJoinRequest);
+
 // Remove Team Member (Auth required, Creator ONLY)
 router.delete('/melds/:linkupId/members/:userId', authenticateToken, meldController.removeMember);
 router.delete('/linkups/:linkupId/members/:userId', authenticateToken, meldController.removeMember);

@@ -290,7 +290,12 @@ const inviteUser = async (req, res, next) => {
     const result = await inviteUserToLinkup(linkupId, req.user.id, inviteeId);
     return res.json({ success: true, message: 'Invitation sent.', ...result });
   } catch (error) {
-    if (error.message.includes('not found') || error.message.includes('already a member') || error.message.includes('not open')) {
+    if (
+      error.message.includes('not found') ||
+      error.message.includes('already a member') ||
+      error.message.includes('not open') ||
+      error.message.includes('Only the creator')
+    ) {
       return res.status(400).json({ success: false, message: error.message });
     }
     next(error);
@@ -310,6 +315,44 @@ const leaveLinkupHandler = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/user/join-requests
+ * View all Join Requests sent by the current user
+ */
+const getMyJoinRequests = async (req, res, next) => {
+  try {
+    const requests = await linkupService.getMySentJoinRequests(req.user.id);
+    return res.json({
+      success: true,
+      count: requests.length,
+      requests,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * DELETE /api/join-requests/:requestId
+ * Cancel a pending join request sent by the current user
+ */
+const cancelJoinRequest = async (req, res, next) => {
+  try {
+    const { requestId } = req.params;
+    const result = await linkupService.cancelMyJoinRequest(requestId, req.user.id);
+    return res.json({
+      success: true,
+      message: 'Join request cancelled successfully.',
+      result,
+    });
+  } catch (error) {
+    if (error.message.includes('not found') || error.message.includes('cannot be cancelled')) {
+      return res.status(404).json({ success: false, message: error.message });
+    }
+    next(error);
+  }
+};
+
 module.exports = {
   createLinkup,
   getLinkups,
@@ -324,4 +367,6 @@ module.exports = {
   getLinkupMatches,
   inviteUser,
   leaveLinkupHandler,
+  getMyJoinRequests,
+  cancelJoinRequest,
 };

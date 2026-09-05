@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { sendOtpApi, resetPasswordApi } from '../services/api';
-import { Mail, ArrowLeft, Loader2, ShieldCheck, Lock, Link2 } from 'lucide-react';
+import { Mail, ArrowLeft, Loader2, ShieldCheck, Lock, User } from 'lucide-react';
 
 export const ForgotPasswordPage = () => {
   const navigate = useNavigate();
 
-  // Step 1: Email, Step 2: OTP & New Password
+  // Step 1: Identifier (Email or Username), Step 2: OTP & New Password
   const [step, setStep] = useState(1);
 
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [resolvedEmail, setResolvedEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -31,9 +32,10 @@ export const ForgotPasswordPage = () => {
   }, [resendCooldown]);
 
   const handleSendOtp = async (e) => {
-    e.preventDefault();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address.');
+    if (e && e.preventDefault) e.preventDefault();
+    const cleanIdentifier = identifier.trim();
+    if (!cleanIdentifier) {
+      setError('Please enter your email or username.');
       return;
     }
 
@@ -42,10 +44,12 @@ export const ForgotPasswordPage = () => {
     setSuccess('');
 
     try {
-      await sendOtpApi(email.trim(), 'PRIMARY');
+      const res = await sendOtpApi(cleanIdentifier, 'PASSWORD_RESET');
+      const sentToEmail = res.email || cleanIdentifier;
+      setResolvedEmail(sentToEmail);
       setStep(2);
       setResendCooldown(60);
-      setSuccess(`Password reset code sent to ${email}`);
+      setSuccess(`Password reset code sent to ${sentToEmail}`);
     } catch (err) {
       setError(err.message || 'Failed to send OTP code.');
     } finally {
@@ -73,7 +77,7 @@ export const ForgotPasswordPage = () => {
 
     setLoading(true);
     try {
-      await resetPasswordApi(email.trim(), otpCode.trim(), newPassword);
+      await resetPasswordApi(resolvedEmail || identifier.trim(), otpCode.trim(), newPassword);
       setSuccess('Password has been successfully reset! Redirecting to login...');
       setTimeout(() => {
         navigate('/login', { replace: true });
@@ -111,7 +115,7 @@ export const ForgotPasswordPage = () => {
           <div className="text-center margin-bottom-xl">
             <h1 className="auth-title">Reset Password</h1>
             <p className="auth-subtitle">
-              {step === 1 ? "Enter your email to receive a verification code." : "Enter the code and set your new password."}
+              {step === 1 ? "Enter your email or username to receive a verification code." : "Enter the code and set your new password."}
             </p>
           </div>
 
@@ -130,18 +134,19 @@ export const ForgotPasswordPage = () => {
           {step === 1 ? (
             <form onSubmit={handleSendOtp} className="auth-form" noValidate>
               <div className="form-group">
-                <label htmlFor="email">Email Address</label>
+                <label htmlFor="identifier">Email or Username</label>
                 <div className="input-wrapper">
-                  <Mail size={18} className="input-left-icon" />
+                  <User size={18} className="input-left-icon" />
                   <input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
+                    id="identifier"
+                    type="text"
+                    placeholder="Email or @username"
+                    value={identifier}
                     onChange={(e) => {
-                      setEmail(e.target.value);
+                      setIdentifier(e.target.value);
                       setError('');
                     }}
+                    autoCapitalize="none"
                     autoFocus
                   />
                 </div>
@@ -167,7 +172,7 @@ export const ForgotPasswordPage = () => {
                   <span className="flex-center gap-xs font-semibold">
                     <Mail size={16} className="text-cyan" /> Email OTP
                   </span>
-                  <span className="text-xs text-muted">{email}</span>
+                  <span className="text-xs text-muted">{resolvedEmail || identifier}</span>
                 </label>
                 <input
                   id="otpCode"

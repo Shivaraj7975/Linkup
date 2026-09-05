@@ -241,7 +241,7 @@ export const RegisterPage = () => {
                   id="register-email"
                   type="email"
                   name="email"
-                  placeholder="you@gmail.com"
+                  placeholder="e.g. alex@gmail.com"
                   value={form.email}
                   onChange={handleChange}
                   className={errors.email ? 'input-error' : ''}
@@ -262,7 +262,7 @@ export const RegisterPage = () => {
                   id="register-college-email"
                   type="email"
                   name="collegeEmail"
-                  placeholder="e.g. alex@stanford.edu or student@rvce.edu.in"
+                  placeholder="e.g. alex@university.edu"
                   value={form.collegeEmail}
                   onChange={handleChange}
                   className={errors.collegeEmail ? 'input-error' : ''}
@@ -353,7 +353,7 @@ export const RegisterPage = () => {
               </div>
 
               {form.collegeEmail && form.collegeEmail.trim() && (
-                <div className="form-group card glass-card p-md margin-bottom-md" style={{ background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                <div className="form-group card glass-card p-md margin-bottom-md" style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
                   <label htmlFor="college-otp" className="flex-center-between">
                     <span className="flex-center gap-xs font-semibold text-primary">
                       <GraduationCap size={16} /> College Email OTP

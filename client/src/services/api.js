@@ -47,13 +47,29 @@ export const getHealthStatus = async () => {
 };
 
 /**
+ * GET /api/auth/check-username
+ */
+export const checkUsernameApi = async (username) => {
+  const response = await fetch(`${API_BASE_URL}/auth/check-username?username=${encodeURIComponent(username)}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to check username availability.');
+  }
+  return data;
+};
+
+/**
  * POST /api/auth/send-otp
  */
-export const sendOtpApi = async (email, type = 'PRIMARY') => {
+export const sendOtpApi = async (identifier, type = 'PRIMARY') => {
   const response = await fetch(`${API_BASE_URL}/auth/send-otp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, type }),
+    body: JSON.stringify({ identifier, email: identifier, type }),
   });
 
   const data = await response.json();
@@ -83,11 +99,11 @@ export const verifyOtpApi = async (email, otpCode, type = 'PRIMARY') => {
 /**
  * POST /api/auth/reset-password
  */
-export const resetPasswordApi = async (email, otpCode, newPassword) => {
+export const resetPasswordApi = async (identifier, otpCode, newPassword) => {
   const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, otpCode, newPassword }),
+    body: JSON.stringify({ identifier, email: identifier, otpCode, newPassword }),
   });
 
   const data = await response.json();
@@ -119,11 +135,11 @@ export const registerUser = async ({ name, email, password, primaryOtp, collegeE
 /**
  * POST /api/auth/login
  */
-export const loginUser = async (email, password) => {
+export const loginUser = async (identifier, password) => {
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ identifier, email: identifier, password }),
   });
 
   const data = await response.json();
@@ -544,3 +560,111 @@ export const removeMeldMember = removeTeamMember;
 export const getMeldMatches = getLinkupMatches;
 export const inviteToMeld = inviteToLinkup;
 export const leaveMeld = leaveLinkup;
+
+/**
+ * GET /api/users/search?q=...&meldId=... - Search platform users/friends to invite
+ */
+export const searchUsersToInvite = async (query = '', meldId = null) => {
+  let url = `${API_BASE_URL}/users/search?q=${encodeURIComponent(query)}`;
+  if (meldId) {
+    url += `&meldId=${encodeURIComponent(meldId)}`;
+  }
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to search users.');
+  return data.users || [];
+};
+
+/**
+ * GET /api/user/join-requests - Fetch join requests sent by current user
+ */
+export const getMyJoinRequests = async () => {
+  const response = await fetch(`${API_BASE_URL}/user/join-requests`, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch your join requests.');
+  return data.requests || [];
+};
+
+/**
+ * DELETE /api/join-requests/:requestId - Cancel a pending join request sent by user
+ */
+export const cancelJoinRequest = async (requestId) => {
+  const response = await fetch(`${API_BASE_URL}/join-requests/${requestId}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to cancel join request.');
+  return data;
+};
+
+/**
+ * GET /api/notifications - Fetch user notifications and unread count
+ */
+export const fetchNotificationsApi = async () => {
+  const response = await fetch(`${API_BASE_URL}/notifications`, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch notifications.');
+  return data;
+};
+
+/**
+ * PUT /api/notifications/:id/read - Mark notification as read
+ */
+export const markNotificationReadApi = async (id) => {
+  const response = await fetch(`${API_BASE_URL}/notifications/${id}/read`, {
+    method: 'PUT',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to mark notification as read.');
+  return data;
+};
+
+/**
+ * PUT /api/notifications/read-all - Mark all notifications as read
+ */
+export const markAllNotificationsReadApi = async () => {
+  const response = await fetch(`${API_BASE_URL}/notifications/read-all`, {
+    method: 'PUT',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to mark all notifications as read.');
+  return data;
+};
+
+/**
+ * DELETE /api/notifications/:id - Delete a notification
+ */
+export const deleteNotificationApi = async (id) => {
+  const response = await fetch(`${API_BASE_URL}/notifications/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to delete notification.');
+  return data;
+};
+
+/**
+ * DELETE /api/notifications/clear-all - Clear all notifications
+ */
+export const clearAllNotificationsApi = async () => {
+  const response = await fetch(`${API_BASE_URL}/notifications/clear-all`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to clear notifications.');
+  return data;
+};

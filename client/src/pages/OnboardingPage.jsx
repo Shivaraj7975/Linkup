@@ -8,8 +8,10 @@ import {
   getProfile,
   updateProfile,
   searchUniversities,
+  checkUsernameApi,
 } from '../services/api';
 import {
+  AtSign,
   GraduationCap,
   Code2,
   Sparkles,
@@ -18,6 +20,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
+  AlertCircle,
   X,
   Search,
   Loader2,
@@ -137,16 +140,16 @@ const FEATURED_SECTOR_INTEREST_NAMES = [
 ];
 
 const STEPS = [
-  { id: 1, name: 'Academics', icon: GraduationCap },
-  { id: 2, name: 'Skills', icon: Code2 },
-  { id: 3, name: 'Interests', icon: Sparkles },
-  { id: 4, name: 'Bio & Time', icon: UserCheck },
-  { id: 5, name: 'Links', icon: Globe },
+  { id: 1, name: 'Handle', icon: AtSign },
+  { id: 2, name: 'Academics', icon: GraduationCap },
+  { id: 3, name: 'Skills', icon: Code2 },
+  { id: 4, name: 'Interests', icon: Sparkles },
+  { id: 5, name: 'About & Links', icon: UserCheck },
 ];
 
 export const OnboardingPage = () => {
   const navigate = useNavigate();
-  const { fetchCurrentUser } = useAuth();
+  const { user, fetchCurrentUser } = useAuth();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -159,6 +162,7 @@ export const OnboardingPage = () => {
 
   // Form State
   const [form, setForm] = useState({
+    username: '',
     college: '',
     city: '',
     state: '',
@@ -174,7 +178,16 @@ export const OnboardingPage = () => {
     linkedin_url: '',
   });
 
+  // Username validation state
+  const [usernameCheck, setUsernameCheck] = useState({
+    checking: false,
+    available: null,
+    message: '',
+  });
+  const usernameDebounceRef = useRef(null);
+
   // University Autocomplete State
+  const [collegeSelectedFromApi, setCollegeSelectedFromApi] = useState(false);
   const [uniSuggestions, setUniSuggestions] = useState([]);
   const [uniLoading, setUniLoading] = useState(false);
   const [showUniDropdown, setShowUniDropdown] = useState(false);
@@ -203,10 +216,35 @@ export const OnboardingPage = () => {
         setDbSkills(skillsList || []);
         setDbInterests(interestsList || []);
 
-        if (profileData && profileData.profile) {
-          const p = profileData.profile;
+        if (profileData) {
+          const u = profileData.user;
+          const p = profileData.profile || {};
+
+          let initialUsername = u?.username || user?.username || '';
+          if (!initialUsername && (u?.name || user?.name)) {
+            const rawFirst = (u?.name || user?.name || '').trim().split(/\s+/)[0];
+            let cleanFirst = rawFirst.toLowerCase().replace(/[^a-z0-9]/g, '') || 'coder';
+            if (!/^[a-z]/.test(cleanFirst)) {
+              cleanFirst = 'user' + cleanFirst;
+            }
+            while ((cleanFirst.match(/[a-z]/g) || []).length < 5) {
+              cleanFirst += 'code';
+            }
+            const rndNum = Math.floor(10 + Math.random() * 90);
+            initialUsername = `${cleanFirst}${rndNum}`;
+          }
+
+          if (initialUsername) {
+            setUsernameCheck({ checking: false, available: true, message: '✓ Current handle' });
+          }
+
+          if (p.college && p.college.trim()) {
+            setCollegeSelectedFromApi(true);
+          }
+
           setForm((prev) => ({
             ...prev,
+            username: initialUsername,
             college: p.college || '',
             city: p.city || '',
             state: p.state || '',
@@ -221,6 +259,11 @@ export const OnboardingPage = () => {
             skills: profileData.skills || [],
             interests: profileData.interests || [],
           }));
+
+          // Restore saved step if user previously exited during onboarding
+          if (p.onboarding_step && p.onboarding_step >= 1 && p.onboarding_step <= 5) {
+            setCurrentStep(p.onboarding_step);
+          }
         }
       } catch (err) {
         console.error('Failed to load onboarding references:', err);
@@ -230,7 +273,79 @@ export const OnboardingPage = () => {
     };
 
     loadInitialData();
-  }, []);
+  }, [user]);
+
+  const handleUsernameChange = (val) => {
+    const clean = val.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    setForm((prev) => ({ ...prev, username: clean }));
+    if (error) setError('');
+
+    if (usernameDebounceRef.current) {
+      clearTimeout(usernameDebounceRef.current);
+    }
+
+    if (!clean) {
+      setUsernameCheck({ checking: false, available: null, message: '' });
+      return;
+    }
+
+    if (!/^[a-z]/.test(clean)) {
+      setUsernameCheck({ checking: false, available: false, message: 'Must start with a letter.' });
+      return;
+    }
+
+    if (clean.length < 7) {
+      setUsernameCheck({ checking: false, available: false, message: `Minimum 7 characters (${clean.length}/7).` });
+      return;
+    }
+
+    if (clean.length > 30) {
+      setUsernameCheck({ checking: false, available: false, message: 'Maximum 30 characters.' });
+      return;
+    }
+
+    const letters = (clean.match(/[a-z]/g) || []).length;
+    const digits = (clean.match(/[0-9]/g) || []).length;
+
+    const conditionA = letters >= 8; // At least 8 letters
+    const conditionB = letters >= 5 && digits >= 2; // At least 5 letters and 2 numbers
+
+    if (!conditionA && !conditionB) {
+      if (letters >= 5) {
+        setUsernameCheck({
+          checking: false,
+          available: false,
+          message: `Needs either ${8 - letters} more letter(s) OR ${2 - digits} more number(s).`,
+        });
+      } else {
+        setUsernameCheck({
+          checking: false,
+          available: false,
+          message: `Needs at least 8 letters OR (5 letters + 2 numbers). Letters: ${letters}/5.`,
+        });
+      }
+      return;
+    }
+
+    setUsernameCheck({ checking: true, available: null, message: 'Checking availability...' });
+
+    usernameDebounceRef.current = setTimeout(async () => {
+      try {
+        const res = await checkUsernameApi(clean);
+        setUsernameCheck({
+          checking: false,
+          available: res.available,
+          message: res.available ? '✓ Username is available!' : '✗ Username is already taken.',
+        });
+      } catch (err) {
+        setUsernameCheck({
+          checking: false,
+          available: false,
+          message: err.message || 'Error checking availability.',
+        });
+      }
+    }, 350);
+  };
 
   // Debounced ROR v2 University Search
   useEffect(() => {
@@ -284,6 +399,7 @@ export const OnboardingPage = () => {
       state: uni.state || prev.state || '',
       country: uni.country || prev.country || 'Global',
     }));
+    setCollegeSelectedFromApi(true);
     setUniSuggestions([]);
     setShowUniDropdown(false);
   };
@@ -372,17 +488,44 @@ export const OnboardingPage = () => {
   // Validation per step
   const validateStep = (step) => {
     if (step === 1) {
-      if (!form.college.trim()) return 'Please enter or select your college or university.';
+      if (!form.username || !form.username.trim()) {
+        return 'Please choose a unique username handle.';
+      }
+      const clean = form.username.trim().toLowerCase();
+      if (!/^[a-z]/.test(clean)) {
+        return 'Username must start with a letter.';
+      }
+      if (clean.length < 7 || clean.length > 30) {
+        return 'Username must be between 7 and 30 characters.';
+      }
+      if (!/^[a-z0-9_]+$/.test(clean)) {
+        return 'Username can only contain letters, numbers, and underscores.';
+      }
+      const letters = (clean.match(/[a-z]/g) || []).length;
+      const digits = (clean.match(/[0-9]/g) || []).length;
+      const conditionA = letters >= 8;
+      const conditionB = letters >= 5 && digits >= 2;
+      if (!conditionA && !conditionB) {
+        return 'Username must have either at least 8 letters, or at least 5 letters and 2 numbers.';
+      }
+      if (usernameCheck.available === false) {
+        return 'This username is already taken. Please choose another.';
+      }
+    }
+    if (step === 2) {
+      if (!collegeSelectedFromApi || !form.college.trim()) {
+        return 'Please search and select your college or university from the verified registry dropdown.';
+      }
       if (!form.degree.trim()) return 'Please enter your degree / major.';
       if (!form.year_of_study) return 'Please select your current year of study.';
     }
-    if (step === 2) {
+    if (step === 3) {
       if (form.skills.length === 0) return 'Please add at least one skill.';
     }
-    if (step === 3) {
+    if (step === 4) {
       if (form.interests.length === 0) return 'Please select at least one area of interest.';
     }
-    if (step === 4) {
+    if (step === 5) {
       if (!form.bio.trim() || form.bio.trim().length < 10) {
         return 'Please provide a short bio (at least 10 characters).';
       }
@@ -391,11 +534,12 @@ export const OnboardingPage = () => {
   };
 
   // Save progress helper
-  const saveProgress = async (isFinal = false) => {
+  const saveProgress = async (isFinal = false, targetStep = currentStep) => {
     setSaving(true);
     setError('');
     try {
       await updateProfile({
+        username: form.username.trim().toLowerCase(),
         college: form.college.trim(),
         city: form.city.trim(),
         state: form.state.trim(),
@@ -409,6 +553,8 @@ export const OnboardingPage = () => {
         linkedin_url: form.linkedin_url.trim(),
         skills: form.skills,
         interests: form.interests,
+        onboarding_step: targetStep,
+        is_completed: isFinal,
       });
 
       if (isFinal) {
@@ -431,9 +577,11 @@ export const OnboardingPage = () => {
       return;
     }
 
+    const nextStep = Math.min(currentStep + 1, 5);
     try {
-      await saveProgress(false);
-      setCurrentStep((prev) => Math.min(prev + 1, 5));
+      await saveProgress(false, nextStep);
+      setCurrentStep(nextStep);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch {
       // Handled in saveProgress
     }
@@ -442,16 +590,17 @@ export const OnboardingPage = () => {
   const handleBack = () => {
     setError('');
     setCurrentStep((prev) => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleComplete = async () => {
-    const err = validateStep(currentStep);
+    const err = validateStep(5);
     if (err) {
       setError(err);
       return;
     }
     try {
-      await saveProgress(true);
+      await saveProgress(true, 5);
     } catch {
       // Handled in saveProgress
     }
@@ -532,11 +681,61 @@ export const OnboardingPage = () => {
           <div className="onboarding-card">
             {error && <div className="alert alert-error">{error}</div>}
 
-            {/* STEP 1: ACADEMICS & ROR V2 SEARCH */}
+            {/* STEP 1: CHOOSE USERNAME HANDLE */}
             {currentStep === 1 && (
               <div className="wizard-step">
                 <div className="wizard-step-header">
-                  <h2>Step 1 — Academic Information</h2>
+                  <h2>Step 1 — Choose Your Username Handle</h2>
+                  <p>Pick your unique identity on MELD. Teammates will find, mention, and invite you using this handle.</p>
+                </div>
+
+                <div className="auth-form">
+                  <div className="form-group">
+                    <label htmlFor="username-input">Unique Username *</label>
+                    <div className="input-wrapper icon-left">
+                      <AtSign size={18} className="input-left-icon" />
+                      <input
+                        id="username-input"
+                        type="text"
+                        placeholder="e.g. alexsmith, dev_sarah"
+                        value={form.username}
+                        onChange={(e) => handleUsernameChange(e.target.value)}
+                        maxLength={30}
+                        autoFocus
+                      />
+                      {usernameCheck.checking && (
+                        <Loader2 size={18} className="input-icon-btn spin" />
+                      )}
+                    </div>
+
+                    <div style={{ marginTop: 8, fontSize: '0.85rem' }}>
+                      {usernameCheck.message && (
+                        <div style={{
+                          color: usernameCheck.available === true ? 'var(--accent-teal, #10b981)' : '#f43f5e',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          fontWeight: 500,
+                          marginBottom: 4,
+                        }}>
+                          {usernameCheck.available === true ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
+                          <span>{usernameCheck.message}</span>
+                        </div>
+                      )}
+                      <span className="field-hint">
+                        Must start with a letter and have either at least 8 letters (e.g. <code>alexander</code>) OR at least 5 letters with 2 numbers (e.g. <code>coder42</code>, <code>shivaraj99</code>).
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: ACADEMICS & ROR V2 SEARCH */}
+            {currentStep === 2 && (
+              <div className="wizard-step">
+                <div className="wizard-step-header">
+                  <h2>Step 2 — Academic Information</h2>
                   <p>Search your university via Research Organization Registry (ROR). City, State, and Country will be auto-selected.</p>
                 </div>
 
@@ -549,9 +748,12 @@ export const OnboardingPage = () => {
                       <input
                         id="college-input"
                         type="text"
-                        placeholder="Type university name..."
+                        placeholder="Search university or college..."
                         value={form.college}
-                        onChange={(e) => handleChange('college', e.target.value)}
+                        onChange={(e) => {
+                          handleChange('college', e.target.value);
+                          setCollegeSelectedFromApi(false);
+                        }}
                         onFocus={() => {
                           if (uniSuggestions.length > 0 && !skipSearchRef.current) {
                             setShowUniDropdown(true);
@@ -567,7 +769,7 @@ export const OnboardingPage = () => {
                         <div className="uni-dropdown">
                           <div className="uni-dropdown-header">
                             <span>ROR Registry Matches ({uniSuggestions.length})</span>
-                            <span className="api-attribution">Verified Institutional Registry</span>
+                            <span className="api-attribution">Click to select institution</span>
                           </div>
                           {uniSuggestions.map((uni) => (
                             <div
@@ -590,9 +792,22 @@ export const OnboardingPage = () => {
                         </div>
                       )}
                     </div>
-                    <span className="field-hint">
-                      Search research & academic organizations globally. Selecting a college auto-detects its location.
-                    </span>
+
+                    {collegeSelectedFromApi ? (
+                      <div style={{ color: 'var(--accent-teal, #10b981)', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
+                        <CheckCircle2 size={14} />
+                        <span style={{ fontWeight: 500 }}>Verified from Institutional Registry</span>
+                      </div>
+                    ) : form.college.trim().length >= 2 ? (
+                      <div style={{ color: '#f59e0b', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
+                        <AlertCircle size={14} />
+                        <span>Please click and select an institution from the suggestions dropdown.</span>
+                      </div>
+                    ) : (
+                      <span className="field-hint">
+                        Search research & academic organizations globally. You must click an option from the dropdown to select it.
+                      </span>
+                    )}
                   </div>
 
                   {/* Location Grid: City, State, Country (Non-editable / Read-only) */}
@@ -683,11 +898,11 @@ export const OnboardingPage = () => {
               </div>
             )}
 
-            {/* STEP 2: SKILLS */}
-            {currentStep === 2 && (
+            {/* STEP 3: SKILLS */}
+            {currentStep === 3 && (
               <div className="wizard-step">
                 <div className="wizard-step-header">
-                  <h2>Step 2 — Technical, Development & Sector Skills</h2>
+                  <h2>Step 3 — Technical, Development & Sector Skills</h2>
                   <p>Select your top skills from Web Development, Software Engineering, Interview Prep, and Sector Fields.</p>
                 </div>
 
@@ -764,7 +979,7 @@ export const OnboardingPage = () => {
                   <div className="pill-grid">
                     {searchResultsSkills.length === 0 ? (
                       <p className="no-pills-text">
-                        No matching skill found in database for "{skillSearch}". Click <strong style={{ color: 'var(--accent-primary, #818cf8)' }}>Add</strong> above or press Enter to create it.
+                        No matching skill found in database for "{skillSearch}". Click <strong style={{ color: 'var(--accent-primary, #3b82f6)' }}>Add</strong> above or press Enter to create it.
                       </p>
                     ) : (
                       <>
@@ -820,11 +1035,11 @@ export const OnboardingPage = () => {
               </div>
             )}
 
-            {/* STEP 3: AREAS OF INTEREST (Searchable + Inline +10 More Expand Button) */}
-            {currentStep === 3 && (
+            {/* STEP 4: AREAS OF INTEREST (Searchable + Inline +10 More Expand Button) */}
+            {currentStep === 4 && (
               <div className="wizard-step">
                 <div className="wizard-step-header">
-                  <h2>Step 3 — Areas of Interest & Domains</h2>
+                  <h2>Step 4 — Areas of Interest & Domains</h2>
                   <p>Choose topics, industries, and project domains you are passionate about collaborating in.</p>
                 </div>
 
@@ -905,7 +1120,7 @@ export const OnboardingPage = () => {
                   <div className="pill-grid grid-lg">
                     {searchResultsInterests.length === 0 ? (
                       <p className="no-pills-text">
-                        No matching interest domain found for "{interestSearch}". Click <strong style={{ color: 'var(--accent-primary, #818cf8)' }}>Add</strong> above or press Enter to create it.
+                        No matching interest domain found for "{interestSearch}". Click <strong style={{ color: 'var(--accent-primary, #3b82f6)' }}>Add</strong> above or press Enter to create it.
                       </p>
                     ) : (
                       <>
@@ -961,12 +1176,12 @@ export const OnboardingPage = () => {
               </div>
             )}
 
-            {/* STEP 4: BIO & AVAILABILITY */}
-            {currentStep === 4 && (
+            {/* STEP 5: ABOUT YOU, AVAILABILITY & LINKS */}
+            {currentStep === 5 && (
               <div className="wizard-step">
                 <div className="wizard-step-header">
-                  <h2>Step 4 — About You & Availability</h2>
-                  <p>Share a brief bio and your weekly availability for project collaboration.</p>
+                  <h2>Step 5 — About You & Social Links</h2>
+                  <p>Share a brief bio, your weekly availability, and portfolio links for project collaboration.</p>
                 </div>
 
                 <div className="auth-form">
@@ -974,7 +1189,7 @@ export const OnboardingPage = () => {
                     <label>Short Bio *</label>
                     <textarea
                       rows={4}
-                      placeholder="Tell potential teammates about your experience, past projects, or what kind of teams you want to join..."
+                      placeholder="Share a short summary of your background, interests, and what you're excited to build..."
                       value={form.bio}
                       onChange={(e) => handleChange('bio', e.target.value)}
                       className="bio-textarea"
@@ -998,21 +1213,9 @@ export const OnboardingPage = () => {
                       ))}
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
 
-            {/* STEP 5: LINKS */}
-            {currentStep === 5 && (
-              <div className="wizard-step">
-                <div className="wizard-step-header">
-                  <h2>Step 5 — Portfolio & Social Links (Optional)</h2>
-                  <p>Add your GitHub and LinkedIn profiles to showcase your work.</p>
-                </div>
-
-                <div className="auth-form">
                   <div className="form-group">
-                    <label>GitHub Profile URL</label>
+                    <label>GitHub Profile URL (Optional)</label>
                     <div className="input-wrapper icon-left">
                       <Github size={18} className="input-left-icon" />
                       <input
@@ -1025,7 +1228,7 @@ export const OnboardingPage = () => {
                   </div>
 
                   <div className="form-group">
-                    <label>LinkedIn Profile URL</label>
+                    <label>LinkedIn Profile URL (Optional)</label>
                     <div className="input-wrapper icon-left">
                       <Linkedin size={18} className="input-left-icon" />
                       <input
