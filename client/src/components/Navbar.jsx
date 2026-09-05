@@ -228,7 +228,7 @@ export const Navbar = () => {
           </nav>
 
           {/* Mobile Top Actions (Theme Toggle & Profile or Login) */}
-          <div className="mobile-top-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div className="mobile-top-actions">
             {/* Mobile Theme Toggle Button */}
             <button
               type="button"
