@@ -87,7 +87,7 @@ export const MeldChat = ({ meldId, currentUser }) => {
         if (!isMounted) return;
 
         // 2. Initialize Socket.IO connection
-        const token = localStorage.getItem('meld_token') || localStorage.getItem('linkup_token');
+        const token = localStorage.getItem('meld_token');
         if (!token) {
           setError('Authentication required for chat.');
           setLoading(false);

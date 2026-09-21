@@ -169,7 +169,7 @@ export const ShareMeldModal = ({ meld, onClose }) => {
               <a
                 href={whatsappUrl}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="btn btn-ghost btn-sm"
                 style={{
                   background: 'rgba(37, 211, 102, 0.12)',
@@ -188,7 +188,7 @@ export const ShareMeldModal = ({ meld, onClose }) => {
               <a
                 href={telegramUrl}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="btn btn-ghost btn-sm"
                 style={{
                   background: 'rgba(0, 136, 204, 0.12)',
@@ -207,7 +207,7 @@ export const ShareMeldModal = ({ meld, onClose }) => {
               <a
                 href={twitterUrl}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="btn btn-ghost btn-sm"
                 style={{
                   background: 'var(--bg-secondary)',
@@ -226,7 +226,7 @@ export const ShareMeldModal = ({ meld, onClose }) => {
               <a
                 href={linkedinUrl}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="btn btn-ghost btn-sm"
                 style={{
                   background: 'rgba(10, 102, 194, 0.12)',

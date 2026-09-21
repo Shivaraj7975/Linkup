@@ -6,14 +6,6 @@ import { PlusCircle, Search, X, Users, Clock, Calendar, CheckCircle2, AlertCircl
 
 import { CATEGORY_NAMES as CATEGORIES } from '../constants/categories';
 
-const COMMITMENT_OPTIONS = [
-  '1-5 hours / week',
-  '5-10 hours / week',
-  '10-20 hours / week',
-  'Full-Time / Sprint',
-  'Flexible',
-];
-
 const DURATION_OPTIONS = [
   '1-2 Weeks (Hackathon / Sprint)',
   '1 Month',
@@ -30,7 +22,6 @@ export const CreateMeldPage = () => {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [maxMembers, setMaxMembers] = useState(4);
-  const [commitmentLevel, setCommitmentLevel] = useState(COMMITMENT_OPTIONS[1]);
   const [projectDuration, setProjectDuration] = useState(DURATION_OPTIONS[1]);
 
   // Skill Selection State
@@ -111,7 +102,6 @@ export const CreateMeldPage = () => {
         category,
         requiredSkills: selectedSkills,
         maxMembers: parseInt(maxMembers, 10),
-        commitmentLevel,
         projectDuration,
       });
 
@@ -325,29 +315,11 @@ export const CreateMeldPage = () => {
               </div>
             </div>
 
-            {/* SECTION 3: COMMITMENT */}
+            {/* SECTION 3: CAPACITY & DURATION */}
             <div className="form-section">
-              <h3 className="section-heading">3. Commitment & Duration</h3>
+              <h3 className="section-heading">3. Project Duration</h3>
 
               <div className="grid-2-col">
-                <div className="form-group">
-                  <label htmlFor="commitment" className="form-label">
-                    Commitment Level <span className="text-danger">*</span>
-                  </label>
-                  <select
-                    id="commitment"
-                    className="select"
-                    value={commitmentLevel}
-                    onChange={(e) => setCommitmentLevel(e.target.value)}
-                  >
-                    {COMMITMENT_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 <div className="form-group">
                   <label htmlFor="duration" className="form-label">
                     Project Duration <span className="text-danger">*</span>

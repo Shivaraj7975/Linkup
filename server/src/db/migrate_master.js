@@ -152,7 +152,6 @@ async function runMasterMigration() {
           category VARCHAR(100) NOT NULL,
           max_members INT NOT NULL DEFAULT 4 CHECK (max_members >= 2),
           current_status VARCHAR(20) NOT NULL DEFAULT 'OPEN' CHECK (current_status IN ('OPEN', 'FULL', 'CLOSED')),
-          commitment_level VARCHAR(100) NOT NULL DEFAULT 'Moderate (5-10 hrs/week)',
           project_duration VARCHAR(100) NOT NULL DEFAULT '1-3 Months',
           created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -198,8 +197,16 @@ async function runMasterMigration() {
           meld_id UUID NOT NULL REFERENCES melds(id) ON DELETE CASCADE,
           user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           match_percentage INT NOT NULL CHECK (match_percentage >= 0 AND match_percentage <= 100),
+          skill_score INT DEFAULT 0,
+          role_fit_score INT DEFAULT 0,
+          project_relevance_score INT DEFAULT 0,
+          interest_score INT DEFAULT 0,
+          availability_score INT DEFAULT 0,
+          team_complement_score INT DEFAULT 0,
+          role_name VARCHAR(100) DEFAULT NULL,
+          algorithm_version VARCHAR(20) DEFAULT '2',
           match_data JSONB NOT NULL DEFAULT '{}'::jsonb,
-          generated_by VARCHAR(50) NOT NULL DEFAULT 'AI' CHECK (generated_by IN ('AI', 'FALLBACK')),
+          generated_by VARCHAR(50) NOT NULL DEFAULT 'AI',
           created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
           CONSTRAINT unique_meld_user_match UNIQUE (meld_id, user_id)
       );
@@ -218,8 +225,9 @@ async function runMasterMigration() {
       CREATE TABLE IF NOT EXISTS otp_verifications (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           email VARCHAR(255) NOT NULL,
-          otp_code VARCHAR(6) NOT NULL,
+          otp_code VARCHAR(255) NOT NULL,
           purpose VARCHAR(50) NOT NULL,
+          attempts INT NOT NULL DEFAULT 0,
           expires_at TIMESTAMPTZ NOT NULL,
           is_verified BOOLEAN NOT NULL DEFAULT FALSE,
           created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -240,10 +248,11 @@ async function runMasterMigration() {
     // 3. Add Missing Columns to Existing Tables (Non-Destructive)
     console.log('🔄 [3/8] Adding all new columns without modifying existing data...');
     
-    // USERS Table: username, role
+    // USERS Table: username, role, token_version
     await client.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(30);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'USER';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INT NOT NULL DEFAULT 1;
     `);
 
     // STUDENT_PROFILES Table: city, state, country, socials, onboarding tracking
@@ -258,11 +267,29 @@ async function runMasterMigration() {
       ALTER TABLE student_profiles ADD COLUMN IF NOT EXISTS onboarding_step INT NOT NULL DEFAULT 1;
     `);
 
-    // MELDS Table: commitment_level, project_duration, current_status
+    // MELDS Table: project_duration, current_status
     await client.query(`
-      ALTER TABLE melds ADD COLUMN IF NOT EXISTS commitment_level VARCHAR(100) NOT NULL DEFAULT 'Moderate (5-10 hrs/week)';
       ALTER TABLE melds ADD COLUMN IF NOT EXISTS project_duration VARCHAR(100) NOT NULL DEFAULT '1-3 Months';
       ALTER TABLE melds ADD COLUMN IF NOT EXISTS current_status VARCHAR(20) NOT NULL DEFAULT 'OPEN';
+      DO $$ BEGIN
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'melds' AND column_name = 'commitment_level') THEN
+              ALTER TABLE melds ALTER COLUMN commitment_level DROP NOT NULL;
+          END IF;
+      END $$;
+    `);
+
+    // MATCHES Table: component scores & algorithm_version
+    await client.query(`
+      ALTER TABLE matches ADD COLUMN IF NOT EXISTS skill_score INT DEFAULT 0;
+      ALTER TABLE matches ADD COLUMN IF NOT EXISTS role_fit_score INT DEFAULT 0;
+      ALTER TABLE matches ADD COLUMN IF NOT EXISTS project_relevance_score INT DEFAULT 0;
+      ALTER TABLE matches ADD COLUMN IF NOT EXISTS interest_score INT DEFAULT 0;
+      ALTER TABLE matches ADD COLUMN IF NOT EXISTS availability_score INT DEFAULT 0;
+      ALTER TABLE matches ADD COLUMN IF NOT EXISTS team_complement_score INT DEFAULT 0;
+      ALTER TABLE matches ADD COLUMN IF NOT EXISTS role_name VARCHAR(100) DEFAULT NULL;
+      -- OTP Verifications
+      ALTER TABLE otp_verifications ALTER COLUMN otp_code TYPE VARCHAR(255);
+      ALTER TABLE otp_verifications ADD COLUMN IF NOT EXISTS attempts INT NOT NULL DEFAULT 0;
     `);
 
     // 4. Backfill Usernames for Existing Users who have NULL
@@ -373,6 +400,7 @@ async function runMasterMigration() {
       CREATE INDEX IF NOT EXISTS idx_matches_meld_id ON matches(meld_id);
       CREATE INDEX IF NOT EXISTS idx_matches_user_id ON matches(user_id);
       CREATE INDEX IF NOT EXISTS idx_matches_percentage ON matches(match_percentage);
+      CREATE INDEX IF NOT EXISTS idx_matches_algorithm_version ON matches(algorithm_version);
 
       CREATE INDEX IF NOT EXISTS idx_meld_invitations_meld_id ON meld_invitations(meld_id);
       CREATE INDEX IF NOT EXISTS idx_meld_invitations_invitee_id ON meld_invitations(invitee_id);

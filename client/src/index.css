@@ -1,22 +1,30 @@
 /* ==========================================================================
    MELD MASTER STYLESHEET
-   Divided into modular stylesheets under ./styles/
+   Modularly structured for rapid analysis, clean maintenance, and high performance
    ========================================================================== */
 
-/* 1. Design Tokens, CSS Variables & Themes */
+/* 1. Design Tokens, CSS Variables & Foundations */
 @import './styles/variables.css';
-
-/* 2. Global Reset, Base Elements & Keyframe Animations */
 @import './styles/base.css';
-
-/* 3. Page Layouts, Navigation & Grid Utilities */
 @import './styles/layout.css';
 
-/* 4. Reusable UI Components, Buttons, Forms, Modals & Cards */
-@import './styles/components.css';
+/* 2. Atomic & Component UI */
+@import './styles/buttons.css';
+@import './styles/forms.css';
+@import './styles/cards.css';
+@import './styles/modals.css';
 
-/* 5. Page-Specific Styles (Landing, Auth, Onboarding, Melds, Admin) */
-@import './styles/pages.css';
+/* 3. Feature-Specific Components */
+@import './styles/ai-match.css';
+@import './styles/chat.css';
 
-/* 6. Responsive Breakpoints & Mobile Optimization */
+/* 4. Page-Specific Styles */
+@import './styles/landing.css';
+@import './styles/auth.css';
+@import './styles/onboarding.css';
+@import './styles/melds.css';
+@import './styles/admin.css';
+
+/* 5. Light Theme Overrides & Responsive Breakpoints */
+@import './styles/light-theme.css';
 @import './styles/responsive.css';

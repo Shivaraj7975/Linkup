@@ -176,7 +176,6 @@ export const MeldDetailsPage = () => {
     category,
     maxMembers,
     currentStatus,
-    commitmentLevel,
     projectDuration,
     requiredSkills = [],
     creator,
@@ -506,10 +505,6 @@ export const MeldDetailsPage = () => {
                   <span>
                     <strong>{Math.max(0, maxMembers - currentMemberCount)}</strong> Open {Math.max(0, maxMembers - currentMemberCount) === 1 ? 'Position' : 'Positions'}
                   </span>
-                </div>
-                <div className="meta-item">
-                  <Clock size={16} className="text-accent" />
-                  <span>{commitmentLevel}</span>
                 </div>
                 <div className="meta-item">
                   <Calendar size={16} className="text-accent" />

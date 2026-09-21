@@ -15,7 +15,8 @@ const optionalAuth = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     if (!token) return next();
 
-    const secret = process.env.JWT_SECRET || 'linkup_jwt_super_secret_key_2026_dev';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) return next();
     const decoded = jwt.verify(token, secret);
 
     const userResult = await query(

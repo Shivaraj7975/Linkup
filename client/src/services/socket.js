@@ -8,7 +8,7 @@ const SOCKET_URL = rawApiUrl
 let globalSocket = null;
 
 export const getSocket = () => {
-  const token = localStorage.getItem('meld_token') || localStorage.getItem('linkup_token');
+  const token = localStorage.getItem('meld_token');
   if (!token) {
     if (globalSocket) {
       globalSocket.disconnect();

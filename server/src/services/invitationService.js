@@ -98,7 +98,7 @@ const getUserInvitations = async (userId) => {
   const sentInvitesRes = await query(
     `SELECT i.id as invitation_id, i.status, i.created_at, 'INVITATION' as type,
             l.id as linkup_id, l.title, l.category, l.description, l.current_status,
-            u.id as invitee_id, u.name as invitee_name, u.username as invitee_username, u.email as invitee_email,
+            u.id as invitee_id, u.name as invitee_name, u.username as invitee_username,
             NULL as message
      FROM meld_invitations i
      JOIN melds l ON i.meld_id = l.id
@@ -112,7 +112,7 @@ const getUserInvitations = async (userId) => {
   const sentRequestsRes = await query(
     `SELECT jr.id as invitation_id, jr.status, jr.created_at, 'JOIN_REQUEST' as type,
             l.id as linkup_id, l.title, l.category, l.description, l.current_status,
-            u.id as invitee_id, u.name as invitee_name, u.username as invitee_username, u.email as invitee_email,
+            u.id as invitee_id, u.name as invitee_name, u.username as invitee_username,
             jr.message
      FROM join_requests jr
      JOIN melds l ON jr.meld_id = l.id

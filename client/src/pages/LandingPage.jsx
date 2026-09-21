@@ -223,7 +223,7 @@ export const LandingPage = () => {
                 <Award size={24} />
               </div>
               <h3>Skill & Availability Alignment</h3>
-              <p>Deterministic scoring algorithms ensure candidates match both technical requirements and weekly availability commitments.</p>
+              <p>Hybrid scoring algorithms ensure candidates match both technical requirements and schedule availability.</p>
             </div>
 
             <div className="feature-card">

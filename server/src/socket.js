@@ -8,10 +8,37 @@ let io;
 // meldId -> Set of userIds currently in the room
 const activeMeldUsers = new Map();
 
+// In-memory per-user sliding window message rate limiter (userId -> Array of timestamps)
+const userMessageRateMap = new Map();
+const MAX_MESSAGES_PER_WINDOW = 10;
+const WINDOW_MS = 5000; // 5 seconds
+
+const checkMessageRateLimit = (userId) => {
+  const now = Date.now();
+  let timestamps = userMessageRateMap.get(userId) || [];
+  // Filter out timestamps outside the sliding window
+  timestamps = timestamps.filter((t) => now - t < WINDOW_MS);
+  
+  if (timestamps.length >= MAX_MESSAGES_PER_WINDOW) {
+    userMessageRateMap.set(userId, timestamps);
+    return false; // Rate limit exceeded
+  }
+
+  timestamps.push(now);
+  userMessageRateMap.set(userId, timestamps);
+  return true; // Allowed
+};
+
 const initSocket = (server) => {
+  const configuredOrigin = process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.replace(/\/$/, '') : null;
+  if (process.env.NODE_ENV === 'production' && !configuredOrigin) {
+    console.error('FATAL SECURITY WARNING: CLIENT_ORIGIN environment variable is not set in production for WebSockets.');
+  }
+
   io = new Server(server, {
+    maxHttpBufferSize: 1e5, // 100KB payload limit to prevent buffer exhaustion attacks
     cors: {
-      origin: process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.replace(/\/$/, '') : (process.env.NODE_ENV === 'production' ? true : 'http://localhost:5173'),
+      origin: configuredOrigin || (process.env.NODE_ENV === 'production' ? false : 'http://localhost:5173'),
       methods: ['GET', 'POST'],
       credentials: true,
     },
@@ -25,15 +52,12 @@ const initSocket = (server) => {
         return next(new Error('Authentication error: Token missing'));
       }
 
-      const secret = process.env.NODE_ENV === 'production'
-        ? process.env.JWT_SECRET
-        : (process.env.JWT_SECRET || 'linkup_jwt_super_secret_key_2026_dev');
-
+      const secret = process.env.JWT_SECRET;
       if (!secret) {
-        throw new Error('JWT_SECRET is required in production');
+        throw new Error('JWT_SECRET environment variable is required');
       }
 
-      const decoded = jwt.verify(token, secret);
+      const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
       socket.user = decoded; // attach user to socket
       next();
     } catch (err) {
@@ -49,6 +73,11 @@ const initSocket = (server) => {
     // Join a Meld room
     socket.on('join_meld', async (meldId, callback) => {
       try {
+        if (!meldId || typeof meldId !== 'string') {
+          if (callback) callback({ success: false, message: 'Invalid meld ID' });
+          return;
+        }
+
         const isAuthorized = await chatService.isUserAuthorizedForMeldChat(meldId, userId);
         
         if (!isAuthorized) {
@@ -74,6 +103,7 @@ const initSocket = (server) => {
 
     // Leave a Meld room
     socket.on('leave_meld', (meldId) => {
+      if (!meldId || typeof meldId !== 'string') return;
       const roomName = `meld:${meldId}`;
       socket.leave(roomName);
       if (activeMeldUsers.has(meldId)) {
@@ -87,16 +117,27 @@ const initSocket = (server) => {
     // Send a message to a Meld room
     socket.on('send_message', async (data, callback) => {
       try {
+        if (!data || typeof data !== 'object') {
+          if (callback) callback({ success: false, message: 'Invalid payload' });
+          return;
+        }
+
         const { meldId, content } = data;
         
-        if (!meldId || !content || typeof content !== 'string') {
-          if (callback) callback({ success: false, message: 'Invalid payload' });
+        if (!meldId || typeof meldId !== 'string' || !content || typeof content !== 'string') {
+          if (callback) callback({ success: false, message: 'Invalid payload structure' });
+          return;
+        }
+
+        // Apply per-user rate limiting / spam prevention
+        if (!checkMessageRateLimit(userId)) {
+          if (callback) callback({ success: false, message: 'Message rate limit exceeded. Please slow down.' });
           return;
         }
 
         const cleanContent = content.trim();
         if (cleanContent.length === 0 || cleanContent.length > 2000) {
-          if (callback) callback({ success: false, message: 'Message content length invalid' });
+          if (callback) callback({ success: false, message: 'Message content must be between 1 and 2000 characters.' });
           return;
         }
 
@@ -139,6 +180,7 @@ const initSocket = (server) => {
           activeMeldUsers.delete(meldId);
         }
       }
+      userMessageRateMap.delete(userId);
     });
   });
 };
@@ -162,4 +204,5 @@ module.exports = {
   getIo,
   emitNotificationToUser,
   isUserActiveInMeldChat,
+  checkMessageRateLimit,
 };

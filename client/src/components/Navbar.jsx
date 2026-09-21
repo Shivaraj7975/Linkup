@@ -277,10 +277,9 @@ export const Navbar = () => {
                 {user?.role === 'ADMIN' && (
                   <Link
                     to="/admin"
-                    className="btn btn-ghost mobile-nav-btn"
-                    style={{ color: '#f43f5e', borderColor: 'rgba(244, 63, 94, 0.4)' }}
+                    className="btn btn-ghost mobile-nav-btn admin-mobile-btn"
                   >
-                    <ShieldAlert size={16} color="#f43f5e" />
+                    <ShieldAlert size={16} />
                     <span>Admin</span>
                   </Link>
                 )}

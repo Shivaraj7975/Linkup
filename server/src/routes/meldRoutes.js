@@ -49,6 +49,14 @@ router.delete('/join-requests/:requestId', authenticateToken, meldController.can
 router.delete('/melds/:linkupId/members/:userId', authenticateToken, meldController.removeMember);
 router.delete('/linkups/:linkupId/members/:userId', authenticateToken, meldController.removeMember);
 
+// Get Candidate Filter Options for a Meld (Auth required)
+router.get('/melds/:linkupId/filter-options', authenticateToken, meldController.getMatchFilterOptions);
+router.get('/linkups/:linkupId/filter-options', authenticateToken, meldController.getMatchFilterOptions);
+
+// Get Eligible Candidate Count with Filters (Auth required)
+router.get('/melds/:linkupId/candidate-count', authenticateToken, meldController.getEligibleCandidateCount);
+router.get('/linkups/:linkupId/candidate-count', authenticateToken, meldController.getEligibleCandidateCount);
+
 // Get Ranked AI Candidate Matches for a Meld (Auth required)
 router.get('/melds/:linkupId/matches', authenticateToken, meldController.getLinkupMatches);
 router.get('/linkups/:linkupId/matches', authenticateToken, meldController.getLinkupMatches);

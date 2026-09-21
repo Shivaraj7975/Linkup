@@ -1,7 +1,7 @@
 const { pool, query } = require('../config/db');
 const { getPublicStudentProfileByUserId } = require('./profileService');
-const { filterCandidateStudents, getFallbackDeterministicMatches } = require('./matchingService');
-const { matchCandidates, buildCompactPayload } = require('./ai/aiMatchingService');
+const { filterCandidateStudents, countEligibleCandidates, getFallbackDeterministicMatches } = require('./matchingService');
+const { matchCandidates, buildCompactPayload, normalizeFilterState } = require('./ai/aiMatchingService');
 const notificationService = require('./notificationService');
 const crypto = require('crypto');
 
@@ -57,7 +57,6 @@ const createLinkup = async (creatorId, data) => {
     category,
     requiredSkills = [],
     maxMembers = 4,
-    commitmentLevel,
     projectDuration,
   } = data;
 
@@ -73,10 +72,10 @@ const createLinkup = async (creatorId, data) => {
     // 1. Insert Linkup
     const linkupInsert = await client.query(
       `INSERT INTO melds (
-        creator_id, title, description, category, max_members, current_status, commitment_level, project_duration
-      ) VALUES ($1, $2, $3, $4, $5, 'OPEN', $6, $7)
+        creator_id, title, description, category, max_members, current_status, project_duration
+      ) VALUES ($1, $2, $3, $4, $5, 'OPEN', $6)
       RETURNING *`,
-      [creatorId, title.trim(), description.trim(), category.trim(), parsedMaxMembers, commitmentLevel.trim(), projectDuration.trim()]
+      [creatorId, title.trim(), description.trim(), category.trim(), parsedMaxMembers, projectDuration.trim()]
     );
 
     const linkup = linkupInsert.rows[0];
@@ -156,8 +155,7 @@ const getLinkups = async (filters = {}) => {
   }
 
   if (availability && availability.trim()) {
-    whereClauses.push(`(sp.availability ILIKE $${paramIdx} OR l.commitment_level ILIKE $${paramIdx})`);
-    paramIdx++;
+    whereClauses.push(`sp.availability ILIKE $${paramIdx++}`);
     params.push(`%${availability.trim()}%`);
   }
 
@@ -183,7 +181,7 @@ const getLinkups = async (filters = {}) => {
   const queryText = `
     SELECT 
       l.id, l.creator_id, l.title, l.description, l.category, 
-      l.max_members, l.current_status, l.commitment_level, l.project_duration, 
+      l.max_members, l.current_status, l.project_duration, 
       l.created_at, l.updated_at,
       u.name as creator_name,
       sp.college as creator_college,
@@ -211,7 +209,6 @@ const getLinkups = async (filters = {}) => {
     category: row.category,
     maxMembers: row.max_members,
     currentStatus: row.current_status,
-    commitmentLevel: row.commitment_level,
     projectDuration: row.project_duration,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -233,7 +230,7 @@ const getLinkupById = async (id, currentUserId = null) => {
   const linkupRes = await query(
     `SELECT 
       l.id, l.creator_id, l.title, l.description, l.category, 
-      l.max_members, l.current_status, l.commitment_level, l.project_duration, 
+      l.max_members, l.current_status, l.project_duration, 
       l.created_at, l.updated_at
      FROM melds l
      WHERE l.id = $1`,
@@ -327,7 +324,6 @@ const getLinkupById = async (id, currentUserId = null) => {
     category: l.category,
     maxMembers: l.max_members,
     currentStatus: l.current_status,
-    commitmentLevel: l.commitment_level,
     projectDuration: l.project_duration,
     createdAt: l.created_at,
     updatedAt: l.updated_at,
@@ -355,7 +351,6 @@ const updateLinkup = async (id, creatorId, data) => {
     category,
     requiredSkills = [],
     maxMembers,
-    commitmentLevel,
     projectDuration,
     currentStatus,
   } = data;
@@ -434,11 +429,10 @@ const updateLinkup = async (id, creatorId, data) => {
         description = COALESCE($2, description),
         category = COALESCE($3, category),
         max_members = $4,
-        commitment_level = COALESCE($5, commitment_level),
-        project_duration = COALESCE($6, project_duration),
-        current_status = $7,
+        project_duration = COALESCE($5, project_duration),
+        current_status = $6,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $8 AND creator_id = $9
+      WHERE id = $7 AND creator_id = $8
       RETURNING *;
     `;
 
@@ -447,7 +441,6 @@ const updateLinkup = async (id, creatorId, data) => {
       description ? description.trim() : null,
       category ? category.trim() : null,
       validatedMaxMembers,
-      commitmentLevel ? commitmentLevel.trim() : null,
       projectDuration ? projectDuration.trim() : null,
       validatedStatus,
       id,
@@ -822,9 +815,118 @@ const removeTeamMember = async (linkupId, memberUserId, creatorId) => {
 };
 
 /**
- * GET /api/linkups/:linkupId/matches implementation (Phase 7 with DB Caching & Persistence)
+ * Get distinct candidate filter options (cities, colleges, branches, years, skills)
+ * based on eligible candidates in the database for a specific MELD.
  */
-const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh = false) => {
+const getMatchFilterOptions = async (linkupId, currentUserId = null) => {
+  const linkup = await getLinkupById(linkupId, currentUserId);
+  if (!linkup) {
+    throw new Error('Linkup not found.');
+  }
+
+  // Enforce IDOR protection: only creator or team member can view filter options
+  if (!linkup.isCreator && !linkup.isMember) {
+    throw new Error('Unauthorized: Only the creator or team members of this MELD can view filter options.');
+  }
+
+  // Active team members + creator exclusion
+  const memberRes = await query(
+    `SELECT user_id FROM meld_members WHERE meld_id = $1 AND status = 'ACTIVE'`,
+    [linkupId]
+  );
+  const excludedUserIds = new Set(memberRes.rows.map((r) => r.user_id));
+  if (linkup.creatorId) {
+    excludedUserIds.add(linkup.creatorId);
+  }
+  const excludedArray = Array.from(excludedUserIds);
+
+  // Run queries to gather distinct non-null, non-empty candidate filter options
+  const [citiesRes, collegesRes, branchesRes, yearsRes, skillsRes] = await Promise.all([
+    query(
+      `SELECT DISTINCT TRIM(sp.city) as value
+       FROM users u
+       JOIN student_profiles sp ON u.id = sp.user_id
+       WHERE ($1::uuid[] IS NULL OR CARDINALITY($1::uuid[]) = 0 OR NOT (u.id = ANY($1::uuid[])))
+         AND sp.city IS NOT NULL AND TRIM(sp.city) <> ''
+       ORDER BY value ASC`,
+      [excludedArray]
+    ),
+    query(
+      `SELECT DISTINCT TRIM(sp.college) as value
+       FROM users u
+       JOIN student_profiles sp ON u.id = sp.user_id
+       WHERE ($1::uuid[] IS NULL OR CARDINALITY($1::uuid[]) = 0 OR NOT (u.id = ANY($1::uuid[])))
+         AND sp.college IS NOT NULL AND TRIM(sp.college) <> ''
+       ORDER BY value ASC`,
+      [excludedArray]
+    ),
+    query(
+      `SELECT DISTINCT TRIM(sp.degree) as value
+       FROM users u
+       JOIN student_profiles sp ON u.id = sp.user_id
+       WHERE ($1::uuid[] IS NULL OR CARDINALITY($1::uuid[]) = 0 OR NOT (u.id = ANY($1::uuid[])))
+         AND sp.degree IS NOT NULL AND TRIM(sp.degree) <> ''
+       ORDER BY value ASC`,
+      [excludedArray]
+    ),
+    query(
+      `SELECT DISTINCT TRIM(sp.year_of_study) as value
+       FROM users u
+       JOIN student_profiles sp ON u.id = sp.user_id
+       WHERE ($1::uuid[] IS NULL OR CARDINALITY($1::uuid[]) = 0 OR NOT (u.id = ANY($1::uuid[])))
+         AND sp.year_of_study IS NOT NULL AND TRIM(sp.year_of_study) <> ''
+       ORDER BY value ASC`,
+      [excludedArray]
+    ),
+    query(
+      `SELECT DISTINCT s.name as value
+       FROM users u
+       JOIN user_skills us ON u.id = us.user_id
+       JOIN skills s ON us.skill_id = s.id
+       WHERE ($1::uuid[] IS NULL OR CARDINALITY($1::uuid[]) = 0 OR NOT (u.id = ANY($1::uuid[])))
+         AND s.name IS NOT NULL AND TRIM(s.name) <> ''
+       ORDER BY value ASC`,
+      [excludedArray]
+    ),
+  ]);
+
+  return {
+    success: true,
+    options: {
+      cities: citiesRes.rows.map((r) => r.value),
+      colleges: collegesRes.rows.map((r) => r.value),
+      branches: branchesRes.rows.map((r) => r.value),
+      years: yearsRes.rows.map((r) => r.value),
+      skills: skillsRes.rows.map((r) => r.value),
+    },
+  };
+};
+
+/**
+ * Get count of eligible candidates for a Linkup under given filters
+ */
+const getEligibleCandidateCount = async (linkupId, currentUserId = null, filters = {}) => {
+  const linkup = await getLinkupById(linkupId, currentUserId);
+  if (!linkup) {
+    throw new Error('Linkup not found.');
+  }
+
+  // Enforce IDOR protection: only creator or team member can query candidate count
+  if (!linkup.isCreator && !linkup.isMember) {
+    throw new Error('Unauthorized: Only the creator or team members of this MELD can view candidate counts.');
+  }
+
+  const count = await countEligibleCandidates(linkup, filters);
+  return {
+    success: true,
+    count,
+  };
+};
+
+/**
+ * GET /api/linkups/:linkupId/matches implementation (Hybrid Engine with Candidate Pre-Filtering & Cache Separation)
+ */
+const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh = false, filters = {}) => {
   const totalStartTime = Date.now();
 
   // 1. Retrieve Linkup details
@@ -833,9 +935,16 @@ const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh 
     throw new Error('Linkup not found.');
   }
 
-  // 2. Filter relevant candidates using PostgreSQL (10-20 candidates max)
+  // Enforce IDOR protection: only creator or team member can view AI match candidates
+  if (!linkup.isCreator && !linkup.isMember) {
+    throw new Error('Unauthorized: Only the creator or team members of this MELD can view candidate matches.');
+  }
+
+  const normalizedFilters = normalizeFilterState(filters);
+
+  // 2. Stage 1: Candidate Retrieval (50 candidates pool with pre-AI filters applied)
   const candDbStartTime = Date.now();
-  const candidateResults = await filterCandidateStudents(linkup, 20);
+  const candidateResults = await filterCandidateStudents(linkup, 50, filters);
   const candDbDuration = Date.now() - candDbStartTime;
   console.log(`[AI MATCH] Candidate DB query: ${candDbDuration}ms (${candidateResults.length} candidates retrieved)`);
 
@@ -844,26 +953,31 @@ const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh 
       cached: false,
       generatedBy: 'DETERMINISTIC',
       matches: [],
+      filters: normalizedFilters,
     };
   }
 
-  // 3. Build compact AI payload & Generate input hash
-  const { compactPayload, candidateIdsSet, candidateLookupMap } = buildCompactPayload(linkup, candidateResults);
+  // 3. Build comprehensive AI payload & Generate input hash with algorithm version and filters
+  const { compactPayload, candidateIdsSet, candidateLookupMap, algorithmVersion } = buildCompactPayload(linkup, candidateResults, filters);
   const inputHash = crypto.createHash('sha256').update(JSON.stringify(compactPayload)).digest('hex');
+  const lockKey = `${linkupId}_${inputHash}`;
 
   // Helper to fetch valid cache
   const checkCache = async () => {
     if (forceRefresh) return null;
     const cachedMatchesRes = await query(
-      `SELECT m.id, m.meld_id as linkup_id, m.user_id, m.match_percentage, m.match_data, m.generated_by, m.created_at,
+      `SELECT m.id, m.meld_id as linkup_id, m.user_id, m.match_percentage, 
+              m.skill_score, m.role_fit_score, m.project_relevance_score, m.interest_score,
+              m.availability_score, m.team_complement_score, m.role_name, m.algorithm_version,
+              m.match_data, m.generated_by, m.created_at,
               u.name, sp.college, sp.degree, sp.year_of_study, COALESCE(sv.status, 'UNVERIFIED') as verification_status
        FROM matches m
        JOIN users u ON m.user_id = u.id
        JOIN student_profiles sp ON u.id = sp.user_id
        LEFT JOIN student_verifications sv ON u.id = sv.user_id
-       WHERE m.meld_id = $1 AND m.match_data->>'inputHash' = $2
+       WHERE m.meld_id = $1 AND m.algorithm_version = $2 AND m.match_data->>'inputHash' = $3
        ORDER BY m.match_percentage DESC`,
-      [linkupId, inputHash]
+      [linkupId, algorithmVersion, inputHash]
     );
 
     if (cachedMatchesRes.rows.length > 0) {
@@ -877,6 +991,13 @@ const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh 
           yearOfStudy: row.year_of_study || '',
           verificationStatus: row.verification_status,
           matchPercentage: row.match_percentage,
+          roleName: row.role_name || matchData.roleName || 'Project Contributor',
+          skillScore: row.skill_score || 0,
+          roleFitScore: row.role_fit_score || 0,
+          projectRelevanceScore: row.project_relevance_score || 0,
+          interestScore: row.interest_score || 0,
+          availabilityScore: row.availability_score || 0,
+          teamComplementScore: row.team_complement_score || 0,
           reasons: matchData.reasons || [],
           strengths: matchData.strengths || [],
           concerns: matchData.concerns || [],
@@ -886,6 +1007,7 @@ const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh 
         cached: true,
         generatedBy: cachedMatchesRes.rows[0].generated_by,
         matches: cachedMatches,
+        filters: normalizedFilters,
       };
     }
     return null;
@@ -899,10 +1021,10 @@ const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh 
   }
 
   // 5. In-flight Request Locking
-  if (inFlightLocks.has(linkupId)) {
-    console.log(`[AI MATCH] Waiting for in-flight generation for Linkup ${linkupId}...`);
+  if (inFlightLocks.has(lockKey)) {
+    console.log(`[AI MATCH] Waiting for in-flight generation for Linkup ${linkupId} (key ${lockKey})...`);
     try {
-      await inFlightLocks.get(linkupId);
+      await inFlightLocks.get(lockKey);
     } catch (err) {
       // Ignored, we just re-check cache or proceed
     }
@@ -917,13 +1039,13 @@ const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh 
   const generatePromise = (async () => {
     let aiAnalysis = null;
     try {
-      aiAnalysis = await matchCandidates(compactPayload, candidateIdsSet, candidateLookupMap);
+      aiAnalysis = await matchCandidates(compactPayload, candidateIdsSet, candidateLookupMap, linkup);
     } catch (aiErr) {
       console.warn(`⚠️ AI Pipeline failed (${aiErr.message}). Falling back to emergency deterministic matcher.`);
       aiAnalysis = getFallbackDeterministicMatches(linkup, candidateResults);
     }
 
-    // Clean match items (Direct AI matchPercentage output, NO JS re-scoring!)
+    // Backend-validated match items
     const formattedMatches = (aiAnalysis.matches || []).map((m) => {
       return {
         userId: String(m.userId),
@@ -933,6 +1055,13 @@ const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh 
         yearOfStudy: m.yearOfStudy || m.candidate?.yearOfStudy || m.candidate?.year_of_study || '',
         verificationStatus: m.verificationStatus || m.candidate?.verificationStatus || 'UNVERIFIED',
         matchPercentage: Math.min(Math.max(parseInt(m.matchPercentage, 10) || 0, 0), 100),
+        roleName: m.roleName || m.candidate?.roleName || 'Project Contributor',
+        skillScore: Math.min(Math.max(parseInt(m.skillScore, 10) || 0, 0), 100),
+        roleFitScore: Math.min(Math.max(parseInt(m.roleFitScore, 10) || 0, 0), 100),
+        projectRelevanceScore: Math.min(Math.max(parseInt(m.projectRelevanceScore, 10) || 0, 0), 100),
+        interestScore: Math.min(Math.max(parseInt(m.interestScore, 10) || 0, 0), 100),
+        availabilityScore: Math.min(Math.max(parseInt(m.availabilityScore, 10) || 0, 0), 100),
+        teamComplementScore: Math.min(Math.max(parseInt(m.teamComplementScore, 10) || 0, 0), 100),
         reasons: Array.isArray(m.reasons) ? m.reasons : [],
         strengths: Array.isArray(m.strengths) ? m.strengths : [],
         concerns: Array.isArray(m.concerns) ? m.concerns : [],
@@ -942,16 +1071,29 @@ const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh 
     formattedMatches.sort((a, b) => b.matchPercentage - a.matchPercentage);
     const generatedByTag = aiAnalysis.generatedBy || 'FALLBACK';
 
-    // Save to DB
+    // Save to DB with component scores, algorithm version, and filters
     try {
-      await query(`DELETE FROM matches WHERE meld_id = $1`, [linkupId]);
+      await query(`DELETE FROM matches WHERE meld_id = $1 AND (match_data->>'inputHash' = $2 OR algorithm_version != $3)`, [linkupId, inputHash, algorithmVersion]);
 
       for (const matchItem of formattedMatches) {
         await query(
-          `INSERT INTO matches (meld_id, user_id, match_percentage, match_data, generated_by)
-           VALUES ($1, $2, $3, $4, $5)
+          `INSERT INTO matches (
+             meld_id, user_id, match_percentage, 
+             skill_score, role_fit_score, project_relevance_score, interest_score, 
+             availability_score, team_complement_score, role_name, algorithm_version,
+             match_data, generated_by
+           )
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
            ON CONFLICT (meld_id, user_id) DO UPDATE SET
              match_percentage = EXCLUDED.match_percentage,
+             skill_score = EXCLUDED.skill_score,
+             role_fit_score = EXCLUDED.role_fit_score,
+             project_relevance_score = EXCLUDED.project_relevance_score,
+             interest_score = EXCLUDED.interest_score,
+             availability_score = EXCLUDED.availability_score,
+             team_complement_score = EXCLUDED.team_complement_score,
+             role_name = EXCLUDED.role_name,
+             algorithm_version = EXCLUDED.algorithm_version,
              match_data = EXCLUDED.match_data,
              generated_by = EXCLUDED.generated_by,
              created_at = CURRENT_TIMESTAMP`,
@@ -959,8 +1101,18 @@ const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh 
             linkupId,
             matchItem.userId,
             matchItem.matchPercentage,
+            matchItem.skillScore,
+            matchItem.roleFitScore,
+            matchItem.projectRelevanceScore,
+            matchItem.interestScore,
+            matchItem.availabilityScore,
+            matchItem.teamComplementScore,
+            matchItem.roleName,
+            algorithmVersion,
             JSON.stringify({
               inputHash,
+              filters: normalizedFilters,
+              roleName: matchItem.roleName,
               reasons: matchItem.reasons,
               strengths: matchItem.strengths,
               concerns: matchItem.concerns,
@@ -977,10 +1129,11 @@ const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh 
       cached: false,
       generatedBy: generatedByTag,
       matches: formattedMatches,
+      filters: normalizedFilters,
     };
   })();
 
-  inFlightLocks.set(linkupId, generatePromise);
+  inFlightLocks.set(lockKey, generatePromise);
 
   try {
     const result = await generatePromise;
@@ -988,7 +1141,7 @@ const getMatchesForLinkup = async (linkupId, currentUserId = null, forceRefresh 
     console.log(`[AI MATCH] Total getMatchesForLinkup Execution: ${totalDuration}ms`);
     return result;
   } finally {
-    inFlightLocks.delete(linkupId);
+    inFlightLocks.delete(lockKey);
   }
 };
 
@@ -1114,7 +1267,10 @@ module.exports = {
   rejectJoinRequest,
   removeTeamMember,
   getMatchesForLinkup,
+  getMatchFilterOptions,
+  getEligibleCandidateCount,
   leaveLinkup,
   getMySentJoinRequests,
   cancelMyJoinRequest,
 };
+

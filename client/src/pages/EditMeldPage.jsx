@@ -20,14 +20,6 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-const COMMITMENT_OPTIONS = [
-  '1-5 hours / week',
-  '5-10 hours / week',
-  '10-20 hours / week',
-  'Full-Time / Sprint',
-  'Flexible',
-];
-
 const DURATION_OPTIONS = [
   '1-2 Weeks (Hackathon / Sprint)',
   '1 Month',
@@ -52,7 +44,6 @@ export const EditMeldPage = () => {
   const [category, setCategory] = useState(CATEGORY_NAMES[0]);
   const [currentStatus, setCurrentStatus] = useState('OPEN');
   const [maxMembers, setMaxMembers] = useState(4);
-  const [commitmentLevel, setCommitmentLevel] = useState(COMMITMENT_OPTIONS[1]);
   const [projectDuration, setProjectDuration] = useState(DURATION_OPTIONS[1]);
 
   // Skill Selection State
@@ -97,7 +88,6 @@ export const EditMeldPage = () => {
       setCategory(meldData.category || CATEGORY_NAMES[0]);
       setCurrentStatus(meldData.currentStatus || 'OPEN');
       setMaxMembers(meldData.maxMembers || 4);
-      setCommitmentLevel(meldData.commitmentLevel || COMMITMENT_OPTIONS[1]);
       setProjectDuration(meldData.projectDuration || DURATION_OPTIONS[1]);
       setSelectedSkills(meldData.requiredSkills || []);
 
@@ -165,7 +155,6 @@ export const EditMeldPage = () => {
         category,
         currentStatus,
         maxMembers: parseInt(maxMembers, 10),
-        commitmentLevel,
         projectDuration,
         requiredSkills: selectedSkills,
       };
@@ -407,8 +396,8 @@ export const EditMeldPage = () => {
             )}
           </div>
 
-          {/* TEAM CAPACITY, COMMITMENT, DURATION */}
-          <div className="grid-3-col margin-bottom-lg">
+          {/* TEAM CAPACITY & DURATION */}
+          <div className="grid-2-col margin-bottom-lg">
             <div className="form-group">
               <label>Max Team Capacity *</label>
               <div className="input-wrapper icon-left">
@@ -423,21 +412,6 @@ export const EditMeldPage = () => {
                   required
                 />
               </div>
-            </div>
-
-            <div className="form-group">
-              <label>Commitment Level *</label>
-              <select
-                className="select"
-                value={commitmentLevel}
-                onChange={(e) => setCommitmentLevel(e.target.value)}
-              >
-                {COMMITMENT_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
             </div>
 
             <div className="form-group">

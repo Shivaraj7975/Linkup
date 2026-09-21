@@ -117,27 +117,27 @@ export const UserProfilePage = () => {
                   {(profile.githubUrl || profile.linkedinUrl || profile.instagramUrl || profile.youtubeUrl || profile.websiteUrl) && (
                     <div className="social-icons-group">
                       {profile.githubUrl && (
-                        <a href={profile.githubUrl} target="_blank" rel="noreferrer" className="social-symbol-btn" title="GitHub" aria-label="GitHub">
+                        <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer" className="social-symbol-btn" title="GitHub" aria-label="GitHub">
                           <Github size={16} />
                         </a>
                       )}
                       {profile.linkedinUrl && (
-                        <a href={profile.linkedinUrl} target="_blank" rel="noreferrer" className="social-symbol-btn" title="LinkedIn" aria-label="LinkedIn">
+                        <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="social-symbol-btn" title="LinkedIn" aria-label="LinkedIn">
                           <Linkedin size={16} />
                         </a>
                       )}
                       {profile.instagramUrl && (
-                        <a href={profile.instagramUrl} target="_blank" rel="noreferrer" className="social-symbol-btn" title="Instagram" aria-label="Instagram">
+                        <a href={profile.instagramUrl} target="_blank" rel="noopener noreferrer" className="social-symbol-btn" title="Instagram" aria-label="Instagram">
                           <Instagram size={16} />
                         </a>
                       )}
                       {profile.youtubeUrl && (
-                        <a href={profile.youtubeUrl} target="_blank" rel="noreferrer" className="social-symbol-btn" title="YouTube" aria-label="YouTube">
+                        <a href={profile.youtubeUrl} target="_blank" rel="noopener noreferrer" className="social-symbol-btn" title="YouTube" aria-label="YouTube">
                           <Youtube size={16} />
                         </a>
                       )}
                       {profile.websiteUrl && (
-                        <a href={profile.websiteUrl} target="_blank" rel="noreferrer" className="social-symbol-btn" title="Portfolio / Website" aria-label="Portfolio / Website">
+                        <a href={profile.websiteUrl} target="_blank" rel="noopener noreferrer" className="social-symbol-btn" title="Portfolio / Website" aria-label="Portfolio / Website">
                           <Globe size={16} />
                         </a>
                       )}

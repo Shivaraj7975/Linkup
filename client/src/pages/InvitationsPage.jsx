@@ -449,7 +449,7 @@ export const InvitationsPage = () => {
                               {isJoinRequest ? `Sent to ${inv.invitee_name} (Creator)` : `Invited ${inv.invitee_name}`}
                             </div>
                             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                              {inv.invitee_username ? `@${inv.invitee_username}` : inv.invitee_email || 'Direct'}
+                              {inv.invitee_username ? `@${inv.invitee_username}` : 'Direct'}
                             </div>
                           </div>
                         </div>

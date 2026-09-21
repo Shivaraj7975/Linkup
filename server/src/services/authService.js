@@ -127,9 +127,18 @@ const createUserWithVerification = async ({ name, email, passwordHash, username 
  * Find user by email (including password_hash for authentication)
  */
 const findUserByEmail = async (email) => {
-  const text = 'SELECT id, name, username, email, role, password_hash FROM users WHERE LOWER(email) = LOWER($1)';
-  const res = await query(text, [email]);
-  return res.rows[0] || null;
+  const text = 'SELECT id, name, username, email, role, password_hash, COALESCE(token_version, 1) as token_version FROM users WHERE LOWER(email) = LOWER($1)';
+  try {
+    const res = await query(text, [email]);
+    return res.rows[0] || null;
+  } catch (err) {
+    if (err.message && err.message.includes('token_version')) {
+      const fallback = 'SELECT id, name, username, email, role, password_hash FROM users WHERE LOWER(email) = LOWER($1)';
+      const res = await query(fallback, [email]);
+      return res.rows[0] || null;
+    }
+    throw err;
+  }
 };
 
 /**
@@ -139,22 +148,45 @@ const findUserByIdentifier = async (identifier) => {
   if (!identifier || typeof identifier !== 'string') return null;
   const clean = identifier.trim().replace(/^@/, '').toLowerCase();
   const text = `
-    SELECT id, name, username, email, role, password_hash 
+    SELECT id, name, username, email, role, password_hash, COALESCE(token_version, 1) as token_version 
     FROM users 
     WHERE LOWER(email) = LOWER($1) 
        OR (username IS NOT NULL AND LOWER(username) = LOWER($2))
   `;
-  const res = await query(text, [clean, clean]);
-  return res.rows[0] || null;
+  try {
+    const res = await query(text, [clean, clean]);
+    return res.rows[0] || null;
+  } catch (err) {
+    if (err.message && err.message.includes('token_version')) {
+      const fallback = `
+        SELECT id, name, username, email, role, password_hash 
+        FROM users 
+        WHERE LOWER(email) = LOWER($1) 
+           OR (username IS NOT NULL AND LOWER(username) = LOWER($2))
+      `;
+      const res = await query(fallback, [clean, clean]);
+      return res.rows[0] || null;
+    }
+    throw err;
+  }
 };
 
 /**
  * Find user by ID (excluding password_hash)
  */
 const findUserById = async (id) => {
-  const text = 'SELECT id, name, username, email, role, created_at, updated_at FROM users WHERE id = $1';
-  const res = await query(text, [id]);
-  return res.rows[0] || null;
+  const text = 'SELECT id, name, username, email, role, COALESCE(token_version, 1) as token_version, created_at, updated_at FROM users WHERE id = $1';
+  try {
+    const res = await query(text, [id]);
+    return res.rows[0] || null;
+  } catch (err) {
+    if (err.message && err.message.includes('token_version')) {
+      const fallback = 'SELECT id, name, username, email, role, created_at, updated_at FROM users WHERE id = $1';
+      const res = await query(fallback, [id]);
+      return res.rows[0] || null;
+    }
+    throw err;
+  }
 };
 
 /**
@@ -175,11 +207,28 @@ const isProfileComplete = async (userId) => {
 };
 
 /**
- * Update user password
+ * Update user password and increment token_version for session invalidation
  */
 const updateUserPassword = async (email, passwordHash) => {
-  const text = 'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(email) = LOWER($2)';
-  await query(text, [passwordHash, email]);
+  const text = `
+    UPDATE users 
+    SET password_hash = $1, 
+        updated_at = CURRENT_TIMESTAMP, 
+        token_version = COALESCE(token_version, 1) + 1 
+    WHERE LOWER(email) = LOWER($2)
+    RETURNING id, token_version
+  `;
+  try {
+    const res = await query(text, [passwordHash, email]);
+    return res.rows[0] || null;
+  } catch (err) {
+    if (err.message && err.message.includes('token_version')) {
+      const fallback = 'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE LOWER(email) = LOWER($2)';
+      await query(fallback, [passwordHash, email]);
+      return null;
+    }
+    throw err;
+  }
 };
 
 module.exports = {
