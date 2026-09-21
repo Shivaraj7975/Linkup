@@ -2,8 +2,23 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
+  build: {
+    sourcemap: false,
+    emptyOutDir: true,
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom', 'lucide-react'],
+        },
+      },
+    },
+  },
+  esbuild: {
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+  },
   // Pre-bundle dependencies at server startup to eliminate first-load browser delay
   optimizeDeps: {
     include: [
@@ -11,7 +26,6 @@ export default defineConfig({
       'react-dom',
       'react-router-dom',
       'lucide-react',
-      'canvas-confetti',
     ],
   },
   server: {
@@ -22,7 +36,7 @@ export default defineConfig({
         './src/main.jsx',
         './src/App.jsx',
         './src/index.css',
-        './src/pages/DiscoverLinkupsPage.jsx',
+        './src/pages/DiscoverMeldsPage.jsx',
         './src/pages/LoginPage.jsx',
         './src/pages/RegisterPage.jsx',
         './src/components/Navbar.jsx',
@@ -36,4 +50,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

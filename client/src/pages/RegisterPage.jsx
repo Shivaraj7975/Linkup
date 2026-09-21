@@ -71,8 +71,8 @@ export const RegisterPage = () => {
     } else if (isCollegeEmailValid(form.email)) {
       errs.email = 'Primary email cannot be a college email ID. Please use a personal email address (e.g. Gmail, Outlook).';
     }
-    if (!form.password || form.password.length < 6) {
-      errs.password = 'Password must be at least 6 characters.';
+    if (!form.password || form.password.length < 9 || !/\d/.test(form.password)) {
+      errs.password = 'Password must be at least 9 characters long and contain at least 1 number.';
     }
     if (form.password !== form.confirmPassword) {
       errs.confirmPassword = 'Passwords do not match.';
@@ -281,7 +281,7 @@ export const RegisterPage = () => {
                     id="register-password"
                     type={showPassword ? 'text' : 'password'}
                     name="password"
-                    placeholder="Min. 6 characters"
+                    placeholder="Min. 9 chars with a number"
                     value={form.password}
                     onChange={handleChange}
                     className={errors.password ? 'input-error' : ''}

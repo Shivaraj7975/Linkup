@@ -1,0 +1,643 @@
+/* ==========================================================================
+   AI MATCHING ENGINE & CANDIDATE CARDS MODAL
+   ========================================================================== */
+
+/* AI Match Results Modal Container */
+.match-modal-card {
+  width: 100%;
+  max-width: 800px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.match-modal-header {
+  padding: 1.15rem 1.5rem;
+}
+
+.match-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.match-modal-body {
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.match-flow-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+/* AI Engine Banner */
+.match-engine-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: var(--radius-md);
+  margin-bottom: 0.5rem;
+}
+
+.engine-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #93c5fd;
+}
+
+.engine-title-text {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.engine-cached-badge {
+  font-size: 0.72rem;
+  background: rgba(59, 130, 246, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.matches-count-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 999px;
+  color: #fff;
+}
+
+/* Loading & Empty States */
+.ai-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3.5rem 1.5rem;
+  text-align: center;
+}
+
+.ai-spinner-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.35);
+}
+
+.ai-loading-container h3 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.ai-loading-container p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  max-width: 420px;
+}
+
+.empty-matches-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+}
+
+.empty-matches-container h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 1rem 0 0.4rem;
+  color: #fff;
+}
+
+.empty-matches-container p {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  max-width: 440px;
+}
+
+/* Filters & Flow Dialogs */
+.match-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.85rem;
+}
+
+.match-active-filters-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: -0.25rem 0 0.1rem;
+}
+
+.match-filter-summary-tag {
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1px 7px;
+  border-radius: 4px;
+}
+
+.match-flow-card {
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 2.25rem 1.5rem;
+  transition: var(--transition);
+}
+
+.match-flow-card.center-content {
+  align-items: center;
+  text-align: center;
+}
+
+.match-flow-card.filter-card {
+  padding: 1.5rem;
+  gap: 1.25rem;
+}
+
+.match-flow-icon-wrapper {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.match-flow-icon-wrapper.danger {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.match-flow-icon-wrapper.warning {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.match-flow-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.5rem;
+}
+
+.match-flow-desc {
+  color: var(--text-secondary);
+  max-width: 480px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  margin: 0 0 1.75rem;
+}
+
+.match-summary-chips-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.match-summary-chip {
+  font-size: 0.75rem;
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.match-skills-filter-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  max-height: 130px;
+  overflow-y: auto;
+  padding: 0.6rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+}
+
+/* Candidate Match Cards Container */
+.match-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+/* Candidate Match Card Layout (2-Column: Identity/Details on Left, Badges/Actions on Right) */
+.candidate-match-card.candidate-grid-layout {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  align-items: center;
+  gap: 0.85rem;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.15rem;
+  transition: var(--transition);
+}
+
+.candidate-match-card.candidate-grid-layout:hover {
+  border-color: var(--glass-border-active);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+}
+
+/* LEFT COLUMN */
+.candidate-col-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.candidate-col-left .rank-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.18rem 0.45rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.candidate-col-left .candidate-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--gradient-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+.candidate-info-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.candidate-info-stack .candidate-name {
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
+.candidate-info-stack .candidate-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+/* RIGHT COLUMN */
+.candidate-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+  justify-content: center;
+}
+
+.candidate-badges-skills-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.match-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.73rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-full);
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  white-space: nowrap;
+}
+
+.candidate-inline-skills {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.candidate-inline-skills .tag-pill {
+  font-size: 0.68rem;
+  padding: 1px 5px;
+}
+
+.candidate-card-actions {
+  display: flex;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.candidate-card-actions .btn {
+  flex: 1 1 50%;
+  min-width: 0;
+  padding: 0.38rem 0.5rem;
+  font-size: 0.8rem;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.candidate-card-actions .invite-btn {
+  background: var(--gradient-brand);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+/* ==========================================================================
+   AI MATCHMAKING MOBILE RESPONSIVENESS
+   ========================================================================== */
+@media (max-width: 640px) {
+  .match-modal-card {
+    max-height: 94vh !important;
+    border-radius: 12px !important;
+  }
+
+  .match-modal-header {
+    padding: 0.85rem 1rem !important;
+  }
+
+  .match-modal-title-group h2 {
+    font-size: 1.05rem !important;
+  }
+
+  .api-attribution {
+    font-size: 0.72rem !important;
+  }
+
+  .match-modal-body {
+    padding: 0.75rem !important;
+    gap: 0.75rem !important;
+  }
+
+  .match-flow-card {
+    padding: 1.25rem 0.75rem !important;
+  }
+
+  .match-flow-icon-wrapper {
+    width: 48px !important;
+    height: 48px !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .match-flow-title {
+    font-size: 1.1rem !important;
+  }
+
+  .match-flow-desc {
+    font-size: 0.84rem !important;
+    margin-bottom: 1.15rem !important;
+  }
+
+  .match-flow-actions {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0.5rem !important;
+  }
+
+  .match-flow-actions .btn {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 0.6rem 1rem !important;
+    font-size: 0.88rem !important;
+  }
+
+  .match-filter-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.55rem !important;
+  }
+
+  .match-engine-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.55rem !important;
+    padding: 0.65rem 0.75rem !important;
+  }
+
+  .engine-indicator {
+    width: 100% !important;
+    justify-content: space-between !important;
+    font-size: 0.76rem !important;
+  }
+
+  .engine-title-text {
+    font-size: 0.76rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .banner-actions {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.35rem !important;
+  }
+
+  .banner-actions .btn {
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.5rem !important;
+  }
+
+  .matches-count-badge {
+    font-size: 0.72rem !important;
+    padding: 0.15rem 0.45rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .match-cards-list {
+    gap: 0.75rem !important;
+  }
+
+  /* 2-Column Mobile Candidate Cards */
+  .candidate-match-card.candidate-grid-layout {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.55rem !important;
+    padding: 0.65rem 0.75rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .candidate-col-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.45rem !important;
+    min-width: 0 !important;
+  }
+
+  .candidate-col-left .rank-badge {
+    font-size: 0.68rem !important;
+    padding: 0.1rem 0.35rem !important;
+  }
+
+  .candidate-col-left .candidate-avatar {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.82rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .candidate-info-stack {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.1rem !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .candidate-info-stack .candidate-name {
+    font-size: 0.85rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.2 !important;
+  }
+
+  .candidate-info-stack .candidate-subtitle {
+    font-size: 0.70rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    gap: 0.2rem !important;
+    line-height: 1.15 !important;
+  }
+
+  .candidate-col-right {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.35rem !important;
+    min-width: 0 !important;
+    justify-content: center !important;
+  }
+
+  .candidate-badges-skills-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 0.25rem !important;
+    flex-wrap: wrap !important;
+  }
+
+  .match-role-badge,
+  .verification-badge {
+    font-size: 0.68rem !important;
+    padding: 0.1rem 0.4rem !important;
+  }
+
+  .candidate-inline-skills .tag-pill {
+    font-size: 0.65rem !important;
+    padding: 1px 4px !important;
+  }
+
+  .candidate-card-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 0.35rem !important;
+    width: 100% !important;
+    margin-top: 0.1rem !important;
+    box-sizing: border-box !important;
+  }
+
+  .candidate-card-actions .btn {
+    flex: 1 1 50% !important;
+    width: 50% !important;
+    min-width: 0 !important;
+    padding: 0.35rem 0.35rem !important;
+    font-size: 0.76rem !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .match-filter-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+

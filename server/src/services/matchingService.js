@@ -1,55 +1,36 @@
 /**
  * matchingService.js
  * 
- * Deterministic AI Matching Engine (Phase 2)
+ * Hybrid Matchmaking Engine & Deterministic Scoring Service for MELD.
  * 
- * Component Weights:
- * - Skill Match: 50%
- * - Interest/Category Match: 25%
- * - Availability Match: 15%
- * - Profile/Bio Relevance: 10%
+ * Formula:
+ * finalScore = round(
+ *   0.35 * skillScore +
+ *   0.20 * roleFitScore +
+ *   0.15 * projectRelevanceScore +
+ *   0.10 * interestScore +
+ *   0.10 * availabilityScore +
+ *   0.10 * teamComplementScore
+ * )
  */
 
 const { query } = require('../config/db');
+const { normalizeSkillArray, getCanonicalSkillKey } = require('../utils/skillNormalizer');
+const { deriveProjectRoles, analyzeTeamComplement } = require('../utils/roleDerivation');
+const { calculateSemanticRelevance } = require('../utils/semanticMatcher');
 
-// Weight constants for deterministic scoring
+// Standard Weight Configuration
 const WEIGHTS = {
-  skill: 0.50,
-  interest: 0.25,
-  availability: 0.15,
-  profile: 0.10,
+  skill: 0.35,
+  roleFit: 0.20,
+  projectRelevance: 0.15,
+  interest: 0.10,
+  availability: 0.10,
+  teamComplement: 0.10,
 };
 
-// Standard English stop words to filter out when tokenizing bio/text
-const STOP_WORDS = new Set([
-  'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and',
-  'any', 'are', 'aren\'t', 'as', 'at', 'be', 'because', 'been', 'before', 'being',
-  'below', 'between', 'both', 'but', 'by', 'can', 'can\'t', 'cannot', 'could',
-  'couldn\'t', 'did', 'didn\'t', 'do', 'does', 'doesn\'t', 'doing', 'don\'t',
-  'down', 'during', 'each', 'few', 'for', 'from', 'further', 'had', 'hadn\'t',
-  'has', 'hasn\'t', 'have', 'haven\'t', 'having', 'he', 'he\'d', 'he\'ll', 'he\'s',
-  'her', 'here', 'here\'s', 'hers', 'herself', 'him', 'himself', 'his', 'how',
-  'how\'s', 'i', 'i\'d', 'i\'ll', 'i\'m', 'i\'ve', 'if', 'in', 'into', 'is',
-  'isn\'t', 'it', 'it\'s', 'its', 'itself', 'let\'s', 'me', 'more', 'most',
-  'mustn\'t', 'my', 'myself', 'no', 'nor', 'not', 'of', 'off', 'on', 'once',
-  'only', 'or', 'other', 'ought', 'our', 'ours', 'ourselves', 'out', 'over',
-  'own', 'same', 'shan\'t', 'she', 'she\'d', 'she\'ll', 'she\'s', 'should',
-  'shouldn\'t', 'so', 'some', 'such', 'than', 'that', 'that\'s', 'the', 'their',
-  'theirs', 'them', 'themselves', 'then', 'there', 'there\'s', 'these', 'they',
-  'they\'d', 'they\'ll', 'they\'re', 'they\'ve', 'this', 'those', 'through',
-  'to', 'too', 'under', 'until', 'up', 'very', 'was', 'wasn\'t', 'we', 'we\'d',
-  'we\'ll', 'we\'re', 'we\'ve', 'were', 'weren\'t', 'what', 'what\'s', 'when',
-  'when\'s', 'where', 'where\'s', 'which', 'while', 'who', 'who\'s', 'whom',
-  'why', 'why\'s', 'with', 'won\'t', 'would', 'wouldn\'t', 'you', 'you\'d',
-  'you\'ll', 'you\'re', 'you\'ve', 'your', 'yours', 'yourself', 'yourselves'
-]);
-
 /**
- * Normalizes input items into an array of lowercase strings.
- * Supports string arrays, objects with `name` properties, or comma-delimited strings.
- * 
- * @param {Array|string|null|undefined} input 
- * @returns {string[]}
+ * Normalizes string array input
  */
 function normalizeStringArray(input) {
   if (!input) return [];
@@ -74,27 +55,7 @@ function normalizeStringArray(input) {
 }
 
 /**
- * Tokenizes text and extracts meaningful keywords (lowercased, punctuation removed, stop words omitted).
- * 
- * @param {string} text 
- * @returns {string[]} Unique array of keywords
- */
-function extractKeywords(text) {
-  if (!text || typeof text !== 'string') return [];
-  const cleaned = text.toLowerCase().replace(/[^a-z0-9+#.-]/g, ' ');
-  const words = cleaned.split(/\s+/).filter(word => {
-    return word.length > 1 && !STOP_WORDS.has(word);
-  });
-  return Array.from(new Set(words));
-}
-
-/**
  * Parses availability string into numeric hours per week.
- * MUST require explicit hour context (e.g. "10 hrs/week", "5 hr", "10 hours").
- * Will NOT interpret arbitrary numbers or non-hour text as hours (e.g. "3 months" -> null, "Flexible" -> null).
- * 
- * @param {string|number|null|undefined} availability 
- * @returns {number|null}
  */
 function parseHoursPerWeek(availability) {
   if (availability === null || availability === undefined) {
@@ -110,7 +71,6 @@ function parseHoursPerWeek(availability) {
   const str = availability.trim();
   if (!str) return null;
 
-  // Range matching with explicit hour context: e.g., "10-20 hrs/week", "10 to 15 hours"
   const rangeMatch = str.match(/(?:^|\s)(\d+(?:\.\d+)?)\s*(?:-|to)\s*(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|hr)(?:\s*(?:\/|per)\s*(?:week|wk))?(?:$|\s|[.,!])/i);
   if (rangeMatch) {
     const min = parseFloat(rangeMatch[1]);
@@ -120,7 +80,6 @@ function parseHoursPerWeek(availability) {
     }
   }
 
-  // Single value matching with explicit hour context: e.g., "10 hrs/week", "5 hr", "7.5 hours", "10 hours/week"
   const singleMatch = str.match(/(?:^|\s)(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|hr)(?:\s*(?:\/|per)\s*(?:week|wk))?(?:$|\s|[.,!])/i);
   if (singleMatch) {
     const val = parseFloat(singleMatch[1]);
@@ -131,309 +90,322 @@ function parseHoursPerWeek(availability) {
 }
 
 /**
- * Calculates Skill Match Score (0 - 100).
- * Weight in final score: 50%
- * 
- * @param {Array|Object} targetSkills Target requirement or required skills array
- * @param {Array|Object} candidateSkills Candidate skills array or profile object
- * @returns {number} 0 - 100
+ * Calculates Skill Match Score (0 - 100) using canonical skill normalization.
  */
 function calculateSkillMatch(targetSkills, candidateSkills) {
-  const req = normalizeStringArray(
+  const req = normalizeSkillArray(
     Array.isArray(targetSkills) ? targetSkills : targetSkills?.requiredSkills || targetSkills?.skills
   );
-  const cand = normalizeStringArray(
+  const cand = normalizeSkillArray(
     Array.isArray(candidateSkills) ? candidateSkills : candidateSkills?.skills
   );
 
-  if (req.length === 0) {
-    return 100;
-  }
-  if (cand.length === 0) {
-    return 0;
-  }
+  if (req.length === 0) return 100;
+  if (cand.length === 0) return 0;
 
-  const candSet = new Set(cand);
-  const matched = req.filter(skill => candSet.has(skill));
+  const candSet = new Set(cand.map(s => getCanonicalSkillKey(s)));
+  const matched = req.filter(skill => candSet.has(getCanonicalSkillKey(skill)));
   const score = (matched.length / req.length) * 100;
-  return Number(score.toFixed(2));
+  return Math.min(Math.max(Math.round(score), 0), 100);
 }
 
 /**
- * Calculates Interest / Domain Category Match Score (0 - 100).
- * Weight in final score: 25%
- * 
- * @param {Array|Object} targetInterests Target requirement or required interests array
- * @param {Array|Object} candidateInterests Candidate interests array or profile object
- * @returns {number} 0 - 100
+ * Calculates Interest / Category Match Score (0 - 100).
  */
 function calculateInterestMatch(targetInterests, candidateInterests) {
   const req = normalizeStringArray(
-    Array.isArray(targetInterests) ? targetInterests : targetInterests?.requiredInterests || targetInterests?.interests || targetInterests?.categories
+    Array.isArray(targetInterests) ? targetInterests : targetInterests?.requiredInterests || targetInterests?.interests || targetInterests?.category
   );
   const cand = normalizeStringArray(
     Array.isArray(candidateInterests) ? candidateInterests : candidateInterests?.interests
   );
 
-  if (req.length === 0) {
-    return 100;
-  }
-  if (cand.length === 0) {
-    return 0;
-  }
+  if (req.length === 0) return 100;
+  if (cand.length === 0) return 0;
 
   const candSet = new Set(cand);
-  const matched = req.filter(interest => candSet.has(interest));
+  const matched = req.filter(interest => {
+    return candSet.has(interest) || Array.from(candSet).some(c => c.includes(interest) || interest.includes(c));
+  });
+
   const score = (matched.length / req.length) * 100;
-  return Number(score.toFixed(2));
+  return Math.min(Math.max(Math.round(score), 0), 100);
 }
 
 /**
  * Calculates Availability Match Score (0 - 100).
- * Weight in final score: 15%
- * 
- * @param {string|number|Object} targetAvailability Required availability
- * @param {string|number|Object} candidateAvailability Candidate availability
- * @returns {number} 0 - 100
  */
 function calculateAvailabilityMatch(targetAvailability, candidateAvailability) {
   const targetRaw = (targetAvailability && typeof targetAvailability === 'object' && !Array.isArray(targetAvailability))
-    ? (targetAvailability.requiredAvailability ?? targetAvailability.availability ?? targetAvailability.hoursPerWeek)
+    ? (targetAvailability.projectDuration ?? targetAvailability.requiredAvailability ?? targetAvailability.availability)
     : targetAvailability;
 
   const candRaw = (candidateAvailability && typeof candidateAvailability === 'object' && !Array.isArray(candidateAvailability))
-    ? (candidateAvailability.availability ?? candidateAvailability.profile?.availability ?? candidateAvailability.hoursPerWeek)
+    ? (candidateAvailability.availability ?? candidateAvailability.profile?.availability)
     : candidateAvailability;
+
+  const candStr = String(candRaw || '').toLowerCase();
+  if (candStr.includes('flexible') || candStr.includes('full-time') || candStr.includes('sprint')) {
+    return 100;
+  }
 
   const targetHours = parseHoursPerWeek(targetRaw);
   const candHours = parseHoursPerWeek(candRaw);
 
-  // If target does not specify required hours, any candidate matches 100%
-  if (targetHours === null || targetHours <= 0) {
-    return 100;
-  }
+  if (targetHours === null || targetHours <= 0) return 100;
+  if (candHours === null || candHours <= 0) return 50; // Partial baseline for unparsed availability
 
-  // If target requires hours but candidate hours cannot be parsed or is 0
-  if (candHours === null || candHours <= 0) {
-    return 0;
-  }
+  if (candHours >= targetHours) return 100;
 
-  // If candidate has enough or more hours than required, 100%
-  if (candHours >= targetHours) {
-    return 100;
-  }
-
-  // Partial score based on proportion of required hours
   const score = (candHours / targetHours) * 100;
-  return Number(score.toFixed(2));
+  return Math.min(Math.max(Math.round(score), 0), 100);
 }
 
 /**
- * Calculates Profile / Bio Relevance Match Score (0 - 100).
- * Uses candidate BIO ONLY because the database has no experience field.
- * Weight in final score: 10%
- * 
- * @param {string|Array|Object} targetProfile Target description, bio, or keywords
- * @param {string|Object} candidateBio Candidate bio text or profile object
- * @returns {number} 0 - 100
+ * Calculates Role Fit Score & Best Fit Role (0 - 100).
  */
-function calculateProfileMatch(targetProfile, candidateBio) {
-  let targetText = '';
-  if (typeof targetProfile === 'string') {
-    targetText = targetProfile;
-  } else if (Array.isArray(targetProfile)) {
-    targetText = targetProfile.join(' ');
-  } else if (targetProfile && typeof targetProfile === 'object') {
-    targetText = targetProfile.description || targetProfile.bio || targetProfile.profileRelevance || targetProfile.keywords || '';
-    if (Array.isArray(targetText)) targetText = targetText.join(' ');
+function calculateRoleFit(project, candidate) {
+  const derivedRoles = deriveProjectRoles(project);
+  const candSkills = normalizeSkillArray(candidate.skills || []);
+  const candSkillSet = new Set(candSkills.map(s => getCanonicalSkillKey(s)));
+
+  let bestRole = derivedRoles[0]?.name || 'Project Contributor';
+  let highestScore = 0;
+
+  for (const role of derivedRoles) {
+    if (!role.skills || role.skills.length === 0) continue;
+    const matched = role.skills.filter(s => candSkillSet.has(getCanonicalSkillKey(s)));
+    const fitPercentage = (matched.length / role.skills.length) * 100;
+
+    if (fitPercentage > highestScore) {
+      highestScore = fitPercentage;
+      bestRole = role.name;
+    }
   }
 
-  let candText = '';
-  if (typeof candidateBio === 'string') {
-    candText = candidateBio;
-  } else if (candidateBio && typeof candidateBio === 'object') {
-    candText = candidateBio.bio || candidateBio.profile?.bio || '';
+  // If candidate has some skills but not exact role skills
+  if (highestScore === 0 && candSkills.length > 0) {
+    highestScore = 30;
   }
 
-  const targetKeywords = extractKeywords(targetText);
-  const candKeywords = extractKeywords(candText);
-
-  if (targetKeywords.length === 0) {
-    return 100;
-  }
-  if (candKeywords.length === 0) {
-    return 0;
-  }
-
-  const candSet = new Set(candKeywords);
-  const matched = targetKeywords.filter(kw => candSet.has(kw));
-  const score = (matched.length / targetKeywords.length) * 100;
-  return Number(score.toFixed(2));
+  return {
+    score: Math.min(Math.max(Math.round(highestScore), 0), 100),
+    bestFitRole: bestRole,
+  };
 }
 
 /**
- * Calculates final weighted composite score (0 - 100).
- * 
- * Weights:
- * - Skill Match: 50%
- * - Interest Match: 25%
- * - Availability Match: 15%
- * - Profile Match: 10%
- * 
- * @param {number|Object} skillScoreOrScores Object with scores or individual skill score
- * @param {number} [interestScore]
- * @param {number} [availabilityScore]
- * @param {number} [profileScore]
- * @returns {number} Composite score (0 - 100)
+ * Calculates Team Complement Score (0 - 100).
+ * High score if candidate fulfills unmet gaps; lower score if candidate only duplicates already-filled roles.
  */
-function calculateFinalScore(skillScoreOrScores, interestScore, availabilityScore, profileScore) {
-  let skill = 0;
-  let interest = 0;
-  let availability = 0;
-  let profile = 0;
+function calculateTeamComplement(project, candidate, teamContext) {
+  const teamAnalysis = teamContext || analyzeTeamComplement(project, project.members || []);
+  const candSkills = normalizeSkillArray(candidate.skills || []);
+  const candSkillSet = new Set(candSkills.map(s => getCanonicalSkillKey(s)));
 
-  if (typeof skillScoreOrScores === 'object' && skillScoreOrScores !== null) {
-    skill = skillScoreOrScores.skillMatch ?? skillScoreOrScores.skillScore ?? skillScoreOrScores.skill ?? 0;
-    interest = skillScoreOrScores.interestMatch ?? skillScoreOrScores.interestScore ?? skillScoreOrScores.interest ?? 0;
-    availability = skillScoreOrScores.availabilityMatch ?? skillScoreOrScores.availabilityScore ?? skillScoreOrScores.availability ?? 0;
-    profile = skillScoreOrScores.profileMatch ?? skillScoreOrScores.profileScore ?? skillScoreOrScores.profile ?? 0;
-  } else {
-    skill = typeof skillScoreOrScores === 'number' ? skillScoreOrScores : 0;
-    interest = typeof interestScore === 'number' ? interestScore : 0;
-    availability = typeof availabilityScore === 'number' ? availabilityScore : 0;
-    profile = typeof profileScore === 'number' ? profileScore : 0;
+  const unmetNeeds = teamAnalysis.unmetNeeds || [];
+  if (unmetNeeds.length === 0) {
+    // Team already covers basic needs; candidate contributes to overall skill capacity
+    return 80;
   }
 
-  const finalScore = (
-    skill * WEIGHTS.skill +
-    interest * WEIGHTS.interest +
-    availability * WEIGHTS.availability +
-    profile * WEIGHTS.profile
+  // Check how many unmet missing skills candidate covers
+  let coveredUnmetSkills = 0;
+  let totalMissingSkills = 0;
+
+  for (const gap of unmetNeeds) {
+    for (const s of (gap.missingSkills || [])) {
+      totalMissingSkills++;
+      if (candSkillSet.has(getCanonicalSkillKey(s))) {
+        coveredUnmetSkills++;
+      }
+    }
+  }
+
+  if (totalMissingSkills === 0) return 85;
+
+  const gapFillRatio = (coveredUnmetSkills / totalMissingSkills);
+  const score = Math.round(50 + gapFillRatio * 50);
+  return Math.min(Math.max(score, 0), 100);
+}
+
+/**
+ * Backend-Controlled Compatibility Score Formula.
+ * 
+ * finalScore = round(
+ *   0.35 * skillScore +
+ *   0.20 * roleFitScore +
+ *   0.15 * projectRelevanceScore +
+ *   0.10 * interestScore +
+ *   0.10 * availabilityScore +
+ *   0.10 * teamComplementScore
+ * )
+ */
+function calculateFinalBackendScore(scores = {}) {
+  const skill = Math.min(Math.max(Number(scores.skillScore) || 0, 0), 100);
+  const roleFit = Math.min(Math.max(Number(scores.roleFitScore) || 0, 0), 100);
+  const projectRelevance = Math.min(Math.max(Number(scores.projectRelevanceScore) || 0, 0), 100);
+  const interest = Math.min(Math.max(Number(scores.interestScore) || 0, 0), 100);
+  const availability = Math.min(Math.max(Number(scores.availabilityScore) || 0, 0), 100);
+  const teamComplement = Math.min(Math.max(Number(scores.teamComplementScore) || 0, 0), 100);
+
+  const weighted = (
+    WEIGHTS.skill * skill +
+    WEIGHTS.roleFit * roleFit +
+    WEIGHTS.projectRelevance * projectRelevance +
+    WEIGHTS.interest * interest +
+    WEIGHTS.availability * availability +
+    WEIGHTS.teamComplement * teamComplement
   );
 
-  return Number(finalScore.toFixed(2));
+  return Math.min(Math.max(Math.round(weighted), 0), 100);
 }
 
 /**
- * Calculates complete match between a target opportunity/project and a candidate.
- * 
- * @param {Object} target Target requirements
- * @param {Object} candidate Candidate profile
- * @returns {Object} Structured matching report with scores, weights, and match details
+ * Calculates complete match report for a project and candidate.
  */
-function calculateMatch(target = {}, candidate = {}) {
-  const skillMatch = calculateSkillMatch(target, candidate);
-  const interestMatch = calculateInterestMatch(target, candidate);
-  const availabilityMatch = calculateAvailabilityMatch(target, candidate);
-  const profileMatch = calculateProfileMatch(target, candidate);
+function calculateMatch(project = {}, candidate = {}, teamContext = null) {
+  const skillScore = calculateSkillMatch(project, candidate);
+  const interestScore = calculateInterestMatch(project, candidate);
+  const availabilityScore = calculateAvailabilityMatch(project, candidate);
+  const projectRelevanceScore = calculateSemanticRelevance(project, candidate);
+  const { score: roleFitScore, bestFitRole } = calculateRoleFit(project, candidate);
+  const teamComplementScore = calculateTeamComplement(project, candidate, teamContext);
 
-  const finalScore = calculateFinalScore({
-    skillMatch,
-    interestMatch,
-    availabilityMatch,
-    profileMatch,
+  const finalScore = calculateFinalBackendScore({
+    skillScore,
+    roleFitScore,
+    projectRelevanceScore,
+    interestScore,
+    availabilityScore,
+    teamComplementScore,
   });
 
-  const reqSkills = normalizeStringArray(target?.requiredSkills || target?.skills);
-  const candSkills = normalizeStringArray(candidate?.skills);
-  const candSkillSet = new Set(candSkills);
-  const matchedSkills = reqSkills.filter(s => candSkillSet.has(s));
-  const missingSkills = reqSkills.filter(s => !candSkillSet.has(s));
+  const reqSkills = normalizeSkillArray(project.requiredSkills || project.skills || []);
+  const candSkills = normalizeSkillArray(candidate.skills || []);
+  const candSkillSet = new Set(candSkills.map(s => getCanonicalSkillKey(s)));
 
-  const reqInterests = normalizeStringArray(target?.requiredInterests || target?.interests || target?.categories);
-  const candInterests = normalizeStringArray(candidate?.interests);
-  const candInterestSet = new Set(candInterests);
-  const matchedInterests = reqInterests.filter(i => candInterestSet.has(i));
-
-  const targetHours = parseHoursPerWeek(target?.requiredAvailability ?? target?.availability ?? target?.hoursPerWeek);
-  const candHours = parseHoursPerWeek(candidate?.availability ?? candidate?.profile?.availability ?? candidate?.hoursPerWeek);
+  const matchedSkills = reqSkills.filter(s => candSkillSet.has(getCanonicalSkillKey(s)));
+  const missingSkills = reqSkills.filter(s => !candSkillSet.has(getCanonicalSkillKey(s)));
 
   return {
     score: finalScore,
+    roleName: bestFitRole,
     breakdown: {
-      skillMatch,
-      interestMatch,
-      availabilityMatch,
-      profileMatch,
+      skillScore,
+      roleFitScore,
+      projectRelevanceScore,
+      interestScore,
+      availabilityScore,
+      teamComplementScore,
     },
     weights: { ...WEIGHTS },
     details: {
       matchedSkills,
       missingSkills,
-      matchedInterests,
-      targetHours,
-      candidateHours: candHours,
+      bestFitRole,
     },
   };
 }
 
 /**
  * Generates human-readable match reasons array for a candidate
- * 
- * @param {Object} matchResult Result from calculateMatch
- * @param {Object} target Linkup target requirement
- * @param {Object} candidate Candidate profile
- * @returns {Array<string>} Array of concise reason strings
  */
-function generateMatchReasons(matchResult, target, candidate) {
+function generateMatchReasons(matchResult, project, candidate) {
   const reasons = [];
   const details = matchResult.details || {};
+  const breakdown = matchResult.breakdown || {};
   const matchedSkills = details.matchedSkills || [];
-  const reqSkills = normalizeStringArray(target?.requiredSkills || target?.skills);
+  const reqSkills = normalizeSkillArray(project.requiredSkills || project.skills || []);
 
-  if (reqSkills.length > 0) {
-    if (matchedSkills.length > 0) {
-      const formattedSkills = matchedSkills
-        .slice(0, 3)
-        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-        .join(', ');
-      reasons.push(`Has ${matchedSkills.length} of ${reqSkills.length} required skills (${formattedSkills})`);
-    } else {
-      reasons.push('Missing primary required skills');
-    }
+  if (matchedSkills.length > 0) {
+    const formatted = matchedSkills.slice(0, 3).join(', ');
+    reasons.push(`Strong alignment with required skills: ${formatted}`);
+  } else if (reqSkills.length > 0) {
+    reasons.push('Shows foundational background for project goals');
   }
 
-  const matchedInterests = details.matchedInterests || [];
-  if (matchedInterests.length > 0) {
-    const formattedInterests = matchedInterests
-      .slice(0, 2)
-      .map((i) => i.charAt(0).toUpperCase() + i.slice(1))
-      .join(' & ');
-    reasons.push(`Interested in ${formattedInterests}`);
-  } else if (target?.category) {
-    reasons.push(`Category alignment with ${target.category}`);
+  if (details.bestFitRole) {
+    reasons.push(`Well-suited for the ${details.bestFitRole} role`);
   }
 
-  if (matchResult.breakdown?.availabilityMatch >= 80) {
-    reasons.push('Availability matches the project commitment level');
+  if (breakdown.teamComplementScore >= 70) {
+    reasons.push('Fills essential skill gaps on the current team');
   }
 
-  if (matchResult.breakdown?.profileMatch >= 50) {
-    reasons.push('Bio description shows relevant background for project goals');
+  if (breakdown.availabilityScore >= 80) {
+    reasons.push('Availability aligns with project schedule needs');
   }
 
-  return reasons;
+  if (breakdown.projectRelevanceScore >= 60) {
+    reasons.push('Bio and experience match project domain');
+  }
+
+  return reasons.slice(0, 4);
 }
 
 /**
- * PHASE 3: Candidate Filtering using PostgreSQL
- * 
- * Queries PostgreSQL to find relevant students for a Linkup using SQL priority filtering.
- * Never sends entire user database to AI models.
- * 
- * Filtering Priority:
- * 1. Students with matching required skills
- * 2. Students with matching interests
- * 3. Students with compatible availability
- * 4. Exclude Linkup creator
- * 5. Exclude students already in the team
- * 6. Exclude duplicate or invalid candidates
- * 
- * @param {string|Object} linkupOrId Linkup ID (UUID) or Linkup object
- * @param {number} [limit=20] Maximum candidate profiles to return (default: 20)
- * @returns {Promise<Array<Object>>} Filtered and ranked candidate student profiles with match scores
+ * Helper to construct parameterized SQL WHERE clauses for candidate filtering.
  */
-const filterCandidateStudents = async (linkupOrId, limit = 20) => {
+function buildCandidateFilterClauses(filters = {}, startParamIdx = 5) {
+  const whereClauses = [];
+  const params = [];
+  let paramIdx = startParamIdx;
+
+  if (filters.city && typeof filters.city === 'string' && filters.city.trim()) {
+    whereClauses.push(`sp.city ILIKE $${paramIdx++}`);
+    params.push(`%${filters.city.trim()}%`);
+  }
+
+  if (filters.college && typeof filters.college === 'string' && filters.college.trim()) {
+    whereClauses.push(`sp.college ILIKE $${paramIdx++}`);
+    params.push(`%${filters.college.trim()}%`);
+  }
+
+  if (filters.branch && typeof filters.branch === 'string' && filters.branch.trim()) {
+    whereClauses.push(`sp.degree ILIKE $${paramIdx++}`);
+    params.push(`%${filters.branch.trim()}%`);
+  }
+
+  if (filters.year && typeof filters.year === 'string' && filters.year.trim()) {
+    whereClauses.push(`sp.year_of_study ILIKE $${paramIdx++}`);
+    params.push(`%${filters.year.trim()}%`);
+  }
+
+  const skillsList = normalizeSkillArray(filters.skills || []);
+  if (skillsList.length > 0) {
+    const lowerSkills = skillsList.map(s => s.toLowerCase());
+    const mode = (filters.skillMatchMode || 'any').toLowerCase();
+
+    if (mode === 'all') {
+      whereClauses.push(`(
+        SELECT COUNT(DISTINCT LOWER(s.name))::int 
+        FROM user_skills us 
+        JOIN skills s ON us.skill_id = s.id 
+        WHERE us.user_id = u.id AND LOWER(s.name) = ANY($${paramIdx++}::text[])
+      ) >= $${paramIdx++}`);
+      params.push(lowerSkills, lowerSkills.length);
+    } else {
+      whereClauses.push(`EXISTS (
+        SELECT 1 
+        FROM user_skills us 
+        JOIN skills s ON us.skill_id = s.id 
+        WHERE us.user_id = u.id AND LOWER(s.name) = ANY($${paramIdx++}::text[])
+      )`);
+      params.push(lowerSkills);
+    }
+  }
+
+  return {
+    whereSql: whereClauses.length > 0 ? `AND ${whereClauses.join(' AND ')}` : '',
+    params,
+  };
+}
+
+/**
+ * Counts the number of eligible candidates matching structured filters before AI execution.
+ */
+const countEligibleCandidates = async (linkupOrId, filters = {}) => {
   let linkupId = null;
   let linkupObj = null;
 
@@ -445,18 +417,70 @@ const filterCandidateStudents = async (linkupOrId, limit = 20) => {
   }
 
   if (!linkupId) {
-    throw new Error('Invalid Linkup ID provided for candidate filtering.');
+    throw new Error('Invalid MELD ID provided for candidate count.');
+  }
+
+  if (!linkupObj || !linkupObj.creatorId) {
+    const lRes = await query(`SELECT id, creator_id FROM melds WHERE id = $1`, [linkupId]);
+    if (lRes.rows.length === 0) {
+      throw new Error(`MELD not found with ID: ${linkupId}`);
+    }
+    linkupObj = { id: lRes.rows[0].id, creatorId: lRes.rows[0].creator_id };
+  }
+
+  const memberRes = await query(
+    `SELECT user_id FROM meld_members WHERE meld_id = $1 AND status = 'ACTIVE'`,
+    [linkupId]
+  );
+  const excludedUserIds = new Set(memberRes.rows.map(r => r.user_id));
+  if (linkupObj.creatorId) {
+    excludedUserIds.add(linkupObj.creatorId);
+  }
+  const excludedArray = Array.from(excludedUserIds);
+
+  const filterResult = buildCandidateFilterClauses(filters, 2);
+  const countQuery = `
+    SELECT COUNT(DISTINCT u.id)::int as total_count
+    FROM users u
+    JOIN student_profiles sp ON u.id = sp.user_id
+    WHERE ($1::uuid[] IS NULL OR CARDINALITY($1::uuid[]) = 0 OR NOT (u.id = ANY($1::uuid[])))
+    ${filterResult.whereSql}
+  `;
+
+  const countRes = await query(countQuery, [excludedArray, ...filterResult.params]);
+  return countRes.rows[0]?.total_count || 0;
+};
+
+/**
+ * STAGE 1: Broad Candidate Retrieval using PostgreSQL (50 - 100 candidates)
+ * 
+ * Uses canonical skill IDs, category overlap, availability compatibility,
+ * applies pre-AI eligibility filters, and excludes project creator + existing team members.
+ */
+const filterCandidateStudents = async (linkupOrId, limit = 50, filters = {}) => {
+  let linkupId = null;
+  let linkupObj = null;
+
+  if (typeof linkupOrId === 'string') {
+    linkupId = linkupOrId;
+  } else if (linkupOrId && typeof linkupOrId === 'object') {
+    linkupId = linkupOrId.id || linkupOrId.linkupId;
+    linkupObj = linkupOrId;
+  }
+
+  if (!linkupId) {
+    throw new Error('Invalid MELD ID provided for candidate filtering.');
   }
 
   // 1. Fetch Linkup details if not provided
   if (!linkupObj || !linkupObj.creatorId) {
     const lRes = await query(
-      `SELECT id, creator_id, title, description, category, commitment_level, project_duration, max_members, current_status
-       FROM linkups WHERE id = $1`,
+      `SELECT id, creator_id, title, description, category, project_duration, max_members, current_status
+       FROM melds WHERE id = $1`,
       [linkupId]
     );
     if (lRes.rows.length === 0) {
-      throw new Error(`Linkup not found with ID: ${linkupId}`);
+      throw new Error(`MELD not found with ID: ${linkupId}`);
     }
     const row = lRes.rows[0];
     linkupObj = {
@@ -465,7 +489,6 @@ const filterCandidateStudents = async (linkupOrId, limit = 20) => {
       title: row.title,
       description: row.description,
       category: row.category,
-      commitmentLevel: row.commitment_level,
       projectDuration: row.project_duration,
       maxMembers: row.max_members,
       currentStatus: row.current_status,
@@ -484,32 +507,41 @@ const filterCandidateStudents = async (linkupOrId, limit = 20) => {
     linkupObj.requiredSkills = sRes.rows;
   }
 
-  // 2. Fetch excluded user IDs (Linkup creator + existing active team members)
+  // Fetch existing team members
   const memberRes = await query(
-    `SELECT DISTINCT user_id FROM meld_members WHERE meld_id = $1 AND status = 'ACTIVE'`,
+    `SELECT mm.user_id, mm.role, u.name,
+            COALESCE(
+              (SELECT json_agg(s.name) FROM user_skills us JOIN skills s ON us.skill_id = s.id WHERE us.user_id = mm.user_id),
+              '[]'::json
+            ) as skills
+     FROM meld_members mm
+     JOIN users u ON mm.user_id = u.id
+     WHERE mm.meld_id = $1 AND mm.status = 'ACTIVE'`,
     [linkupId]
   );
-  const excludedUserIds = new Set(memberRes.rows.map((r) => r.user_id));
+  linkupObj.members = memberRes.rows.map(r => ({
+    userId: r.user_id,
+    id: r.user_id,
+    name: r.name,
+    role: r.role,
+    skills: Array.isArray(r.skills) ? r.skills : [],
+  }));
+
+  // 2. Fetch excluded user IDs (MELD creator + existing active team members)
+  const excludedUserIds = new Set(linkupObj.members.map((r) => r.userId));
   if (linkupObj.creatorId) {
     excludedUserIds.add(linkupObj.creatorId);
   }
   const excludedArray = Array.from(excludedUserIds);
 
-  // 3. Extract required skill IDs & names
-  const reqSkillIds = [];
-  if (Array.isArray(linkupObj.requiredSkills)) {
-    for (const sk of linkupObj.requiredSkills) {
-      if (typeof sk === 'object' && sk.id) {
-        const parsedId = parseInt(sk.id, 10);
-        if (!isNaN(parsedId)) reqSkillIds.push(parsedId);
-      }
-    }
-  }
-
+  // 3. Extract normalized required skills
+  const reqSkills = normalizeSkillArray(linkupObj.requiredSkills || []);
   const categoryStr = (linkupObj.category || '').trim();
-  const maxLimit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 50);
+  const maxLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 10), 100);
 
-  // 4. Execute SQL priority candidate query
+  // 4. Build custom candidate filter clauses (Stage 1)
+  const filterClausesResult = buildCandidateFilterClauses(filters, 5);
+
   const filterQueryText = `
     SELECT 
       u.id, u.name,
@@ -518,15 +550,17 @@ const filterCandidateStudents = async (linkupOrId, limit = 20) => {
       COALESCE(sv.status, 'UNVERIFIED') as verification_status,
       (
         CASE 
-          WHEN $2::int[] IS NOT NULL AND CARDINALITY($2::int[]) > 0 THEN
-            (SELECT COUNT(*)::int FROM user_skills us WHERE us.user_id = u.id AND us.skill_id = ANY($2::int[]))
+          WHEN $2::text[] IS NOT NULL AND CARDINALITY($2::text[]) > 0 THEN
+            (SELECT COUNT(*)::int FROM user_skills us JOIN skills s ON us.skill_id = s.id 
+             WHERE us.user_id = u.id AND LOWER(s.name) = ANY($2::text[]))
           ELSE 0
         END
       ) as skill_match_count,
       (
         CASE 
           WHEN $3::text IS NOT NULL AND $3::text <> '' THEN
-            (SELECT COUNT(*)::int FROM user_interests ui JOIN interests i ON ui.interest_id = i.id WHERE ui.user_id = u.id AND i.name ILIKE '%' || $3 || '%')
+            (SELECT COUNT(*)::int FROM user_interests ui JOIN interests i ON ui.interest_id = i.id 
+             WHERE ui.user_id = u.id AND i.name ILIKE '%' || $3 || '%')
           ELSE 0
         END
       ) as interest_match_count
@@ -534,15 +568,17 @@ const filterCandidateStudents = async (linkupOrId, limit = 20) => {
     JOIN student_profiles sp ON u.id = sp.user_id
     LEFT JOIN student_verifications sv ON u.id = sv.user_id
     WHERE ($1::uuid[] IS NULL OR CARDINALITY($1::uuid[]) = 0 OR NOT (u.id = ANY($1::uuid[])))
+    ${filterClausesResult.whereSql}
     ORDER BY skill_match_count DESC, interest_match_count DESC, u.created_at DESC
     LIMIT $4
   `;
 
   const candidatesRes = await query(filterQueryText, [
     excludedArray,
-    reqSkillIds,
+    reqSkills.map(s => s.toLowerCase()),
     categoryStr,
     maxLimit,
+    ...filterClausesResult.params,
   ]);
 
   if (candidatesRes.rows.length === 0) {
@@ -581,7 +617,10 @@ const filterCandidateStudents = async (linkupOrId, limit = 20) => {
     candidateInterestsMap[row.user_id].push(row.name);
   }
 
-  // 7. Format candidate profiles and calculate match scores
+  // Pre-calculate team complement context
+  const teamContext = analyzeTeamComplement(linkupObj, linkupObj.members || []);
+
+  // 7. Format candidate profiles and compute scores
   const formattedCandidates = candidatesRes.rows.map((row) => {
     const candidateObj = {
       id: row.id,
@@ -595,11 +634,14 @@ const filterCandidateStudents = async (linkupOrId, limit = 20) => {
       githubUrl: row.github_url || '',
       linkedinUrl: row.linkedin_url || '',
       verificationStatus: row.verification_status,
-      skills: candidateSkillsMap[row.id] || [],
+      skills: normalizeSkillArray(candidateSkillsMap[row.id] || []),
       interests: candidateInterestsMap[row.id] || [],
     };
 
-    const matchResult = calculateMatch(linkupObj, candidateObj);
+    const matchResult = calculateMatch(linkupObj, candidateObj, teamContext);
+    const matchedSkills = matchResult.details?.matchedSkills || [];
+    const missingSkills = matchResult.details?.missingSkills || [];
+
     return {
       userId: candidateObj.id,
       name: candidateObj.name,
@@ -607,22 +649,18 @@ const filterCandidateStudents = async (linkupOrId, limit = 20) => {
       degree: candidateObj.degree,
       yearOfStudy: candidateObj.yearOfStudy,
       verificationStatus: candidateObj.verificationStatus,
-      matchPercentage: Math.round(matchResult.score),
+      matchPercentage: matchResult.score,
+      roleName: matchResult.roleName,
       breakdown: matchResult.breakdown,
       reasons: generateMatchReasons(matchResult, linkupObj, candidateObj),
+      strengths: matchedSkills.map(s => `Skill match: ${s}`),
+      concerns: missingSkills.slice(0, 2).map(s => `Lacks ${s}`),
       candidate: candidateObj,
     };
   });
 
-  // Sort by Verified Student status first (VERIFIED comes first), then matchPercentage
-  formattedCandidates.sort((a, b) => {
-    const aVerified = (a.candidate?.verificationStatus || a.verificationStatus) === 'VERIFIED' ? 1 : 0;
-    const bVerified = (b.candidate?.verificationStatus || b.verificationStatus) === 'VERIFIED' ? 1 : 0;
-    if (aVerified !== bVerified) {
-      return bVerified - aVerified;
-    }
-    return b.matchPercentage - a.matchPercentage;
-  });
+  // Sort by matchPercentage descending
+  formattedCandidates.sort((a, b) => b.matchPercentage - a.matchPercentage);
 
   return formattedCandidates.slice(0, maxLimit);
 };
@@ -630,10 +668,12 @@ const filterCandidateStudents = async (linkupOrId, limit = 20) => {
 /**
  * Emergency Fallback Deterministic Matcher (Used ONLY when AI calls completely fail)
  */
-const getFallbackDeterministicMatches = (linkup, candidates) => {
+const getFallbackDeterministicMatches = (project, candidates) => {
+  const teamContext = analyzeTeamComplement(project, project.members || []);
+
   const formattedMatches = candidates.map((item) => {
     const candidateObj = item.candidate || item;
-    const matchResult = calculateMatch(linkup, candidateObj);
+    const matchResult = calculateMatch(project, candidateObj, teamContext);
 
     const matchedSkills = matchResult.details?.matchedSkills || [];
     const missingSkills = matchResult.details?.missingSkills || [];
@@ -645,23 +685,23 @@ const getFallbackDeterministicMatches = (linkup, candidates) => {
       degree: candidateObj.degree || '',
       yearOfStudy: candidateObj.yearOfStudy || candidateObj.year_of_study || '',
       verificationStatus: candidateObj.verificationStatus || candidateObj.verification_status || 'UNVERIFIED',
-      matchPercentage: Math.round(matchResult.score),
-      reasons: generateMatchReasons(matchResult, linkup, candidateObj),
-      strengths: matchedSkills.map((s) => `Matched skill: ${s}`),
-      concerns: missingSkills.map((s) => `Missing skill: ${s}`),
+      matchPercentage: matchResult.score,
+      roleName: matchResult.roleName,
+      skillScore: matchResult.breakdown.skillScore,
+      roleFitScore: matchResult.breakdown.roleFitScore,
+      projectRelevanceScore: matchResult.breakdown.projectRelevanceScore,
+      interestScore: matchResult.breakdown.interestScore,
+      availabilityScore: matchResult.breakdown.availabilityScore,
+      teamComplementScore: matchResult.breakdown.teamComplementScore,
+      reasons: generateMatchReasons(matchResult, project, candidateObj),
+      strengths: matchedSkills.map((s) => `Skill match: ${s}`),
+      concerns: missingSkills.slice(0, 2).map((s) => `Lacks ${s}`),
       generatedBy: 'FALLBACK',
       candidate: candidateObj,
     };
   });
 
-  formattedMatches.sort((a, b) => {
-    const aVerified = a.verificationStatus === 'VERIFIED' ? 1 : 0;
-    const bVerified = b.verificationStatus === 'VERIFIED' ? 1 : 0;
-    if (aVerified !== bVerified) {
-      return bVerified - aVerified;
-    }
-    return b.matchPercentage - a.matchPercentage;
-  });
+  formattedMatches.sort((a, b) => b.matchPercentage - a.matchPercentage);
 
   return {
     success: true,
@@ -671,14 +711,19 @@ const getFallbackDeterministicMatches = (linkup, candidates) => {
 };
 
 module.exports = {
+  WEIGHTS,
   calculateSkillMatch,
   calculateInterestMatch,
   calculateAvailabilityMatch,
-  calculateProfileMatch,
-  calculateFinalScore,
+  calculateRoleFit,
+  calculateTeamComplement,
+  calculateFinalBackendScore,
   calculateMatch,
   parseHoursPerWeek,
   generateMatchReasons,
+  buildCandidateFilterClauses,
+  countEligibleCandidates,
   filterCandidateStudents,
   getFallbackDeterministicMatches,
 };
+

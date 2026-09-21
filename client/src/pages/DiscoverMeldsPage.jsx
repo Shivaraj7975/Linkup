@@ -130,8 +130,8 @@ export const DiscoverMeldsPage = () => {
           </p>
 
           <div className="margin-top-sm" style={{ display: 'flex', justifyContent: 'center' }}>
-            <Link to="/create-linkup" className="btn btn-primary btn-sm" style={{ padding: '0.45rem 1rem', fontSize: '0.85rem', width: 'fit-content', gap: '0.35rem' }}>
-              <Plus size={15} />
+            <Link to="/create-meld" className="btn btn-primary" style={{ padding: '0.6rem 1.35rem', fontSize: '0.92rem', fontWeight: '600', borderRadius: '10px', width: 'fit-content', gap: '0.45rem' }}>
+              <Plus size={18} />
               <span>Create Meld</span>
             </Link>
           </div>
@@ -163,9 +163,9 @@ export const DiscoverMeldsPage = () => {
                 </button>
               )}
               <div className="integrated-search-actions">
-                <button 
-                  type="submit" 
-                  className="search-action-btn search-submit-btn" 
+                <button
+                  type="submit"
+                  className="search-action-btn search-submit-btn"
                   title="Search"
                   aria-label="Search"
                 >
@@ -286,7 +286,7 @@ export const DiscoverMeldsPage = () => {
               <button onClick={handleClearFilters} className="btn btn-ghost btn-sm">
                 Clear Filters
               </button>
-              <Link to="/create-linkup" className="btn btn-primary btn-sm">
+              <Link to="/create-meld" className="btn btn-primary btn-sm">
                 <Plus size={16} />
                 <span>Create a Meld</span>
               </Link>
@@ -303,13 +303,12 @@ export const DiscoverMeldsPage = () => {
                 <div className="card-top-row">
                   <span className="badge badge-category">{l.category}</span>
                   <span
-                    className={`badge badge-status ${
-                      l.currentStatus === 'OPEN'
+                    className={`badge badge-status ${l.currentStatus === 'OPEN'
                         ? 'status-open'
                         : l.currentStatus === 'FULL'
-                        ? 'status-full'
-                        : 'status-closed'
-                    }`}
+                          ? 'status-full'
+                          : 'status-closed'
+                      }`}
                   >
                     {l.currentStatus}
                   </span>

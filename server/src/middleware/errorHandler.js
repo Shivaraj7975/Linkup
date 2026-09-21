@@ -1,14 +1,31 @@
 /**
  * Global error handler middleware
+ * Protects internal details, database queries, and stack traces from leaking to clients in production.
  */
 const errorHandler = (err, req, res, next) => {
-  console.error('Unhandled Server Error:', err);
+  // Always log full error details on server side for debugging and security audits
+  console.error('Unhandled Server Error:', {
+    message: err?.message,
+    name: err?.name,
+    stack: err?.stack,
+    url: req?.originalUrl,
+    method: req?.method,
+    ip: req?.ip,
+  });
 
-  const statusCode = err.statusCode || 500;
+  const statusCode = err.statusCode || (err.status && typeof err.status === 'number' ? err.status : 500);
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  // In production, mask internal server errors with a generic safe message
+  let clientMessage = err.message || 'Internal Server Error';
+  if (isProduction && statusCode === 500) {
+    clientMessage = 'Internal server error. Please try again later.';
+  }
+
   res.status(statusCode).json({
     success: false,
-    message: err.message || 'Internal Server Error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    message: clientMessage,
+    ...(!isProduction && { stack: err.stack }),
   });
 };
 

@@ -66,8 +66,8 @@ export const ForgotPasswordPage = () => {
       setError('Please enter the 6-digit OTP code.');
       return;
     }
-    if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (newPassword.length < 9 || !/\d/.test(newPassword)) {
+      setError('Password must be at least 9 characters long and contain at least 1 number.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -201,7 +201,7 @@ export const ForgotPasswordPage = () => {
                   <input
                     id="newPassword"
                     type="password"
-                    placeholder="Min. 6 characters"
+                    placeholder="Min. 9 chars with a number"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                   />

@@ -350,7 +350,7 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
               <a
                 href={whatsappUrl}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="btn btn-ghost btn-xs"
                 style={{
                   background: 'rgba(37, 211, 102, 0.12)',
@@ -368,7 +368,7 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
               <a
                 href={telegramUrl}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="btn btn-ghost btn-xs"
                 style={{
                   background: 'rgba(0, 136, 204, 0.12)',

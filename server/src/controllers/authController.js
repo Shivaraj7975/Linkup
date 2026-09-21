@@ -16,25 +16,24 @@ const {
   verifyOtpInDb,
   sendOtpEmail,
   normalizePurpose,
+  maskEmail,
 } = require('../services/emailService');
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Generate JWT Token helper
+ * Generate JWT Token helper - fails loudly if JWT_SECRET is unset
  */
 const generateToken = (user) => {
-  const secret = process.env.NODE_ENV === 'production'
-    ? process.env.JWT_SECRET
-    : (process.env.JWT_SECRET || 'linkup_jwt_super_secret_key_2026_dev');
-
+  const secret = process.env.JWT_SECRET;
   if (!secret) {
-    throw new Error('JWT_SECRET is required in production');
+    throw new Error('JWT_SECRET environment variable is required');
   }
 
-  const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+  const expiresIn = process.env.JWT_EXPIRES_IN || '24h';
+  const tokenVersion = typeof user.token_version === 'number' ? user.token_version : 1;
   return jwt.sign(
-    { id: user.id, email: user.email, username: user.username || null },
+    { id: user.id, email: user.email, username: user.username || null, tokenVersion },
     secret,
     { expiresIn }
   );
@@ -58,13 +57,19 @@ const sendOtp = async (req, res, next) => {
     const purpose = normalizePurpose(type);
     let cleanEmail = target.toLowerCase();
 
-    // If password reset, resolve user by email or username
-    if (purpose === 'PASSWORD_RESET') {
+    // If password reset or login, resolve user by email or username
+    if (purpose === 'PASSWORD_RESET' || purpose === 'LOGIN') {
       const user = await findUserByIdentifier(target);
       if (!user) {
-        return res.status(404).json({
+        if (purpose === 'PASSWORD_RESET') {
+          return res.json({
+            success: true,
+            message: 'If an account exists with this email or username, a verification code has been sent.',
+          });
+        }
+        return res.status(401).json({
           success: false,
-          message: 'No account found with this email or username.',
+          message: 'Invalid credentials or account not found.',
         });
       }
       cleanEmail = user.email.toLowerCase();
@@ -106,7 +111,7 @@ const sendOtp = async (req, res, next) => {
     try {
       await sendOtpEmail({ toEmail: cleanEmail, otpCode, type: purpose });
     } catch (emailErr) {
-      console.error(`❌ Email delivery failure for ${cleanEmail}:`, emailErr.message);
+      console.error(`❌ Email delivery failure for ${maskEmail(cleanEmail)}:`, emailErr.message);
       if (process.env.NODE_ENV === 'production') {
         return res.status(502).json({
           success: false,
@@ -184,10 +189,10 @@ const register = async (req, res, next) => {
       });
     }
 
-    if (!password || typeof password !== 'string' || password.length < 6) {
+    if (!password || typeof password !== 'string' || password.length < 9 || !/\d/.test(password)) {
       return res.status(400).json({
         success: false,
-        message: 'Password is required and must be at least 6 characters.',
+        message: 'Password is required, must be at least 9 characters long, and must contain at least 1 number.',
       });
     }
 
@@ -286,7 +291,7 @@ const register = async (req, res, next) => {
 };
 
 /**
- * POST /api/auth/login
+ * POST /api/auth/login (Password Login)
  */
 const login = async (req, res, next) => {
   try {
@@ -313,6 +318,58 @@ const login = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         message: 'Invalid email/username or password.',
+      });
+    }
+
+    const token = generateToken(user);
+
+    return res.status(200).json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        username: user.username || null,
+        email: user.email,
+        role: user.role || 'USER',
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/auth/login-otp (One-Time Password Login)
+ */
+const loginWithOtp = async (req, res, next) => {
+  try {
+    const { identifier, email, username, otpCode } = req.body;
+    const loginIdentifier = (identifier || email || username || '').trim();
+
+    if (!loginIdentifier || !otpCode) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email or username and OTP code are required.',
+      });
+    }
+
+    const user = await findUserByIdentifier(loginIdentifier);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with this email or username.',
+      });
+    }
+
+    const cleanEmail = user.email.toLowerCase();
+    const cleanCode = String(otpCode).trim();
+
+    const isValid = await verifyOtpInDb(cleanEmail, cleanCode, 'LOGIN');
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired login verification code.',
       });
     }
 
@@ -409,18 +466,18 @@ const resetPassword = async (req, res, next) => {
       });
     }
 
-    if (typeof newPassword !== 'string' || newPassword.length < 6) {
+    if (typeof newPassword !== 'string' || newPassword.length < 9 || !/\d/.test(newPassword)) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 6 characters long.',
+        message: 'Password must be at least 9 characters long and contain at least 1 number.',
       });
     }
 
     const user = await findUserByIdentifier(targetIdentifier);
     if (!user) {
-      return res.status(404).json({
+      return res.status(400).json({
         success: false,
-        message: 'No account found with this email or username.',
+        message: 'Invalid or expired password reset OTP code.',
       });
     }
 
@@ -455,6 +512,7 @@ const resetPassword = async (req, res, next) => {
 module.exports = {
   register,
   login,
+  loginWithOtp,
   getMe,
   checkUsername,
   sendOtp,

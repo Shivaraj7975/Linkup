@@ -111,7 +111,6 @@ CREATE TABLE melds (
     category VARCHAR(100) NOT NULL,
     max_members INT NOT NULL DEFAULT 4 CHECK (max_members >= 2),
     current_status VARCHAR(20) NOT NULL DEFAULT 'OPEN' CHECK (current_status IN ('OPEN', 'FULL', 'CLOSED')),
-    commitment_level VARCHAR(100) NOT NULL,
     project_duration VARCHAR(100) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -162,8 +161,16 @@ CREATE TABLE matches (
     meld_id UUID NOT NULL REFERENCES melds(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     match_percentage INT NOT NULL CHECK (match_percentage >= 0 AND match_percentage <= 100),
+    skill_score INT DEFAULT 0,
+    role_fit_score INT DEFAULT 0,
+    project_relevance_score INT DEFAULT 0,
+    interest_score INT DEFAULT 0,
+    availability_score INT DEFAULT 0,
+    team_complement_score INT DEFAULT 0,
+    role_name VARCHAR(100) DEFAULT NULL,
+    algorithm_version VARCHAR(20) DEFAULT '2',
     match_data JSONB NOT NULL DEFAULT '{}'::jsonb,
-    generated_by VARCHAR(50) NOT NULL DEFAULT 'AI' CHECK (generated_by IN ('AI', 'FALLBACK')),
+    generated_by VARCHAR(50) NOT NULL DEFAULT 'AI',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT unique_meld_user_match UNIQUE (meld_id, user_id)
 );
@@ -238,6 +245,7 @@ CREATE INDEX idx_meld_messages_created_at ON meld_messages(created_at);
 CREATE INDEX idx_matches_meld_id ON matches(meld_id);
 CREATE INDEX idx_matches_user_id ON matches(user_id);
 CREATE INDEX idx_matches_percentage ON matches(match_percentage);
+CREATE INDEX idx_matches_algorithm_version ON matches(algorithm_version);
 
 CREATE INDEX idx_meld_invitations_meld_id ON meld_invitations(meld_id);
 CREATE INDEX idx_meld_invitations_invitee_id ON meld_invitations(invitee_id);

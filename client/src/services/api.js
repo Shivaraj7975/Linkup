@@ -7,7 +7,18 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 /**
  * Get stored JWT token from localStorage
  */
-const getToken = () => localStorage.getItem('meld_token') || localStorage.getItem('linkup_token');
+const getToken = () => {
+  const token = localStorage.getItem('meld_token');
+  if (!token) {
+    const legacy = localStorage.getItem('linkup_token');
+    if (legacy) {
+      localStorage.setItem('meld_token', legacy);
+      localStorage.removeItem('linkup_token');
+      return legacy;
+    }
+  }
+  return token;
+};
 
 /**
  * Helper to build request headers with optional auth token
@@ -146,6 +157,25 @@ export const loginUser = async (identifier, password) => {
 
   if (!response.ok) {
     throw new Error(data.message || 'Login failed.');
+  }
+
+  return data;
+};
+
+/**
+ * POST /api/auth/login-otp
+ */
+export const loginWithOtpApi = async (identifier, otpCode) => {
+  const response = await fetch(`${API_BASE_URL}/auth/login-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ identifier, email: identifier, otpCode }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'OTP Login failed.');
   }
 
   return data;
@@ -464,10 +494,61 @@ export const removeTeamMember = async (linkupId, userId) => {
    ========================================================================== */
 
 /**
- * GET /api/linkups/:linkupId/matches - Fetch Ranked AI Teammate Matches
+ * GET /api/linkups/:linkupId/filter-options - Fetch Dynamic Candidate Filter Options
  */
-export const getLinkupMatches = async (linkupId, refresh = false) => {
-  const url = `${API_BASE_URL}/linkups/${linkupId}/matches${refresh ? '?refresh=true' : ''}`;
+export const getMatchFilterOptions = async (linkupId) => {
+  const url = `${API_BASE_URL}/linkups/${linkupId}/filter-options`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch candidate filter options.');
+  return data.options || { cities: [], colleges: [], branches: [], years: [], skills: [] };
+};
+
+/**
+ * GET /api/linkups/:linkupId/candidate-count - Fetch Count of Eligible Candidates with Filters
+ */
+export const getEligibleCandidateCount = async (linkupId, filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.city) params.append('city', filters.city);
+  if (filters.college) params.append('college', filters.college);
+  if (filters.branch) params.append('branch', filters.branch);
+  if (filters.year) params.append('year', filters.year);
+  if (Array.isArray(filters.skills) && filters.skills.length > 0) {
+    params.append('skills', filters.skills.join(','));
+  }
+  if (filters.skillMatchMode) params.append('skillMatchMode', filters.skillMatchMode);
+
+  const queryStr = params.toString();
+  const url = `${API_BASE_URL}/linkups/${linkupId}/candidate-count${queryStr ? `?${queryStr}` : ''}`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to calculate candidate pool count.');
+  return data.count !== undefined ? data.count : 0;
+};
+
+/**
+ * GET /api/linkups/:linkupId/matches - Fetch Ranked AI Teammate Matches with Filters
+ */
+export const getLinkupMatches = async (linkupId, refresh = false, filters = {}) => {
+  const params = new URLSearchParams();
+  if (refresh) params.append('refresh', 'true');
+  if (filters.city) params.append('city', filters.city);
+  if (filters.college) params.append('college', filters.college);
+  if (filters.branch) params.append('branch', filters.branch);
+  if (filters.year) params.append('year', filters.year);
+  if (Array.isArray(filters.skills) && filters.skills.length > 0) {
+    params.append('skills', filters.skills.join(','));
+  }
+  if (filters.skillMatchMode) params.append('skillMatchMode', filters.skillMatchMode);
+
+  const queryStr = params.toString();
+  const url = `${API_BASE_URL}/linkups/${linkupId}/matches${queryStr ? `?${queryStr}` : ''}`;
   const response = await fetch(url, {
     method: 'GET',
     headers: authHeaders(),
@@ -557,6 +638,8 @@ export const deleteMeld = deleteLinkup;
 export const sendMeldJoinRequest = sendJoinRequest;
 export const getMeldRequests = getLinkupRequests;
 export const removeMeldMember = removeTeamMember;
+export const getMeldFilterOptions = getMatchFilterOptions;
+export const getMeldCandidateCount = getEligibleCandidateCount;
 export const getMeldMatches = getLinkupMatches;
 export const inviteToMeld = inviteToLinkup;
 export const leaveMeld = leaveLinkup;

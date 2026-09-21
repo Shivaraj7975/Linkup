@@ -1,7 +1,7 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api') + '/admin';
 
 const getHeaders = () => {
-  const token = localStorage.getItem('meld_token') || localStorage.getItem('linkup_token');
+  const token = localStorage.getItem('meld_token');
   return {
     'Content-Type': 'application/json',
     Authorization: token ? `Bearer ${token}` : '',

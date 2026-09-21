@@ -6,12 +6,12 @@ const linkupService = require('../services/meldService');
  */
 const createLinkup = async (req, res, next) => {
   try {
-    const { title, description, category, requiredSkills, maxMembers, commitmentLevel, projectDuration } = req.body;
+    const { title, description, category, requiredSkills, maxMembers, projectDuration } = req.body;
 
-    if (!title || !description || !category || !commitmentLevel || !projectDuration) {
+    if (!title || !description || !category || !projectDuration) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide all required fields: title, description, category, commitmentLevel, and projectDuration.',
+        message: 'Please provide all required fields: title, description, category, and projectDuration.',
       });
     }
 
@@ -21,7 +21,6 @@ const createLinkup = async (req, res, next) => {
       category,
       requiredSkills,
       maxMembers: maxMembers || 4,
-      commitmentLevel,
       projectDuration,
     });
 
@@ -259,6 +258,84 @@ const removeMember = async (req, res, next) => {
 };
 
 /**
+ * Helper to extract and sanitize candidate filters from query parameters or body
+ */
+function extractFiltersFromRequest(req) {
+  const source = req.method === 'POST' ? { ...req.query, ...req.body } : req.query;
+  const filters = {};
+
+  if (source.city && typeof source.city === 'string' && source.city.trim()) {
+    filters.city = source.city.trim();
+  }
+  if (source.college && typeof source.college === 'string' && source.college.trim()) {
+    filters.college = source.college.trim();
+  }
+  if (source.branch && typeof source.branch === 'string' && source.branch.trim()) {
+    filters.branch = source.branch.trim();
+  }
+  if (source.year && typeof source.year === 'string' && source.year.trim()) {
+    filters.year = source.year.trim();
+  }
+  if (source.skills) {
+    if (Array.isArray(source.skills)) {
+      filters.skills = source.skills;
+    } else if (typeof source.skills === 'string') {
+      filters.skills = source.skills.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+  }
+  if (source.skillMatchMode) {
+    filters.skillMatchMode = source.skillMatchMode;
+  }
+
+  return filters;
+}
+
+/**
+ * GET /api/linkups/:linkupId/filter-options
+ * Get dynamic candidate filter options for a MELD
+ */
+const getMatchFilterOptions = async (req, res, next) => {
+  try {
+    const { linkupId } = req.params;
+    const currentUserId = req.user ? req.user.id : null;
+
+    const result = await linkupService.getMatchFilterOptions(linkupId, currentUserId);
+    return res.status(200).json(result);
+  } catch (error) {
+    if (error.message.includes('Unauthorized') || error.message.includes('unauthorized')) {
+      return res.status(403).json({ success: false, message: error.message });
+    }
+    if (error.message.includes('not found')) {
+      return res.status(404).json({ success: false, message: error.message });
+    }
+    next(error);
+  }
+};
+
+/**
+ * GET /api/linkups/:linkupId/candidate-count
+ * Get count of eligible candidates matching structured filters
+ */
+const getEligibleCandidateCount = async (req, res, next) => {
+  try {
+    const { linkupId } = req.params;
+    const currentUserId = req.user ? req.user.id : null;
+    const filters = extractFiltersFromRequest(req);
+
+    const result = await linkupService.getEligibleCandidateCount(linkupId, currentUserId, filters);
+    return res.status(200).json(result);
+  } catch (error) {
+    if (error.message.includes('Unauthorized') || error.message.includes('unauthorized')) {
+      return res.status(403).json({ success: false, message: error.message });
+    }
+    if (error.message.includes('not found')) {
+      return res.status(404).json({ success: false, message: error.message });
+    }
+    next(error);
+  }
+};
+
+/**
  * GET /api/linkups/:linkupId/matches
  * Get ranked AI candidate matches for a Linkup
  */
@@ -267,14 +344,18 @@ const getLinkupMatches = async (req, res, next) => {
     const { linkupId } = req.params;
     const currentUserId = req.user ? req.user.id : null;
     const forceRefresh = req.query.refresh === 'true' || req.query.force === 'true';
+    const filters = extractFiltersFromRequest(req);
 
-    const matchResults = await linkupService.getMatchesForLinkup(linkupId, currentUserId, forceRefresh);
+    const matchResults = await linkupService.getMatchesForLinkup(linkupId, currentUserId, forceRefresh, filters);
 
     return res.status(200).json({
       success: true,
       ...matchResults,
     });
   } catch (error) {
+    if (error.message.includes('Unauthorized') || error.message.includes('unauthorized')) {
+      return res.status(403).json({ success: false, message: error.message });
+    }
     if (error.message.includes('not found')) {
       return res.status(404).json({ success: false, message: error.message });
     }
@@ -364,6 +445,8 @@ module.exports = {
   acceptRequest,
   rejectRequest,
   removeMember,
+  getMatchFilterOptions,
+  getEligibleCandidateCount,
   getLinkupMatches,
   inviteUser,
   leaveLinkupHandler,

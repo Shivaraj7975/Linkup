@@ -1,6 +1,22 @@
 const { pool, query } = require('../config/db');
 
 /**
+ * Sanitize and validate external URLs to prevent javascript:, data:, and vbscript: XSS injection
+ */
+const sanitizeUrl = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (/^(?:javascript|data|vbscript):/i.test(trimmed)) {
+    return '';
+  }
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+  return trimmed;
+};
+
+/**
  * Fetch all available skills
  */
 const getAllSkills = async () => {
@@ -179,11 +195,11 @@ const updateStudentProfile = async (userId, data) => {
       year_of_study || '',
       bio || '',
       availability || '',
-      github_url || '',
-      linkedin_url || '',
-      instagram_url || '',
-      youtube_url || '',
-      website_url || '',
+      sanitizeUrl(github_url),
+      sanitizeUrl(linkedin_url),
+      sanitizeUrl(instagram_url),
+      sanitizeUrl(youtube_url),
+      sanitizeUrl(website_url),
       is_completed === true,
       parseInt(onboarding_step, 10) || 1,
     ]);

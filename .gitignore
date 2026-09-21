@@ -27,6 +27,8 @@ dist/
 build/
 **/dist/
 **/build/
+**/.vite/
+*.map
 *.timestamp*.mjs
 
 # Logs
