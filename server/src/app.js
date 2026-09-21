@@ -15,29 +15,7 @@ app.set('trust proxy', 1);
 // Disable x-powered-by banner
 app.disable('x-powered-by');
 
-// 1. Helmet HTTP Security Headers with explicit CSP
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: [
-        "'self'",
-        process.env.CLIENT_ORIGIN || 'http://localhost:5173',
-        'ws:',
-        'wss:',
-      ],
-      objectSrc: ["'none'"],
-      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
-    },
-  },
-  crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
-
-// 2. Configure CORS - Support comma-separated origins & apex/www variants
+// 1. Configure allowed origins - Support comma-separated origins & apex/www variants
 const rawOrigins = (process.env.CLIENT_ORIGIN || '')
   .split(',')
   .map((o) => o.trim().replace(/\/$/, ''))
@@ -55,10 +33,35 @@ for (const o of rawOrigins) {
   } catch {}
 }
 
+const originsArray = Array.from(allowedOrigins);
+
 if (process.env.NODE_ENV === 'production' && allowedOrigins.size === 0) {
   console.error('FATAL SECURITY WARNING: CLIENT_ORIGIN is not configured in production. Rejecting untrusted origins.');
 }
 
+// 2. Helmet HTTP Security Headers with explicit CSP
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: [
+        "'self'",
+        ...(originsArray.length > 0 ? originsArray : ['http://localhost:5173']),
+        'ws:',
+        'wss:',
+      ],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+    },
+  },
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// 3. Configure CORS
 app.use(cors({
   origin: function (origin, callback) {
     if (process.env.NODE_ENV === 'production') {
