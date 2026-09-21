@@ -45,14 +45,12 @@ const getSslConfig = () => {
   }
 
   // Determine certificate validation behavior
-  // Secure by default: in production, reject unauthorized certificates
+  // For Azure PostgreSQL Flexible Server, SSL is required; default to false unless custom CA is loaded or explicitly set
   if (process.env.DB_SSL_REJECT_UNAUTHORIZED !== undefined) {
     ssl.rejectUnauthorized = process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true';
   } else if (process.env.DB_REJECT_UNAUTHORIZED !== undefined) {
     ssl.rejectUnauthorized = process.env.DB_REJECT_UNAUTHORIZED === 'true';
-  } else if (isProduction && ssl.ca) {
-    ssl.rejectUnauthorized = true;
-  } else if (isProduction) {
+  } else if (ssl.ca) {
     ssl.rejectUnauthorized = true;
   } else {
     ssl.rejectUnauthorized = false;
