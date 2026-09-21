@@ -37,22 +37,38 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// 2. Configure CORS - Fail closed in production if CLIENT_ORIGIN is missing
-const configuredOrigin = process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.replace(/\/$/, '') : null;
-if (process.env.NODE_ENV === 'production' && !configuredOrigin) {
+// 2. Configure CORS - Support comma-separated origins & apex/www variants
+const rawOrigins = (process.env.CLIENT_ORIGIN || '')
+  .split(',')
+  .map((o) => o.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
+const allowedOrigins = new Set(rawOrigins);
+for (const o of rawOrigins) {
+  try {
+    const url = new URL(o);
+    if (url.hostname.startsWith('www.')) {
+      allowedOrigins.add(`${url.protocol}//${url.hostname.replace(/^www\./, '')}`);
+    } else {
+      allowedOrigins.add(`${url.protocol}//www.${url.hostname}`);
+    }
+  } catch {}
+}
+
+if (process.env.NODE_ENV === 'production' && allowedOrigins.size === 0) {
   console.error('FATAL SECURITY WARNING: CLIENT_ORIGIN is not configured in production. Rejecting untrusted origins.');
 }
 
 app.use(cors({
   origin: function (origin, callback) {
     if (process.env.NODE_ENV === 'production') {
-      if (!configuredOrigin) {
+      if (allowedOrigins.size === 0) {
         return callback(new Error('CORS blocked: CLIENT_ORIGIN environment variable is not configured on the server.'));
       }
-      if (!origin || origin === configuredOrigin) {
+      if (!origin || allowedOrigins.has(origin)) {
         return callback(null, true);
       }
-      console.error(`CORS Blocked: Origin ${origin} does not match configured origin ${configuredOrigin}`);
+      console.error(`CORS Blocked: Origin ${origin} does not match allowed origins:`, Array.from(allowedOrigins));
       return callback(new Error('Not allowed by CORS'));
     } else {
       return callback(null, true);

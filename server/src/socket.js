@@ -30,15 +30,39 @@ const checkMessageRateLimit = (userId) => {
 };
 
 const initSocket = (server) => {
-  const configuredOrigin = process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.replace(/\/$/, '') : null;
-  if (process.env.NODE_ENV === 'production' && !configuredOrigin) {
+  const rawOrigins = (process.env.CLIENT_ORIGIN || '')
+    .split(',')
+    .map((o) => o.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+
+  const allowedOrigins = new Set(rawOrigins);
+  for (const o of rawOrigins) {
+    try {
+      const url = new URL(o);
+      if (url.hostname.startsWith('www.')) {
+        allowedOrigins.add(`${url.protocol}//${url.hostname.replace(/^www\./, '')}`);
+      } else {
+        allowedOrigins.add(`${url.protocol}//www.${url.hostname}`);
+      }
+    } catch {}
+  }
+
+  if (process.env.NODE_ENV === 'production' && allowedOrigins.size === 0) {
     console.error('FATAL SECURITY WARNING: CLIENT_ORIGIN environment variable is not set in production for WebSockets.');
   }
 
   io = new Server(server, {
     maxHttpBufferSize: 1e5, // 100KB payload limit to prevent buffer exhaustion attacks
     cors: {
-      origin: configuredOrigin || (process.env.NODE_ENV === 'production' ? false : 'http://localhost:5173'),
+      origin: (origin, callback) => {
+        if (process.env.NODE_ENV === 'production') {
+          if (!origin || allowedOrigins.has(origin)) {
+            return callback(null, true);
+          }
+          return callback(new Error('Socket CORS blocked'));
+        }
+        return callback(null, true);
+      },
       methods: ['GET', 'POST'],
       credentials: true,
     },
