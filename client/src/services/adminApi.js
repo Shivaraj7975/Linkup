@@ -1,4 +1,12 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api') + '/admin';
+const getAdminApiBaseUrl = () => {
+  let url = (import.meta.env.VITE_API_BASE_URL || '/api').trim().replace(/\/+$/, '');
+  if (url.startsWith('http') && !url.endsWith('/api')) {
+    url = `${url}/api`;
+  }
+  return `${url}/admin`;
+};
+
+const API_BASE_URL = getAdminApiBaseUrl();
 
 const getHeaders = () => {
   const token = localStorage.getItem('meld_token');
