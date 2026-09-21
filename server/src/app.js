@@ -148,29 +148,37 @@ const aiMatchingLimiter = rateLimit({
   message: { success: false, message: 'AI matching rate limit exceeded. Please wait a few minutes before generating more matches.' }
 });
 
-// Apply rate limiters
-app.use('/api/', generalLimiter);
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/login-otp', authLimiter);
-app.use('/api/auth/register', authLimiter);
-app.use('/api/auth/send-otp', otpLimiter);
-app.use('/api/auth/verify-otp', otpLimiter);
-app.use('/api/auth/reset-password', passwordResetLimiter);
-app.use('/api/users/search', searchLimiter);
-app.use('/api/melds/:id/matches', aiMatchingLimiter);
+// Apply rate limiters to both /api and root routes
+app.use(['/api/', '/'], generalLimiter);
+app.use(['/api/auth/login', '/auth/login'], authLimiter);
+app.use(['/api/auth/login-otp', '/auth/login-otp'], authLimiter);
+app.use(['/api/auth/register', '/auth/register'], authLimiter);
+app.use(['/api/auth/send-otp', '/auth/send-otp'], otpLimiter);
+app.use(['/api/auth/verify-otp', '/auth/verify-otp'], otpLimiter);
+app.use(['/api/auth/reset-password', '/auth/reset-password'], passwordResetLimiter);
+app.use(['/api/users/search', '/users/search'], searchLimiter);
+app.use(['/api/melds/:id/matches', '/melds/:id/matches', '/linkups/:id/matches'], aiMatchingLimiter);
 
 const chatRoutes = require('./routes/chatRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 
-// Register routes
+// Register routes (supported with /api prefix and root aliases)
 app.use('/api', healthRoutes);
+app.use('/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
 app.use('/api', profileRoutes);
+app.use('/', profileRoutes);
 app.use('/api', meldRoutes);
+app.use('/', meldRoutes);
 app.use('/api/melds', chatRoutes);
+app.use('/melds', chatRoutes);
 app.use('/api/invitations', invitationRoutes);
+app.use('/invitations', invitationRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/admin', adminRoutes);
 
 // Root route welcome message
 app.get('/', (req, res) => {
