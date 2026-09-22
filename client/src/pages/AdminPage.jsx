@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
+import { ConfirmModal } from '../components/ConfirmModal';
 import {
   ShieldAlert,
   Users,
@@ -52,8 +53,9 @@ export const AdminPage = () => {
   const [userSearch, setUserSearch] = useState('');
 
   // Messages
-  const [alertSuccess, setAlertSuccess] = useState('');
   const [alertError, setAlertError] = useState('');
+  const [alertSuccess, setAlertSuccess] = useState('');
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const fetchStats = async () => {
     setStatsLoading(true);
@@ -120,20 +122,25 @@ export const AdminPage = () => {
     }
   };
 
-  const handleDeleteMeld = async (meldId, title) => {
-    if (!window.confirm(`Are you sure you want to permanently delete MELD "${title}"?`)) {
-      return;
-    }
-    try {
-      setAlertSuccess('');
-      setAlertError('');
-      await deleteAdminMeld(meldId);
-      setAlertSuccess(`MELD project "${title}" deleted.`);
-      fetchMelds();
-      fetchStats();
-    } catch (err) {
-      setAlertError(err.message || 'Failed to delete MELD.');
-    }
+  const handleDeleteMeld = (meldId, title) => {
+    setConfirmConfig({
+      title: 'Delete MELD Project',
+      message: `Are you sure you want to permanently delete MELD "${title}"? This action cannot be undone.`,
+      confirmText: 'Delete MELD',
+      isDangerous: true,
+      onConfirm: async () => {
+        try {
+          setAlertSuccess('');
+          setAlertError('');
+          await deleteAdminMeld(meldId);
+          setAlertSuccess(`MELD project "${title}" deleted.`);
+          fetchMelds();
+          fetchStats();
+        } catch (err) {
+          setAlertError(err.message || 'Failed to delete MELD.');
+        }
+      },
+    });
   };
 
   const handleToggleVerification = async (userId, currentStatus, userName) => {
@@ -150,36 +157,46 @@ export const AdminPage = () => {
     }
   };
 
-  const handleToggleRole = async (userId, currentRole, userName) => {
+  const handleToggleRole = (userId, currentRole, userName) => {
     const nextRole = currentRole === 'ADMIN' ? 'USER' : 'ADMIN';
-    if (!window.confirm(`Change role of user "${userName}" from ${currentRole} to ${nextRole}?`)) {
-      return;
-    }
-    try {
-      setAlertSuccess('');
-      setAlertError('');
-      await updateAdminUserRole(userId, nextRole);
-      setAlertSuccess(`User "${userName}" role updated to ${nextRole}.`);
-      fetchUsers();
-    } catch (err) {
-      setAlertError(err.message || 'Failed to update user role.');
-    }
+    setConfirmConfig({
+      title: 'Change User Role',
+      message: `Are you sure you want to change the role of "${userName}" from ${currentRole} to ${nextRole}?`,
+      confirmText: `Set to ${nextRole}`,
+      isDangerous: false,
+      onConfirm: async () => {
+        try {
+          setAlertSuccess('');
+          setAlertError('');
+          await updateAdminUserRole(userId, nextRole);
+          setAlertSuccess(`User "${userName}" role updated to ${nextRole}.`);
+          fetchUsers();
+        } catch (err) {
+          setAlertError(err.message || 'Failed to update user role.');
+        }
+      },
+    });
   };
 
-  const handleDeleteUser = async (userId, userName, userEmail) => {
-    if (!window.confirm(`Are you sure you want to permanently delete user "${userName}" (${userEmail})? This cannot be undone.`)) {
-      return;
-    }
-    try {
-      setAlertSuccess('');
-      setAlertError('');
-      await deleteAdminUser(userId);
-      setAlertSuccess(`User account for "${userName}" deleted.`);
-      fetchUsers();
-      fetchStats();
-    } catch (err) {
-      setAlertError(err.message || 'Failed to delete user account.');
-    }
+  const handleDeleteUser = (userId, userName, userEmail) => {
+    setConfirmConfig({
+      title: 'Delete User Account',
+      message: `Are you sure you want to permanently delete user "${userName}" (${userEmail})? All associated data will be removed.`,
+      confirmText: 'Delete User',
+      isDangerous: true,
+      onConfirm: async () => {
+        try {
+          setAlertSuccess('');
+          setAlertError('');
+          await deleteAdminUser(userId);
+          setAlertSuccess(`User account for "${userName}" deleted.`);
+          fetchUsers();
+          fetchStats();
+        } catch (err) {
+          setAlertError(err.message || 'Failed to delete user account.');
+        }
+      },
+    });
   };
 
   return (
@@ -615,6 +632,20 @@ export const AdminPage = () => {
           </div>
         )}
       </main>
+
+      <ConfirmModal
+        isOpen={!!confirmConfig}
+        title={confirmConfig?.title || 'Confirm Action'}
+        message={confirmConfig?.message || ''}
+        confirmText={confirmConfig?.confirmText || 'Confirm'}
+        isDangerous={confirmConfig?.isDangerous ?? true}
+        onConfirm={() => {
+          const fn = confirmConfig?.onConfirm;
+          setConfirmConfig(null);
+          if (fn) fn();
+        }}
+        onCancel={() => setConfirmConfig(null)}
+      />
     </div>
   );
 };

@@ -578,6 +578,23 @@
   border: 1px solid #bfdbfe !important;
 }
 
+[data-theme="light"] .member-card-actions {
+  border-top-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .member-avatar,
+[data-theme="light"] .member-avatar-lg,
+[data-theme="light"] .applicant-avatar {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+}
+
+[data-theme="light"] .project-box-preview {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  border-left-color: #3b82f6 !important;
+}
+
 [data-theme="light"] .creator-card-header .card-badge {
   background: #eff6ff !important;
   color: #1d4ed8 !important;
