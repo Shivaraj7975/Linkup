@@ -115,6 +115,7 @@
 [data-theme="light"] .member-name,
 [data-theme="light"] .creator-full-name,
 [data-theme="light"] .availability-status,
+[data-theme="light"] .availability-pill,
 [data-theme="light"] .section-title,
 [data-theme="light"] .admin-hero-title,
 [data-theme="light"] .empty-matches-container h3,
@@ -124,7 +125,16 @@
 [data-theme="light"] .workflow-card h3,
 [data-theme="light"] .notification-title,
 [data-theme="light"] .notification-item h4,
-[data-theme="light"] .candidate-info-stack .candidate-name {
+[data-theme="light"] .candidate-info-stack .candidate-name,
+[data-theme="light"] .profile-display-name,
+[data-theme="light"] .profile-section-header h2,
+[data-theme="light"] .profile-section-header h4,
+[data-theme="light"] .dash-card-header h2,
+[data-theme="light"] .dash-card-header h3,
+[data-theme="light"] .dash-card h3,
+[data-theme="light"] .dash-card h2,
+[data-theme="light"] .modal-header h2,
+[data-theme="light"] .match-flow-title {
   color: #0f172a !important;
 }
 
@@ -156,9 +166,32 @@
 [data-theme="light"] .form-help-text,
 [data-theme="light"] .field-hint,
 [data-theme="light"] .candidate-info-stack .candidate-subtitle,
+[data-theme="light"] .candidate-info-stack .candidate-detail-line,
+[data-theme="light"] .candidate-info-stack .candidate-degree-line,
 [data-theme="light"] .candidate-subtitle,
-[data-theme="light"] .match-flow-desc {
+[data-theme="light"] .match-flow-desc,
+[data-theme="light"] .bio-text,
+[data-theme="light"] .profile-meta-item,
+[data-theme="light"] .profile-email-tag,
+[data-theme="light"] .api-attribution,
+[data-theme="light"] .no-pills-text {
   color: #475569 !important;
+}
+
+[data-theme="light"] .candidate-info-stack .candidate-college-line,
+[data-theme="light"] .profile-meta-item.text-muted,
+[data-theme="light"] .text-muted {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .candidate-col-left .rank-badge {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .user-handle-pill {
+  color: #2563eb !important;
 }
 
 /* Badges & Tags */
@@ -526,6 +559,7 @@
 [data-theme="light"] .sent-invites-hero-card,
 [data-theme="light"] .member-card,
 [data-theme="light"] .member-manage-card,
+[data-theme="light"] .creator-card,
 [data-theme="light"] .faq-card,
 [data-theme="light"] .feature-card,
 [data-theme="light"] .workflow-card,
@@ -536,6 +570,26 @@
   background: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
   box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 4px 14px -2px rgba(15, 23, 42, 0.05) !important;
+}
+
+[data-theme="light"] .member-role-badge {
+  background: #eff6ff !important;
+  color: #2563eb !important;
+  border: 1px solid #bfdbfe !important;
+}
+
+[data-theme="light"] .creator-card-header .card-badge {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #bfdbfe !important;
+}
+
+[data-theme="light"] .creator-degree-text {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .sidebar-heading {
+  color: #0f172a !important;
 }
 
 [data-theme="light"] .linkup-card:hover,

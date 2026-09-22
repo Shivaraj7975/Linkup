@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Navbar } from '../components/Navbar';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
@@ -468,7 +469,7 @@ export const ProfilePage = () => {
       return;
     }
     if (!collegeSelectedFromApi || !form.college.trim()) {
-      setEditError('Please search and select your college or university from the verified registry dropdown.');
+      setEditError('Please search and select your college or university from the suggestions list.');
       return;
     }
     if (!form.degree.trim()) {
@@ -833,8 +834,8 @@ export const ProfilePage = () => {
       </main>
 
       {/* EDIT PROFILE MODAL */}
-      {isEditing && (
-        <div className="modal-overlay" onClick={() => setIsEditing(false)}>
+      {isEditing && createPortal(
+        <div className="modal-overlay" onClick={() => setIsEditing(false)} style={{ zIndex: 100000 }}>
           <div className="modal-card edit-profile-modal" onClick={(e) => e.stopPropagation()} tabIndex={-1}>
             <div className="modal-header">
               <div className="modal-title-group">
@@ -893,8 +894,8 @@ export const ProfilePage = () => {
                   {showUniDropdown && uniSuggestions.length > 0 && (
                     <div className="uni-dropdown">
                       <div className="uni-dropdown-header">
-                        <span>ROR Registry Matches ({uniSuggestions.length})</span>
-                        <span className="api-attribution">Click to select institution</span>
+                        <span>Suggested Institutions ({uniSuggestions.length})</span>
+                        <span className="api-attribution">Select your institution</span>
                       </div>
                       {uniSuggestions.map((uni) => (
                         <div
@@ -919,7 +920,7 @@ export const ProfilePage = () => {
                 {collegeSelectedFromApi ? (
                   <div style={{ color: 'var(--accent-teal, #10b981)', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
                     <CheckCircle2 size={14} />
-                    <span style={{ fontWeight: 500 }}>Verified from Institutional Registry</span>
+                    <span style={{ fontWeight: 500 }}>Verified Institution</span>
                   </div>
                 ) : form.college.trim().length >= 2 ? (
                   <div style={{ color: '#f59e0b', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
@@ -928,7 +929,7 @@ export const ProfilePage = () => {
                   </div>
                 ) : (
                   <span className="field-hint">
-                    Search research & academic organizations globally. You must click an option from the dropdown to select it.
+                    Search colleges & universities. Select an option from the suggestions to link your institution.
                   </span>
                 )}
               </div>
@@ -1095,7 +1096,7 @@ export const ProfilePage = () => {
                 <div className="pill-grid">
                   {searchResultsSkills.length === 0 ? (
                     <p className="no-pills-text">
-                      No matching skill found in database for "{skillSearch}". Click <strong style={{ color: 'var(--accent-primary, #3b82f6)' }}>Add</strong> above or press Enter to create it.
+                      No matching skill found for "{skillSearch}". Click <strong style={{ color: 'var(--accent-primary, #3b82f6)' }}>Add</strong> above or press Enter to create it.
                     </p>
                   ) : (
                     <>
@@ -1354,7 +1355,8 @@ export const ProfilePage = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <ConfirmModal

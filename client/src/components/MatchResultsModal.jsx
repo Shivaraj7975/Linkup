@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   getMatchFilterOptions,
   getEligibleCandidateCount,
@@ -280,9 +281,9 @@ export const MatchResultsModal = ({ linkup, meld, onClose }) => {
 
   const filterSummaryItems = getFilterSummaryItems(appliedFilters);
 
-  return (
+  return createPortal(
     <>
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay" onClick={onClose} style={{ zIndex: 100000 }}>
         <div
           className="modal-card edit-profile-modal match-modal-card"
           onClick={(e) => e.stopPropagation()}
@@ -295,8 +296,8 @@ export const MatchResultsModal = ({ linkup, meld, onClose }) => {
                 <h2 style={{ fontSize: '1.15rem', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   Find Your Team
                 </h2>
-                <span className="api-attribution" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  Matchmaking Engine for: <strong>{activeMeld?.title || 'MELD Project'}</strong>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  Team Recommendations for: <strong>{activeMeld?.title || 'MELD Project'}</strong>
                 </span>
               </div>
             </div>
@@ -802,19 +803,26 @@ export const MatchResultsModal = ({ linkup, meld, onClose }) => {
                             <h4 className="candidate-name" title={item.name}>
                               {item.name}
                             </h4>
-                            <p
-                              className="candidate-subtitle"
-                              title={[item.degree || 'Student', item.college, item.yearOfStudy]
-                                .filter(Boolean)
-                                .join(' • ')}
+
+                            <div
+                              className="candidate-detail-line candidate-degree-line"
+                              title={[item.degree || 'Student', item.yearOfStudy].filter(Boolean).join(' • ')}
                             >
                               <GraduationCap size={12} style={{ flexShrink: 0 }} />
                               <span>
-                                {[item.degree || 'Student', item.college, item.yearOfStudy]
-                                  .filter(Boolean)
-                                  .join(' • ')}
+                                {[item.degree || 'Student', item.yearOfStudy].filter(Boolean).join(' • ')}
                               </span>
-                            </p>
+                            </div>
+
+                            {item.college && (
+                              <div
+                                className="candidate-detail-line candidate-college-line"
+                                title={item.college}
+                              >
+                                <Building2 size={12} style={{ flexShrink: 0 }} />
+                                <span>{item.college}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -897,6 +905,7 @@ export const MatchResultsModal = ({ linkup, meld, onClose }) => {
           onClose={() => setSelectedUserId(null)}
         />
       )}
-    </>
+    </>,
+    document.body
   );
 };

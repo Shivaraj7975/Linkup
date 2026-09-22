@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   UserPlus,
   Search,
@@ -98,8 +99,8 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
   const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(`${shareText} ${meldUrl}`)}`;
   const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(meldUrl)}&text=${encodeURIComponent(shareText)}`;
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
+  return createPortal(
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 100000 }}>
       <div 
         className="modal-card edit-profile-modal" 
         onClick={(e) => e.stopPropagation()} 
@@ -393,6 +394,7 @@ export const InviteFriendsModal = ({ meld, onClose, onInvitationSent }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

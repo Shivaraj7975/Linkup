@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
 
 export const ConfirmModal = ({ 
@@ -13,8 +14,8 @@ export const ConfirmModal = ({
 }) => {
   if (!isOpen) return null;
 
-  return (
-    <div className="modal-overlay" onClick={onCancel} style={{ zIndex: 12000 }}>
+  return createPortal(
+    <div className="modal-overlay" onClick={onCancel} style={{ zIndex: 100020 }}>
       <div 
         className="modal-card edit-profile-modal" 
         onClick={(e) => e.stopPropagation()} 
@@ -29,7 +30,7 @@ export const ConfirmModal = ({
             )}
             <h2>{title}</h2>
           </div>
-          <button onClick={onCancel} className="modal-close-btn">
+          <button onClick={onCancel} className="modal-close-btn" type="button" aria-label="Close modal">
             <X size={20} />
           </button>
         </div>
@@ -63,6 +64,7 @@ export const ConfirmModal = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

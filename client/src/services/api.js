@@ -1,5 +1,5 @@
 /**
- * API Service for communicating with Linkup Express Backend
+ * API Service for communicating with MELD Platform Services
  */
 
 const getApiBaseUrl = () => {
@@ -41,26 +41,95 @@ const authHeaders = () => {
 };
 
 /**
- * Fetch backend health status GET /api/health
+ * Sanitize and encapsulate backend/network errors into friendly, human-centric messages.
+ * Never leaks raw network errors, 500 HTML traces, or database errors to the user.
+ */
+export const sanitizeErrorMessage = (error, defaultFallback = 'Unable to complete this request right now. Please try again.') => {
+  if (!error) return defaultFallback;
+  const rawMsg = typeof error === 'string' ? error : (error.message || '');
+  if (!rawMsg) return defaultFallback;
+
+  const lower = rawMsg.toLowerCase();
+
+  // Network / Connection errors
+  if (
+    lower.includes('failed to fetch') ||
+    lower.includes('networkerror') ||
+    lower.includes('network request failed') ||
+    lower.includes('econnrefused') ||
+    lower.includes('connection refused')
+  ) {
+    return 'Unable to connect right now. Please check your internet connection and try again.';
+  }
+
+  // Server 5xx errors or database errors
+  if (
+    lower.includes('500') ||
+    lower.includes('502') ||
+    lower.includes('503') ||
+    lower.includes('504') ||
+    lower.includes('internal server error') ||
+    lower.includes('mongoose') ||
+    lower.includes('mongo') ||
+    lower.includes('database') ||
+    lower.includes('sql') ||
+    lower.includes('econnreset')
+  ) {
+    return 'We are experiencing temporary difficulties. Please try again in a moment.';
+  }
+
+  // JSON / Syntax parsing errors
+  if (
+    lower.includes('json') ||
+    lower.includes('unexpected token') ||
+    lower.includes('syntaxerror')
+  ) {
+    return 'Something went wrong while processing your request. Please try again.';
+  }
+
+  // Clean technical prefixes
+  let cleanMsg = rawMsg.replace(/^(Error:\s*|HTTP Error:\s*\d+\s*|API Error:\s*)/i, '').trim();
+
+  return cleanMsg || defaultFallback;
+};
+
+/**
+ * Universal safe fetch wrapper that performs JSON parsing and error encapsulation
+ */
+const safeRequest = async (url, options = {}, defaultErrMsg = 'Request failed.') => {
+  try {
+    const response = await fetch(url, options);
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    if (!response.ok) {
+      const serverMsg = data && (data.message || data.error);
+      throw new Error(serverMsg || defaultErrMsg);
+    }
+    return data;
+  } catch (err) {
+    throw new Error(sanitizeErrorMessage(err, defaultErrMsg));
+  }
+};
+
+/**
+ * Fetch health status GET /api/health
  */
 export const getHealthStatus = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/health`, {
+    const data = await safeRequest(`${API_BASE_URL}/health`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP Error: ${response.status}`);
-    }
-
-    const data = await response.json();
+    }, 'Service is currently unavailable.');
     return { success: true, data };
   } catch (error) {
-    console.error('API Error fetching /api/health:', error);
     return {
       success: false,
-      error: error.message || 'Failed to connect to MELD backend API',
+      error: error.message || 'Service is currently unavailable.',
     };
   }
 };
@@ -69,154 +138,132 @@ export const getHealthStatus = async () => {
  * GET /api/auth/check-username
  */
 export const checkUsernameApi = async (username) => {
-  const response = await fetch(`${API_BASE_URL}/auth/check-username?username=${encodeURIComponent(username)}`, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to check username availability.');
-  }
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/auth/check-username?username=${encodeURIComponent(username)}`,
+    {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    },
+    'Unable to check username availability.'
+  );
 };
 
 /**
  * POST /api/auth/send-otp
  */
 export const sendOtpApi = async (identifier, type = 'PRIMARY') => {
-  const response = await fetch(`${API_BASE_URL}/auth/send-otp`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identifier, email: identifier, type }),
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to send OTP verification code.');
-  }
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/auth/send-otp`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, email: identifier, type }),
+    },
+    'Unable to send verification code. Please try again.'
+  );
 };
 
 /**
  * POST /api/auth/verify-otp
  */
 export const verifyOtpApi = async (email, otpCode, type = 'PRIMARY') => {
-  const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, otpCode, type }),
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || 'Invalid or expired OTP code.');
-  }
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/auth/verify-otp`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otpCode, type }),
+    },
+    'Invalid or expired verification code.'
+  );
 };
 
 /**
  * POST /api/auth/reset-password
  */
 export const resetPasswordApi = async (identifier, otpCode, newPassword) => {
-  const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identifier, email: identifier, otpCode, newPassword }),
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to reset password');
-  }
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/auth/reset-password`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, email: identifier, otpCode, newPassword }),
+    },
+    'Unable to reset password. Please try again.'
+  );
 };
 
 /**
  * POST /api/auth/register
  */
 export const registerUser = async ({ name, email, password, primaryOtp, collegeEmail, collegeOtp }) => {
-  const response = await fetch(`${API_BASE_URL}/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password, primaryOtp, collegeEmail, collegeOtp }),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || 'Registration failed.');
-  }
-
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/auth/register`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, primaryOtp, collegeEmail, collegeOtp }),
+    },
+    'Registration could not be completed. Please try again.'
+  );
 };
 
 /**
  * POST /api/auth/login
  */
 export const loginUser = async (identifier, password) => {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identifier, email: identifier, password }),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || 'Login failed.');
-  }
-
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/auth/login`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, email: identifier, password }),
+    },
+    'Invalid login credentials. Please check and try again.'
+  );
 };
 
 /**
  * POST /api/auth/login-otp
  */
 export const loginWithOtpApi = async (identifier, otpCode) => {
-  const response = await fetch(`${API_BASE_URL}/auth/login-otp`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identifier, email: identifier, otpCode }),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || 'OTP Login failed.');
-  }
-
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/auth/login-otp`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, email: identifier, otpCode }),
+    },
+    'Login verification code is invalid or expired.'
+  );
 };
 
 /**
  * GET /api/auth/me
  */
 export const getCurrentUser = async () => {
-  const response = await fetch(`${API_BASE_URL}/auth/me`, {
-    method: 'GET',
-    headers: authHeaders(),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to fetch user.');
-  }
-
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/auth/me`,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+    },
+    'Unable to load your account session.'
+  );
 };
 
 /**
  * GET /api/skills
  */
 export const getSkills = async () => {
-  const response = await fetch(`${API_BASE_URL}/skills`, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to load skills.');
+  const data = await safeRequest(
+    `${API_BASE_URL}/skills`,
+    {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    },
+    'Unable to load skills list.'
+  );
   return data.skills || [];
 };
 
@@ -224,12 +271,14 @@ export const getSkills = async () => {
  * GET /api/interests
  */
 export const getInterests = async () => {
-  const response = await fetch(`${API_BASE_URL}/interests`, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to load interests.');
+  const data = await safeRequest(
+    `${API_BASE_URL}/interests`,
+    {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    },
+    'Unable to load interests list.'
+  );
   return data.interests || [];
 };
 
@@ -237,59 +286,62 @@ export const getInterests = async () => {
  * GET /api/profile
  */
 export const getProfile = async () => {
-  const response = await fetch(`${API_BASE_URL}/profile`, {
-    method: 'GET',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to fetch profile.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/profile`,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+    },
+    'Unable to load your profile details.'
+  );
 };
 
 /**
  * PUT /api/profile
  */
 export const updateProfile = async (profileData) => {
-  const response = await fetch(`${API_BASE_URL}/profile`, {
-    method: 'PUT',
-    headers: authHeaders(),
-    body: JSON.stringify(profileData),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to save profile.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/profile`,
+    {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(profileData),
+    },
+    'Unable to save profile changes. Please try again.'
+  );
 };
 
 /**
  * POST /api/profile/link-college-email
  */
 export const linkCollegeEmailApi = async (collegeEmail, collegeOtp) => {
-  const response = await fetch(`${API_BASE_URL}/profile/link-college-email`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify({ collegeEmail, collegeOtp }),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to link college email.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/profile/link-college-email`,
+    {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ collegeEmail, collegeOtp }),
+    },
+    'Unable to verify college email address.'
+  );
 };
 
 /**
  * DELETE /api/profile/unlink-college-email
  */
 export const unlinkCollegeEmailApi = async () => {
-  const response = await fetch(`${API_BASE_URL}/profile/unlink-college-email`, {
-    method: 'DELETE',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to unlink college email.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/profile/unlink-college-email`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(),
+    },
+    'Unable to unlink college email address.'
+  );
 };
 
 /**
- * Search universities/colleges via ROR v2 Organizations API
- * GET https://api.ror.org/v2/organizations?query={name}
+ * Search universities/colleges
  */
 export const searchUniversities = async (queryStr) => {
   if (!queryStr || queryStr.trim().length < 2) return [];
@@ -324,32 +376,32 @@ export const searchUniversities = async (queryStr) => {
         locationStr: [city, state, country].filter(Boolean).join(', '),
       };
     });
-  } catch (error) {
-    console.error('ROR v2 Organizations API search error:', error);
+  } catch {
     return [];
   }
 };
 
 /* ==========================================================================
-   LINKUP MODULE API ENDPOINTS (PERSON 2)
+   MELD MODULE API ENDPOINTS
    ========================================================================== */
 
 /**
- * POST /api/linkups - Create a new Linkup project request
+ * POST /api/linkups - Create a new MELD project
  */
 export const createLinkup = async (linkupData) => {
-  const response = await fetch(`${API_BASE_URL}/linkups`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify(linkupData),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to create Linkup.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/linkups`,
+    {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(linkupData),
+    },
+    'Unable to create your MELD project.'
+  );
 };
 
 /**
- * GET /api/linkups - Discover / Filter Linkups
+ * GET /api/linkups - Discover / Filter Melds
  */
 export const getLinkups = async (params = {}) => {
   const queryParams = new URLSearchParams();
@@ -365,153 +417,168 @@ export const getLinkups = async (params = {}) => {
   const queryString = queryParams.toString();
   const url = `${API_BASE_URL}/linkups${queryString ? `?${queryString}` : ''}`;
 
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to fetch Linkups.');
-  return data;
+  return safeRequest(
+    url,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+    },
+    'Unable to load projects.'
+  );
 };
 
 /**
- * GET /api/linkups/:id - Get single Linkup details
+ * GET /api/linkups/:id - Get single Meld details
  */
 export const getLinkupById = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/linkups/${id}`, {
-    method: 'GET',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to fetch Meld details.');
+  const data = await safeRequest(
+    `${API_BASE_URL}/linkups/${id}`,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+    },
+    'Unable to load project details.'
+  );
   return data.meld || data.linkup;
 };
 
 /**
- * PUT /api/linkups/:id - Update Linkup (Creator ONLY)
+ * PUT /api/linkups/:id - Update Meld
  */
 export const updateLinkup = async (id, linkupData) => {
-  const response = await fetch(`${API_BASE_URL}/linkups/${id}`, {
-    method: 'PUT',
-    headers: authHeaders(),
-    body: JSON.stringify(linkupData),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to update Linkup.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/linkups/${id}`,
+    {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(linkupData),
+    },
+    'Unable to save project updates.'
+  );
 };
 
 /**
- * DELETE /api/linkups/:id - Delete Linkup (Creator ONLY)
+ * DELETE /api/linkups/:id - Delete Meld
  */
 export const deleteLinkup = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/linkups/${id}`, {
-    method: 'DELETE',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to delete Linkup.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/linkups/${id}`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(),
+    },
+    'Unable to delete project.'
+  );
 };
 
 /**
  * POST /api/linkups/:linkupId/join - Submit Join Request
  */
 export const sendJoinRequest = async (linkupId, message) => {
-  const response = await fetch(`${API_BASE_URL}/linkups/${linkupId}/join`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify({ message }),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to submit join request.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/linkups/${linkupId}/join`,
+    {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ message }),
+    },
+    'Unable to submit join request.'
+  );
 };
 
 /**
- * GET /api/linkups/:linkupId/requests - View Join Requests (Creator ONLY)
+ * GET /api/linkups/:linkupId/requests - View Join Requests
  */
 export const getLinkupRequests = async (linkupId) => {
-  const response = await fetch(`${API_BASE_URL}/linkups/${linkupId}/requests`, {
-    method: 'GET',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to fetch join requests.');
+  const data = await safeRequest(
+    `${API_BASE_URL}/linkups/${linkupId}/requests`,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+    },
+    'Unable to load join requests.'
+  );
   return data.requests || [];
 };
 
 /**
- * GET /api/linkups/:linkupId/requests - View Join Requests (Creator ONLY)
+ * GET /api/melds/:meldId/messages - View Chat History
  */
 export const getMeldChatHistory = async (meldId, beforeTimestamp = null) => {
   let url = `${API_BASE_URL}/melds/${meldId}/messages`;
   if (beforeTimestamp) {
     url += `?before=${encodeURIComponent(beforeTimestamp)}`;
   }
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to fetch chat history.');
+  const data = await safeRequest(
+    url,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+    },
+    'Unable to load chat messages.'
+  );
   return data.messages || [];
 };
 
 /**
- * POST /api/join-requests/:requestId/accept - Accept Join Request (Creator ONLY)
+ * POST /api/join-requests/:requestId/accept - Accept Join Request
  */
 export const acceptJoinRequest = async (requestId) => {
-  const response = await fetch(`${API_BASE_URL}/join-requests/${requestId}/accept`, {
-    method: 'POST',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to accept candidate.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/join-requests/${requestId}/accept`,
+    {
+      method: 'POST',
+      headers: authHeaders(),
+    },
+    'Unable to accept applicant.'
+  );
 };
 
 /**
- * POST /api/join-requests/:requestId/reject - Reject Join Request (Creator ONLY)
+ * POST /api/join-requests/:requestId/reject - Reject Join Request
  */
 export const rejectJoinRequest = async (requestId) => {
-  const response = await fetch(`${API_BASE_URL}/join-requests/${requestId}/reject`, {
-    method: 'POST',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to reject join request.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/join-requests/${requestId}/reject`,
+    {
+      method: 'POST',
+      headers: authHeaders(),
+    },
+    'Unable to decline join request.'
+  );
 };
 
 /**
- * DELETE /api/linkups/:linkupId/members/:userId - Remove Team Member (Creator ONLY)
+ * DELETE /api/linkups/:linkupId/members/:userId - Remove Team Member
  */
 export const removeTeamMember = async (linkupId, userId) => {
-  const response = await fetch(`${API_BASE_URL}/linkups/${linkupId}/members/${userId}`, {
-    method: 'DELETE',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to remove team member.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/linkups/${linkupId}/members/${userId}`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(),
+    },
+    'Unable to remove team member.'
+  );
 };
 
 /* ==========================================================================
-   AI MATCHING ENGINE API ENDPOINTS (PERSON 3)
+   AI MATCHING ENGINE API ENDPOINTS
    ========================================================================== */
 
 /**
- * GET /api/linkups/:linkupId/filter-options - Fetch Dynamic Candidate Filter Options
+ * GET /api/linkups/:linkupId/filter-options - Fetch Candidate Filter Options
  */
 export const getMatchFilterOptions = async (linkupId) => {
   const url = `${API_BASE_URL}/linkups/${linkupId}/filter-options`;
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to fetch candidate filter options.');
+  const data = await safeRequest(
+    url,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+    },
+    'Unable to load candidate filter options.'
+  );
   return data.options || { cities: [], colleges: [], branches: [], years: [], skills: [] };
 };
 
@@ -531,12 +598,14 @@ export const getEligibleCandidateCount = async (linkupId, filters = {}) => {
 
   const queryStr = params.toString();
   const url = `${API_BASE_URL}/linkups/${linkupId}/candidate-count${queryStr ? `?${queryStr}` : ''}`;
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to calculate candidate pool count.');
+  const data = await safeRequest(
+    url,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+    },
+    'Unable to calculate candidate pool size.'
+  );
   return data.count !== undefined ? data.count : 0;
 };
 
@@ -557,87 +626,93 @@ export const getLinkupMatches = async (linkupId, refresh = false, filters = {}) 
 
   const queryStr = params.toString();
   const url = `${API_BASE_URL}/linkups/${linkupId}/matches${queryStr ? `?${queryStr}` : ''}`;
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to fetch AI matches.');
-  return data;
+  return safeRequest(
+    url,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+    },
+    'Unable to find team recommendations right now.'
+  );
 };
 
 /**
  * GET /api/users/:userId - Fetch Public Student Profile
  */
 export const getPublicUserProfile = async (userId) => {
-  const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
-    method: 'GET',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to fetch student profile.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/users/${userId}`,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+    },
+    'Unable to load student profile.'
+  );
 };
 
 /* ==========================================================================
-   INVITATIONS & LEAVING API ENDPOINTS
+   INVITATIONS & MEMBERSHIP API ENDPOINTS
    ========================================================================== */
 
 /**
- * POST /api/linkups/:linkupId/invite - Invite a user to a Linkup
+ * POST /api/linkups/:linkupId/invite - Invite a user to a Meld
  */
 export const inviteToLinkup = async (linkupId, inviteeId) => {
-  const response = await fetch(`${API_BASE_URL}/linkups/${linkupId}/invite`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify({ inviteeId }),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to send invitation.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/linkups/${linkupId}/invite`,
+    {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ inviteeId }),
+    },
+    'Unable to send invitation.'
+  );
 };
 
 /**
- * POST /api/linkups/:linkupId/leave - Leave a Linkup
+ * POST /api/linkups/:linkupId/leave - Leave a Meld
  */
 export const leaveLinkup = async (linkupId) => {
-  const response = await fetch(`${API_BASE_URL}/linkups/${linkupId}/leave`, {
-    method: 'POST',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to leave Linkup.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/linkups/${linkupId}/leave`,
+    {
+      method: 'POST',
+      headers: authHeaders(),
+    },
+    'Unable to leave project.'
+  );
 };
 
 /**
  * GET /api/invitations - Get pending invitations
  */
 export const getUserInvitations = async () => {
-  const response = await fetch(`${API_BASE_URL}/invitations`, {
-    method: 'GET',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to fetch invitations.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/invitations`,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+    },
+    'Unable to load invitations.'
+  );
 };
 
 /**
  * POST /api/invitations/:id/respond - Accept or reject invitation
  */
 export const respondToInvitation = async (invitationId, action) => {
-  const response = await fetch(`${API_BASE_URL}/invitations/${invitationId}/respond`, {
-    method: 'POST',
-    headers: authHeaders(),
-    body: JSON.stringify({ action }), // 'ACCEPTED' or 'REJECTED'
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to respond to invitation.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/invitations/${invitationId}/respond`,
+    {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ action }), // 'ACCEPTED' or 'REJECTED'
+    },
+    'Unable to respond to invitation.'
+  );
 };
 
-// MELD Alias Exports for seamless backward/forward compatibility
+// MELD Alias Exports for backward/forward compatibility
 export const createMeld = createLinkup;
 export const getMelds = getLinkups;
 export const getMeldById = getLinkupById;
@@ -653,19 +728,21 @@ export const inviteToMeld = inviteToLinkup;
 export const leaveMeld = leaveLinkup;
 
 /**
- * GET /api/users/search?q=...&meldId=... - Search platform users/friends to invite
+ * GET /api/users/search?q=...&meldId=... - Search platform users to invite
  */
 export const searchUsersToInvite = async (query = '', meldId = null) => {
   let url = `${API_BASE_URL}/users/search?q=${encodeURIComponent(query)}`;
   if (meldId) {
     url += `&meldId=${encodeURIComponent(meldId)}`;
   }
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to search users.');
+  const data = await safeRequest(
+    url,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+    },
+    'Unable to search candidates.'
+  );
   return data.users || [];
 };
 
@@ -673,89 +750,97 @@ export const searchUsersToInvite = async (query = '', meldId = null) => {
  * GET /api/user/join-requests - Fetch join requests sent by current user
  */
 export const getMyJoinRequests = async () => {
-  const response = await fetch(`${API_BASE_URL}/user/join-requests`, {
-    method: 'GET',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to fetch your join requests.');
+  const data = await safeRequest(
+    `${API_BASE_URL}/user/join-requests`,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+    },
+    'Unable to load your join requests.'
+  );
   return data.requests || [];
 };
 
 /**
- * DELETE /api/join-requests/:requestId - Cancel a pending join request sent by user
+ * DELETE /api/join-requests/:requestId - Cancel a pending join request
  */
 export const cancelJoinRequest = async (requestId) => {
-  const response = await fetch(`${API_BASE_URL}/join-requests/${requestId}`, {
-    method: 'DELETE',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to cancel join request.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/join-requests/${requestId}`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(),
+    },
+    'Unable to cancel join request.'
+  );
 };
 
 /**
  * GET /api/notifications - Fetch user notifications and unread count
  */
 export const fetchNotificationsApi = async () => {
-  const response = await fetch(`${API_BASE_URL}/notifications`, {
-    method: 'GET',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to fetch notifications.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/notifications`,
+    {
+      method: 'GET',
+      headers: authHeaders(),
+    },
+    'Unable to load notifications.'
+  );
 };
 
 /**
  * PUT /api/notifications/:id/read - Mark notification as read
  */
 export const markNotificationReadApi = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/notifications/${id}/read`, {
-    method: 'PUT',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to mark notification as read.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/notifications/${id}/read`,
+    {
+      method: 'PUT',
+      headers: authHeaders(),
+    },
+    'Unable to update notification.'
+  );
 };
 
 /**
  * PUT /api/notifications/read-all - Mark all notifications as read
  */
 export const markAllNotificationsReadApi = async () => {
-  const response = await fetch(`${API_BASE_URL}/notifications/read-all`, {
-    method: 'PUT',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to mark all notifications as read.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/notifications/read-all`,
+    {
+      method: 'PUT',
+      headers: authHeaders(),
+    },
+    'Unable to mark all notifications as read.'
+  );
 };
 
 /**
  * DELETE /api/notifications/:id - Delete a notification
  */
 export const deleteNotificationApi = async (id) => {
-  const response = await fetch(`${API_BASE_URL}/notifications/${id}`, {
-    method: 'DELETE',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to delete notification.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/notifications/${id}`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(),
+    },
+    'Unable to delete notification.'
+  );
 };
 
 /**
  * DELETE /api/notifications/clear-all - Clear all notifications
  */
 export const clearAllNotificationsApi = async () => {
-  const response = await fetch(`${API_BASE_URL}/notifications/clear-all`, {
-    method: 'DELETE',
-    headers: authHeaders(),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to clear notifications.');
-  return data;
+  return safeRequest(
+    `${API_BASE_URL}/notifications/clear-all`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(),
+    },
+    'Unable to clear notifications.'
+  );
 };

@@ -132,7 +132,7 @@ export const RegisterPage = () => {
           : `Verification OTP code sent to ${form.email}.`
       );
     } catch (err) {
-      setApiError(err.message || 'Failed to send OTP codes via Resend email service.');
+      setApiError(err.message || 'Unable to send verification codes. Please try again.');
     } finally {
       setSendingOtp(false);
     }
@@ -211,7 +211,7 @@ export const RegisterPage = () => {
           <p className="auth-subtitle">
             {step === 1
               ? 'Join MELD to gather your crew and build amazing projects.'
-              : 'Enter the verification OTP code(s) sent via Resend API to your email.'}
+              : 'Enter the verification code(s) sent to your email.'}
           </p>
 
           {apiError && <div className="alert alert-error flex-center gap-xs"><AlertCircle size={16} /><span>{apiError}</span></div>}
