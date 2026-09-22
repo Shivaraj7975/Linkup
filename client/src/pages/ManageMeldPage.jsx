@@ -392,7 +392,7 @@ export const ManageMeldPage = () => {
                     {m.name ? m.name.charAt(0).toUpperCase() : 'M'}
                   </div>
                   <div className="member-manage-details" style={{ flex: 1, minWidth: 0 }}>
-                    <div className="member-name-row" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <div className="member-name-row" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
                       <h4
                         className="member-name"
                         style={{ cursor: 'pointer', margin: 0, fontSize: '1rem', fontWeight: 700 }}
@@ -405,7 +405,7 @@ export const ManageMeldPage = () => {
                       )}
                     </div>
                     {m.college && (
-                      <div className="member-college" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div className="member-college" style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '2px', wordBreak: 'break-word' }}>
                         {m.college}
                       </div>
                     )}
@@ -416,7 +416,7 @@ export const ManageMeldPage = () => {
                 </div>
 
                 {m.skills && m.skills.length > 0 && (
-                  <div className="pills-container" style={{ marginTop: '0.85rem', display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                  <div className="pills-container" style={{ marginTop: '0.75rem', display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                     {m.skills.slice(0, 4).map((sk) => (
                       <span key={sk} className="pill pill-xs">
                         {sk}
@@ -430,7 +430,7 @@ export const ManageMeldPage = () => {
                     type="button"
                     onClick={() => navigate(`/users/${m.userId || m.id}`)}
                     className="btn btn-ghost btn-sm"
-                    style={{ flex: 1, justifyContent: 'center', fontSize: '0.8rem', gap: '0.35rem' }}
+                    style={{ flex: 1, justifyContent: 'center', fontSize: '0.82rem', gap: '0.35rem', padding: '0.45rem 0.65rem' }}
                     title={`View ${m.name}'s full profile page`}
                   >
                     <User size={14} />
@@ -441,7 +441,7 @@ export const ManageMeldPage = () => {
                     <button
                       onClick={() => handleRemoveMember(m.userId, m.name)}
                       className="btn btn-danger btn-ghost btn-sm"
-                      style={{ flex: 1, justifyContent: 'center', fontSize: '0.8rem', gap: '0.35rem' }}
+                      style={{ flex: 1, justifyContent: 'center', fontSize: '0.82rem', gap: '0.35rem', padding: '0.45rem 0.65rem' }}
                       title={`Remove ${m.name} from team`}
                     >
                       <Trash2 size={14} />

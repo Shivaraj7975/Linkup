@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 export const InvitationsPage = () => {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ export const InvitationsPage = () => {
   const [actionError, setActionError] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
   const [actionLoading, setActionLoading] = useState(null);
+  const [withdrawTarget, setWithdrawTarget] = useState(null);
 
   useEffect(() => {
     fetchInvitations();
@@ -86,10 +88,14 @@ export const InvitationsPage = () => {
     }
   };
 
-  const handleWithdraw = async (item) => {
-    if (!window.confirm(`Are you sure you want to withdraw this request for "${item.title}"?`)) {
-      return;
-    }
+  const handleWithdraw = (item) => {
+    setWithdrawTarget(item);
+  };
+
+  const executeWithdraw = async () => {
+    if (!withdrawTarget) return;
+    const item = withdrawTarget;
+    setWithdrawTarget(null);
     try {
       setActionError('');
       setActionSuccess('');
@@ -408,44 +414,30 @@ export const InvitationsPage = () => {
                 </Link>
               </div>
             ) : (
-              <div className="members-manage-grid">
+              <div className="invitations-grid">
                 {sentInvitations.map((inv) => {
                   const isJoinRequest = inv.type === 'JOIN_REQUEST';
 
                   return (
                     <div
                       key={`${inv.type}-${inv.invitation_id}`}
-                      className="request-item-card sent-invite-card"
-                      style={{
-                        border: '1px solid var(--glass-border)',
-                        borderRadius: 'var(--radius-md)',
-                        padding: '1.25rem',
-                        background: 'var(--bg-card)',
-                      }}
+                      className="card glass-card sent-invite-card"
                     >
                       <div
                         className="card-top-row"
                         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <div
-                            className="applicant-avatar"
-                            style={{
-                              background: isJoinRequest ? 'linear-gradient(135deg, #0ea5e9, #3b82f6)' : 'var(--accent-primary)',
-                              width: '40px',
-                              height: '40px',
-                              fontSize: '0.95rem',
-                            }}
-                          >
+                          <div className="applicant-avatar">
                             {(inv.invitee_name || 'U').charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
                               <span className={`badge ${isJoinRequest ? 'badge-accent' : 'badge-primary'}`} style={{ fontSize: '0.68rem', padding: '0.1rem 0.45rem' }}>
                                 {isJoinRequest ? 'Join Request' : 'Invite'}
                               </span>
                             </div>
-                            <div style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.15rem' }}>
+                            <div style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                               {isJoinRequest ? `Sent to ${inv.invitee_name} (Creator)` : `Invited ${inv.invitee_name}`}
                             </div>
                             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
@@ -460,10 +452,7 @@ export const InvitationsPage = () => {
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '0.35rem',
-                            background: 'rgba(245, 158, 11, 0.15)',
-                            color: '#f59e0b',
-                            border: '1px solid rgba(245, 158, 11, 0.3)',
-                            padding: '0.3rem 0.65rem',
+                            padding: '0.25rem 0.6rem',
                             borderRadius: '999px',
                             fontSize: '0.75rem',
                             fontWeight: 600,
@@ -474,29 +463,11 @@ export const InvitationsPage = () => {
                         </span>
                       </div>
 
-                      <div
-                        style={{
-                          marginTop: '1rem',
-                          padding: '0.75rem',
-                          background: 'var(--bg-secondary)',
-                          border: '1px solid var(--glass-border)',
-                          borderRadius: 'var(--radius-sm)',
-                          borderLeft: '3px solid var(--accent-primary)',
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: '0.72rem',
-                            color: 'var(--text-muted)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            marginBottom: '0.2rem',
-                            fontWeight: 600,
-                          }}
-                        >
+                      <div className="project-box-preview">
+                        <div className="project-box-label">
                           MELD Project:
                         </div>
-                        <div style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        <div className="project-box-title">
                           {inv.title || 'MELD Project'}
                         </div>
                       </div>
@@ -512,7 +483,7 @@ export const InvitationsPage = () => {
                         </div>
                       )}
 
-                      <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ marginTop: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.75rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
                         {isJoinRequest ? (
                           <button
                             type="button"
@@ -543,6 +514,17 @@ export const InvitationsPage = () => {
           </div>
         )}
       </main>
+
+      <ConfirmModal
+        isOpen={!!withdrawTarget}
+        title="Withdraw Join Request"
+        message={`Are you sure you want to withdraw your join request for "${withdrawTarget?.title}"?`}
+        confirmText="Withdraw Request"
+        cancelText="Keep Request"
+        isDangerous={true}
+        onConfirm={executeWithdraw}
+        onCancel={() => setWithdrawTarget(null)}
+      />
     </div>
   );
 };

@@ -58,8 +58,9 @@ export const MeldDetailsPage = () => {
   const [joinSuccess, setJoinSuccess] = useState('');
   const [joinError, setJoinError] = useState('');
 
-  // Delete State
+  // Delete & Leave State
   const [deleting, setDeleting] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   useEffect(() => {
     fetchLinkupDetails();
@@ -126,8 +127,12 @@ export const MeldDetailsPage = () => {
     }
   };
 
-  const handleLeaveLinkup = async () => {
-    if (!window.confirm("Are you sure you want to leave this MELD?")) return;
+  const handleLeaveLinkup = () => {
+    setShowLeaveConfirm(true);
+  };
+
+  const executeLeaveLinkup = async () => {
+    setShowLeaveConfirm(false);
     try {
       setLeaving(true);
       setActionError('');
@@ -889,6 +894,17 @@ export const MeldDetailsPage = () => {
         confirmText="Delete Meld"
         onConfirm={executeDeleteLinkup}
         onCancel={() => setShowDeleteConfirm(false)}
+        isDangerous={true}
+      />
+
+      <ConfirmModal
+        isOpen={showLeaveConfirm}
+        title="Leave MELD Team"
+        message="Are you sure you want to leave this MELD? You will lose access to team chat and discussions."
+        confirmText="Leave Team"
+        cancelText="Stay on Team"
+        onConfirm={executeLeaveLinkup}
+        onCancel={() => setShowLeaveConfirm(false)}
         isDangerous={true}
       />
 

@@ -4,6 +4,7 @@ import { Navbar } from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { getLinkups, getMyJoinRequests, cancelJoinRequest } from '../services/api';
 import { MatchResultsModal } from '../components/MatchResultsModal';
+import { ConfirmModal } from '../components/ConfirmModal';
 import {
   Compass,
   Rocket,
@@ -40,6 +41,7 @@ export const DashboardPage = () => {
   const [actionSuccess, setActionSuccess] = useState('');
   const [actionError, setActionError] = useState('');
   const [cancellingRequestId, setCancellingRequestId] = useState(null);
+  const [withdrawTarget, setWithdrawTarget] = useState(null);
   const [matchingLinkup, setMatchingLinkup] = useState(null);
 
   useEffect(() => {
@@ -69,11 +71,15 @@ export const DashboardPage = () => {
     }
   };
 
-  const handleWithdrawRequest = async (e, requestId, meldTitle) => {
+  const handleWithdrawRequest = (e, requestId, meldTitle) => {
     e.stopPropagation();
-    if (!window.confirm(`Are you sure you want to withdraw your join request for "${meldTitle}"?`)) {
-      return;
-    }
+    setWithdrawTarget({ id: requestId, title: meldTitle });
+  };
+
+  const executeWithdrawRequest = async () => {
+    if (!withdrawTarget) return;
+    const { id: requestId, title: meldTitle } = withdrawTarget;
+    setWithdrawTarget(null);
     try {
       setCancellingRequestId(requestId);
       setActionError('');
@@ -545,6 +551,17 @@ export const DashboardPage = () => {
             onClose={() => setMatchingLinkup(null)}
           />
         )}
+
+        <ConfirmModal
+          isOpen={!!withdrawTarget}
+          title="Withdraw Join Request"
+          message={`Are you sure you want to withdraw your join request for "${withdrawTarget?.title}"?`}
+          confirmText="Withdraw Request"
+          cancelText="Keep Request"
+          isDangerous={true}
+          onConfirm={executeWithdrawRequest}
+          onCancel={() => setWithdrawTarget(null)}
+        />
       </main>
     </div>
   );
