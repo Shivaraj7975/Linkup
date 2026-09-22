@@ -115,7 +115,7 @@ export const MeldChat = ({ meldId, currentUser }) => {
         activeSocket.on('connect_error', (err) => {
           console.error('Socket connect error:', err);
           if (isMounted) {
-            setError('Failed to connect to chat server.');
+            setError('Unable to connect to team chat right now. Retrying...');
             setLoading(false);
           }
         });

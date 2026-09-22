@@ -514,7 +514,7 @@ export const OnboardingPage = () => {
     }
     if (step === 2) {
       if (!collegeSelectedFromApi || !form.college.trim()) {
-        return 'Please search and select your college or university from the verified registry dropdown.';
+        return 'Please search and select your college or university from the suggestions list.';
       }
       if (!form.degree.trim()) return 'Please enter your degree / major.';
       if (!form.year_of_study) return 'Please select your current year of study.';
@@ -731,16 +731,16 @@ export const OnboardingPage = () => {
               </div>
             )}
 
-            {/* STEP 2: ACADEMICS & ROR V2 SEARCH */}
+            {/* STEP 2: ACADEMICS & UNIVERSITY SEARCH */}
             {currentStep === 2 && (
               <div className="wizard-step">
                 <div className="wizard-step-header">
                   <h2>Step 2 — Academic Information</h2>
-                  <p>Search your university via Research Organization Registry (ROR). City, State, and Country will be auto-selected.</p>
+                  <p>Search and select your university. City, State, and Country will be auto-filled.</p>
                 </div>
 
                 <div className="auth-form">
-                  {/* College Search Autocomplete with ROR API */}
+                  {/* College Search Autocomplete */}
                   <div className="form-group">
                     <label htmlFor="college-input">College or University *</label>
                     <div className="input-wrapper icon-left" ref={dropdownRef}>
@@ -768,8 +768,8 @@ export const OnboardingPage = () => {
                       {showUniDropdown && uniSuggestions.length > 0 && (
                         <div className="uni-dropdown">
                           <div className="uni-dropdown-header">
-                            <span>ROR Registry Matches ({uniSuggestions.length})</span>
-                            <span className="api-attribution">Click to select institution</span>
+                            <span>Suggested Institutions ({uniSuggestions.length})</span>
+                            <span className="api-attribution">Select your institution</span>
                           </div>
                           {uniSuggestions.map((uni) => (
                             <div
@@ -796,7 +796,7 @@ export const OnboardingPage = () => {
                     {collegeSelectedFromApi ? (
                       <div style={{ color: 'var(--accent-teal, #10b981)', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
                         <CheckCircle2 size={14} />
-                        <span style={{ fontWeight: 500 }}>Verified from Institutional Registry</span>
+                        <span style={{ fontWeight: 500 }}>Verified Institution</span>
                       </div>
                     ) : form.college.trim().length >= 2 ? (
                       <div style={{ color: '#f59e0b', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
@@ -979,7 +979,7 @@ export const OnboardingPage = () => {
                   <div className="pill-grid">
                     {searchResultsSkills.length === 0 ? (
                       <p className="no-pills-text">
-                        No matching skill found in database for "{skillSearch}". Click <strong style={{ color: 'var(--accent-primary, #3b82f6)' }}>Add</strong> above or press Enter to create it.
+                        No matching skill found for "{skillSearch}". Click <strong style={{ color: 'var(--accent-primary, #3b82f6)' }}>Add</strong> above or press Enter to create it.
                       </p>
                     ) : (
                       <>

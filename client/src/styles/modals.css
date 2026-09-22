@@ -145,7 +145,7 @@
   font-size: 1.5rem;
   font-weight: 800;
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   line-height: 1.25;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -208,7 +208,7 @@
   align-items: center;
   gap: 0.75rem 1.5rem;
   padding: 1rem 1.25rem 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--glass-border);
 }
 
 .profile-meta-item {
@@ -249,20 +249,20 @@
 .profile-section-item:nth-child(1) {
   padding-right: 2.25rem;
   padding-bottom: 2rem;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .profile-section-item:nth-child(2) {
   padding-left: 2.25rem;
   padding-bottom: 2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .profile-section-item:nth-child(3) {
   padding-right: 2.25rem;
   padding-top: 2rem;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid var(--glass-border);
 }
 
 .profile-section-item:nth-child(4) {
@@ -276,11 +276,12 @@
   gap: 0.6rem;
 }
 
-.profile-section-header h2 {
+.profile-section-header h2,
+.profile-section-header h4 {
   font-size: 1.05rem;
   font-weight: 700;
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .bio-text {

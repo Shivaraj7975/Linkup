@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +30,7 @@ import {
   Pencil,
   Lock,
   Share2,
+  X,
 } from 'lucide-react';
 
 export const MeldDetailsPage = () => {
@@ -71,10 +73,10 @@ export const MeldDetailsPage = () => {
       if (data) {
         setLinkup(data);
       } else {
-        setError('Linkup project not found.');
+        setError('This MELD could not be found or may have been removed.');
       }
     } catch (err) {
-      setError(err.message || 'Failed to load Linkup details.');
+      setError(err.message || 'Unable to load MELD details.');
     } finally {
       setLoading(false);
     }
@@ -789,72 +791,88 @@ export const MeldDetailsPage = () => {
       </main>
 
       {/* JOIN REQUEST MODAL */}
-      {showJoinModal && (
-        <div className="modal-backdrop">
-          <div className="modal-content glass-card card">
+      {showJoinModal && createPortal(
+        <div className="modal-overlay" onClick={() => setShowJoinModal(false)} style={{ zIndex: 100000 }}>
+          <div
+            className="modal-card edit-profile-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '560px', width: '90%' }}
+          >
             <div className="modal-header">
-              <h2 className="modal-title">Request to Join Linkup</h2>
-              <button onClick={() => setShowJoinModal(false)} className="btn-close">
-                &times;
+              <div className="modal-title-group">
+                <UserPlus size={20} color="var(--accent-primary, #3b82f6)" />
+                <h2>Request to Join MELD</h2>
+              </div>
+              <button
+                onClick={() => setShowJoinModal(false)}
+                className="modal-close-btn"
+                type="button"
+                aria-label="Close modal"
+              >
+                <X size={20} />
               </button>
             </div>
 
-            {joinSuccess ? (
-              <div className="alert alert-success margin-y-md">
-                <CheckCircle2 size={20} />
-                <span>{joinSuccess}</span>
-              </div>
-            ) : (
-              <form onSubmit={handleJoinSubmit} className="form-stack margin-top-md">
-                {joinError && (
-                  <div className="alert alert-error">
-                    <AlertCircle size={18} />
-                    <span>{joinError}</span>
+            <div className="modal-body auth-form" style={{ padding: '1.5rem', gap: '1.25rem' }}>
+              {joinSuccess ? (
+                <div className="alert alert-success" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <CheckCircle2 size={20} />
+                  <span>{joinSuccess}</span>
+                </div>
+              ) : (
+                <form onSubmit={handleJoinSubmit} className="form-stack" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {joinError && (
+                    <div className="alert alert-error" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <AlertCircle size={18} />
+                      <span>{joinError}</span>
+                    </div>
+                  )}
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label htmlFor="joinMessage" className="form-label" style={{ fontWeight: 600, fontSize: '0.92rem', marginBottom: '0.25rem', display: 'block' }}>
+                      Introductory Message to Creator *
+                    </label>
+                    <p className="form-help-text" style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.65rem' }}>
+                      Tell the creator why you'd like to join, your background, and what skills you bring to this project.
+                    </p>
+                    <textarea
+                      id="joinMessage"
+                      className="input-field textarea"
+                      rows={4}
+                      style={{ width: '100%', padding: '0.75rem 1rem', fontSize: '0.92rem', lineHeight: 1.5, resize: 'vertical' }}
+                      placeholder="Introduce yourself and share how you'd like to contribute..."
+                      value={joinMessage}
+                      onChange={(e) => setJoinMessage(e.target.value)}
+                      required
+                    />
                   </div>
-                )}
 
-                <div className="form-group">
-                  <label htmlFor="joinMessage" className="form-label">
-                    Introductory Message to Creator
-                  </label>
-                  <p className="form-help-text">
-                    Tell the creator why you'd like to join, your background, and what skills you bring.
-                  </p>
-                  <textarea
-                    id="joinMessage"
-                    className="textarea"
-                    rows={4}
-                    placeholder="Introduce yourself and share how you'd like to contribute..."
-                    value={joinMessage}
-                    onChange={(e) => setJoinMessage(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="form-actions margin-top-md">
-                  <button
-                    type="button"
-                    onClick={() => setShowJoinModal(false)}
-                    className="btn btn-ghost"
-                    disabled={submittingJoin}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary" disabled={submittingJoin}>
-                    {submittingJoin ? (
-                      <span>Sending...</span>
-                    ) : (
-                      <>
-                        <Send size={16} />
-                        <span>Send Join Request</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            )}
+                  <div className="modal-footer-actions" style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', borderTop: 'none', padding: 0, background: 'transparent' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowJoinModal(false)}
+                      className="btn btn-ghost"
+                      disabled={submittingJoin}
+                    >
+                      Cancel
+                    </button>
+                    <button type="submit" className="btn btn-primary" disabled={submittingJoin} style={{ gap: '0.45rem' }}>
+                      {submittingJoin ? (
+                        <span>Sending...</span>
+                      ) : (
+                        <>
+                          <Send size={16} />
+                          <span>Send Join Request</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {showMatchModal && (

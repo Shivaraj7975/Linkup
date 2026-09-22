@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { getPublicUserProfile } from '../services/api';
 import {
   X,
@@ -45,8 +46,8 @@ export const PublicProfileModal = ({ userId, onClose }) => {
 
   if (!userId) return null;
 
-  return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 11000 }}>
+  return createPortal(
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 100010 }}>
       <div className="modal-card edit-profile-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '680px' }}>
         <div className="modal-header">
           <div className="modal-title-group">
@@ -219,6 +220,7 @@ export const PublicProfileModal = ({ userId, onClose }) => {
           ) : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

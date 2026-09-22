@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Share2,
   Copy,
@@ -65,8 +66,8 @@ export const ShareMeldModal = ({ meld, onClose }) => {
   const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
   const emailUrl = `mailto:?subject=${encodeURIComponent(`Invitation to collaborate on ${meld.title}`)}&body=${encodeURIComponent(`Hi,\n\nI'd like to invite you to check out "${meld.title}" on MELD.\n\nProject Link:\n${shareUrl}\n\nLet's build something awesome together!`)}`;
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
+  return createPortal(
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 100000 }}>
       <div 
         className="modal-card edit-profile-modal" 
         onClick={(e) => e.stopPropagation()} 
@@ -288,6 +289,7 @@ export const ShareMeldModal = ({ meld, onClose }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
