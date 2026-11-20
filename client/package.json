@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint src",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:unit": "node test/safeHref.test.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.378.0",
