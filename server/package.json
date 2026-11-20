@@ -8,7 +8,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "db:init": "node src/db/initDb.js",
-    "test": "node test/audit_integration_test.js && node test/security_hardening_test.js",
+    "db:migrate": "node src/db/migrate_master.js",
+    "test": "node test/schema_parity_test.js && node test/audit_integration_test.js && node test/security_hardening_test.js",
     "test:security": "node test/security_hardening_test.js"
   },
   "keywords": [

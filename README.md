@@ -49,8 +49,11 @@ cd server
 cp .env.example .env
 # Edit .env with your PostgreSQL and SMTP credentials
 
-# Initialize database schema and seed data
+# Initialize database schema and seed data (DESTRUCTIVE: drops and recreates all tables)
 npm run db:init
+
+# Upgrade an existing database in place without data loss
+npm run db:migrate
 ```
 
 ### 2. Run Backend Server

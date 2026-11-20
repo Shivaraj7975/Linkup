@@ -2,10 +2,12 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Drop existing tables if re-initializing (in reverse dependency order)
+DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS otp_verifications CASCADE;
 DROP TABLE IF EXISTS meld_invitations CASCADE;
 DROP TABLE IF EXISTS matches CASCADE;
 DROP TABLE IF EXISTS join_requests CASCADE;
+DROP TABLE IF EXISTS meld_messages CASCADE;
 DROP TABLE IF EXISTS meld_members CASCADE;
 DROP TABLE IF EXISTS meld_skills CASCADE;
 DROP TABLE IF EXISTS melds CASCADE;
@@ -39,6 +41,7 @@ CREATE TABLE users (
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'USER',
+    token_version INT NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -59,6 +62,9 @@ CREATE TABLE student_profiles (
     availability VARCHAR(100),
     github_url VARCHAR(255),
     linkedin_url VARCHAR(255),
+    instagram_url VARCHAR(255),
+    youtube_url VARCHAR(255),
+    website_url VARCHAR(255),
     is_completed BOOLEAN NOT NULL DEFAULT FALSE,
     onboarding_step INT NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -111,7 +117,7 @@ CREATE TABLE melds (
     category VARCHAR(100) NOT NULL,
     max_members INT NOT NULL DEFAULT 4 CHECK (max_members >= 2),
     current_status VARCHAR(20) NOT NULL DEFAULT 'OPEN' CHECK (current_status IN ('OPEN', 'FULL', 'CLOSED')),
-    project_duration VARCHAR(100) NOT NULL,
+    project_duration VARCHAR(100) NOT NULL DEFAULT '1-3 Months',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -191,8 +197,9 @@ CREATE TABLE meld_invitations (
 CREATE TABLE otp_verifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) NOT NULL,
-    otp_code VARCHAR(6) NOT NULL,
+    otp_code VARCHAR(255) NOT NULL, -- stores a 64-char HMAC-SHA256 hex digest, never the raw code
     purpose VARCHAR(50) NOT NULL, -- 'REGISTRATION' | 'COLLEGE_VERIFICATION'
+    attempts INT NOT NULL DEFAULT 0,
     expires_at TIMESTAMPTZ NOT NULL,
     is_verified BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
