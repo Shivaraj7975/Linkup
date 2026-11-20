@@ -157,7 +157,8 @@ app.use(['/api/auth/send-otp', '/auth/send-otp'], otpLimiter);
 app.use(['/api/auth/verify-otp', '/auth/verify-otp'], otpLimiter);
 app.use(['/api/auth/reset-password', '/auth/reset-password'], passwordResetLimiter);
 app.use(['/api/users/search', '/users/search'], searchLimiter);
-app.use(['/api/melds/:id/matches', '/melds/:id/matches', '/linkups/:id/matches'], aiMatchingLimiter);
+// Every alias of the AI matching route must share this limiter (the SPA calls /api/linkups/:id/matches)
+app.use(['/api/melds/:id/matches', '/melds/:id/matches', '/api/linkups/:id/matches', '/linkups/:id/matches'], aiMatchingLimiter);
 
 const chatRoutes = require('./routes/chatRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
