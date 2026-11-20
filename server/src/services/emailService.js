@@ -27,6 +27,15 @@ const normalizePurpose = (type) => {
 };
 
 /**
+ * True only for OTP types that map to a canonical purpose (unknown types used to be
+ * stored and emailed as-is, skipping every per-purpose check in send-otp).
+ */
+const isKnownPurpose = (type) => {
+  if (!type) return true; // defaults to REGISTRATION
+  return Object.prototype.hasOwnProperty.call(CANONICAL_PURPOSES, String(type).trim().toUpperCase());
+};
+
+/**
  * Mask email address for privacy in server logs (e.g. u***r@example.com)
  */
 const maskEmail = (email) => {
@@ -377,6 +386,7 @@ module.exports = {
   maskEmail,
   isCollegeEmail,
   isValidEmailAddress,
+  isKnownPurpose,
   generateOtpCode,
   hashOtp,
   saveOtpToDb,
