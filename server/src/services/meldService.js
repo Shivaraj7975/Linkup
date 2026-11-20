@@ -7,6 +7,15 @@ const crypto = require('crypto');
 
 const inFlightLocks = new Map();
 
+// Lazy-load socket helpers to prevent circular dependency (same pattern as notificationService)
+const evictUserFromMeldChat = (meldId, userId) => {
+  try {
+    require('../socket').removeUserFromMeldRoom(meldId, userId);
+  } catch (err) {
+    console.error('Failed to evict user from meld chat room:', err.message);
+  }
+};
+
 /**
  * Helper to fetch skills associated with a set of Linkup IDs
  */
@@ -811,6 +820,9 @@ const removeTeamMember = async (linkupId, memberUserId, creatorId) => {
     await query(`UPDATE melds SET current_status = 'OPEN' WHERE id = $1`, [linkupId]);
   }
 
+  // Revoke live chat access: removed member must stop receiving room broadcasts
+  evictUserFromMeldChat(linkupId, memberUserId);
+
   return { success: true, removedUserId: memberUserId };
 };
 
@@ -1187,6 +1199,9 @@ const leaveLinkup = async (linkupId, userId) => {
       [linkupId]
     );
   }
+
+  // Revoke live chat access for the departing member
+  evictUserFromMeldChat(linkupId, userId);
 
   return { success: true };
 };

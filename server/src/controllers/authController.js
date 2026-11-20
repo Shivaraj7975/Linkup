@@ -523,6 +523,13 @@ const resetPassword = async (req, res, next) => {
     // Update password
     await updateUserPassword(cleanEmail, passwordHash);
 
+    // Terminate live WebSocket sessions that were authenticated with the old credentials
+    try {
+      require('../socket').disconnectUserSockets(user.id);
+    } catch (socketErr) {
+      console.error('Failed to disconnect sockets after password reset:', socketErr.message);
+    }
+
     return res.status(200).json({
       success: true,
       message: 'Password has been reset successfully. You can now login.',
