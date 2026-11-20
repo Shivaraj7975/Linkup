@@ -243,6 +243,8 @@ const sendOtpEmail = async ({ toEmail, otpCode, type = 'REGISTRATION' }) => {
   const senderName = process.env.SENDER_NAME || 'MELD Platform';
 
   const cleanToEmail = toEmail.trim().toLowerCase();
+  // HTML-escaped copy for the email body (the address is user-supplied)
+  const htmlToEmail = cleanToEmail.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const canonicalPurpose = normalizePurpose(type);
   const isCollege = canonicalPurpose === 'COLLEGE_VERIFICATION';
   const isPasswordReset = canonicalPurpose === 'PASSWORD_RESET';
@@ -287,16 +289,16 @@ const sendOtpEmail = async ({ toEmail, otpCode, type = 'REGISTRATION' }) => {
           ${headingText}
         </h2>
         <div style="background: rgba(255, 255, 255, 0.05); padding: 8px 14px; border-radius: 6px; margin: 12px 0; font-size: 13px; color: #cbd5e1;">
-          Verification Target: <strong style="color: #60a5fa;">${cleanToEmail}</strong>
+          Verification Target: <strong style="color: #60a5fa;">${htmlToEmail}</strong>
         </div>
         <p style="color: #94a3b8; font-size: 14px; margin-top: 8px;">
-          Use the 6-digit verification code below for <strong style="color: #f1f5f9;">${cleanToEmail}</strong>:
+          Use the 6-digit verification code below for <strong style="color: #f1f5f9;">${htmlToEmail}</strong>:
         </p>
         <div style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #22d3ee; margin: 20px 0; background: rgba(34, 211, 238, 0.1); padding: 12px; border-radius: 6px;">
           ${otpCode}
         </div>
         <p style="color: #64748b; font-size: 12px; margin-bottom: 0;">
-          This code is valid for 10 minutes. If you did not request this OTP for ${cleanToEmail}, please ignore this email.
+          This code is valid for 10 minutes. If you did not request this OTP for ${htmlToEmail}, please ignore this email.
         </p>
       </div>
     </div>

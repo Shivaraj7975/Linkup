@@ -13,7 +13,7 @@ const normalizeAccount = (value) => (typeof value === 'string' ? value.trim().to
 
 const pickAccount = (body, fields) => {
   for (const field of fields) {
-    const value = normalizeAccount(body?.[field]);
+    const value = normalizeAccount(body?.[field]).replace(/^@+/, ''); // handlers strip a leading @ from usernames
     if (value) return value;
   }
   return '';
