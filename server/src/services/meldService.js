@@ -4,6 +4,7 @@ const { filterCandidateStudents, countEligibleCandidates, getFallbackDeterminist
 const { matchCandidates, buildCompactPayload, normalizeFilterState } = require('./ai/aiMatchingService');
 const notificationService = require('./notificationService');
 const crypto = require('crypto');
+const { httpError } = require('../utils/httpError');
 
 const inFlightLocks = new Map();
 
@@ -47,6 +48,30 @@ const getMemberCountsForLinkups = async (linkupIds) => {
   return countsMap;
 };
 
+// Must match the melds.current_status CHECK constraint in schema.sql / migrate_master.sql.
+const VALID_MELD_STATUSES = ['OPEN', 'FULL', 'CLOSED'];
+const MAX_MEMBERS_LIMIT = 50;
+
+const assertString = (value, field, min, max) => {
+  if (typeof value !== 'string' || value.trim().length < min || value.trim().length > max) {
+    throw httpError(400, `${field} must be between ${min} and ${max} characters.`);
+  }
+};
+
+/**
+ * Resolve a requiredSkills entry (string name or { id, name }) to its parts.
+ * Ignores null/non-object junk instead of crashing with a TypeError (500).
+ */
+const parseSkillItem = (item) => {
+  if (typeof item === 'string') return { skillId: null, skillName: item.trim() };
+  if (item && typeof item === 'object') {
+    const skillId = Number.isInteger(item.id) || /^\d+$/.test(String(item.id ?? '')) ? Number(item.id) : null;
+    const skillName = typeof item.name === 'string' ? item.name.trim() : null;
+    return { skillId, skillName };
+  }
+  return { skillId: null, skillName: null };
+};
+
 /**
  * Create a new Linkup (with required skills & creator as first member)
  */
@@ -60,9 +85,19 @@ const createLinkup = async (creatorId, data) => {
     projectDuration,
   } = data;
 
+  // Bounds follow the column sizes (and the client form), so invalid input is a
+  // 400 instead of a TypeError / "value too long" 500.
+  assertString(title, 'Title', 1, 255);
+  assertString(description, 'Description', 1, 10000);
+  assertString(category, 'Category', 1, 100);
+  assertString(projectDuration, 'Project duration', 1, 100);
+  if (requiredSkills !== undefined && requiredSkills !== null && !Array.isArray(requiredSkills)) {
+    throw httpError(400, 'requiredSkills must be an array.');
+  }
+
   const parsedMaxMembers = parseInt(maxMembers, 10);
-  if (isNaN(parsedMaxMembers) || parsedMaxMembers < 2) {
-    throw new Error('Maximum members must be a number greater than or equal to 2.');
+  if (isNaN(parsedMaxMembers) || parsedMaxMembers < 2 || parsedMaxMembers > MAX_MEMBERS_LIMIT) {
+    throw httpError(400, `Maximum members must be an integer between 2 and ${MAX_MEMBERS_LIMIT}.`);
   }
 
   let linkupId;
@@ -84,8 +119,7 @@ const createLinkup = async (creatorId, data) => {
     // 2. Process & Insert required skills
     if (Array.isArray(requiredSkills) && requiredSkills.length > 0) {
       for (const item of requiredSkills) {
-        let skillId = typeof item === 'object' && item.id ? item.id : null;
-        let skillName = typeof item === 'string' ? item.trim() : item.name?.trim();
+        let { skillId, skillName } = parseSkillItem(item);
 
         if (!skillId && skillName) {
           const insertSkill = await client.query(
@@ -346,37 +380,46 @@ const getLinkupById = async (id, currentUserId = null) => {
  */
 const updateLinkup = async (id, creatorId, data) => {
   const existing = await query('SELECT id, creator_id, max_members, current_status FROM melds WHERE id = $1', [id]);
-  if (existing.rows.length === 0) throw new Error('Linkup not found.');
-  if (existing.rows[0].creator_id !== creatorId) throw new Error('Unauthorized. Only creator can edit Linkup.');
+  if (existing.rows.length === 0) throw httpError(404, 'Linkup not found.');
+  if (existing.rows[0].creator_id !== creatorId) throw httpError(403, 'Unauthorized. Only creator can edit Linkup.');
 
   const {
     title,
     description,
     category,
-    requiredSkills = [],
+    // No default: a partial update that omits requiredSkills must keep the
+    // existing skills (previously defaulted to [] and wiped them).
+    requiredSkills,
     maxMembers,
     projectDuration,
     currentStatus,
   } = data;
 
+  if (requiredSkills !== undefined && requiredSkills !== null && !Array.isArray(requiredSkills)) {
+    throw httpError(400, 'requiredSkills must be an array.');
+  }
+  if (projectDuration !== undefined && projectDuration !== null) {
+    assertString(projectDuration, 'Project duration', 1, 100);
+  }
+
   // 1. Validate Title
   if (title !== undefined) {
     if (typeof title !== 'string' || title.trim().length < 3 || title.trim().length > 100) {
-      throw new Error('Title is required and must be between 3 and 100 characters.');
+      throw httpError(400, 'Title is required and must be between 3 and 100 characters.');
     }
   }
 
   // 2. Validate Description
   if (description !== undefined) {
     if (typeof description !== 'string' || description.trim().length < 10 || description.trim().length > 2000) {
-      throw new Error('Description is required and must be between 10 and 2000 characters.');
+      throw httpError(400, 'Description is required and must be between 10 and 2000 characters.');
     }
   }
 
   // 3. Validate Category
   if (category !== undefined) {
     if (typeof category !== 'string' || category.trim().length === 0 || category.trim().length > 50) {
-      throw new Error('Valid project category is required.');
+      throw httpError(400, 'Valid project category is required.');
     }
   }
 
@@ -391,22 +434,24 @@ const updateLinkup = async (id, creatorId, data) => {
   let validatedMaxMembers = existing.rows[0].max_members;
   if (maxMembers !== undefined && maxMembers !== null) {
     const parsedMax = parseInt(maxMembers, 10);
-    if (isNaN(parsedMax) || parsedMax < 2 || parsedMax > 50) {
-      throw new Error('Maximum members must be an integer between 2 and 50.');
+    if (isNaN(parsedMax) || parsedMax < 2 || parsedMax > MAX_MEMBERS_LIMIT) {
+      throw httpError(400, `Maximum members must be an integer between 2 and ${MAX_MEMBERS_LIMIT}.`);
     }
     if (parsedMax < currentActiveMembers) {
-      throw new Error(`Maximum members (${parsedMax}) cannot be lower than the current active member count (${currentActiveMembers}).`);
+      throw httpError(400, `Maximum members (${parsedMax}) cannot be lower than the current active member count (${currentActiveMembers}).`);
     }
     validatedMaxMembers = parsedMax;
   }
 
   // 6. Validate & Normalize currentStatus
-  const VALID_STATUSES = ['OPEN', 'FULL', 'IN_PROGRESS', 'COMPLETED', 'CLOSED'];
+  // IN_PROGRESS / COMPLETED used to be accepted here but violate the DB CHECK
+  // constraint, turning a valid-looking request into a 500.
+  const VALID_STATUSES = VALID_MELD_STATUSES;
   let validatedStatus = existing.rows[0].current_status;
   if (currentStatus !== undefined && currentStatus !== null) {
     const cleanStatus = String(currentStatus).trim().toUpperCase();
     if (!VALID_STATUSES.includes(cleanStatus)) {
-      throw new Error(`Invalid status: ${currentStatus}. Must be one of: ${VALID_STATUSES.join(', ')}`);
+      throw httpError(400, `Invalid status: ${currentStatus}. Must be one of: ${VALID_STATUSES.join(', ')}`);
     }
     // Business Rule: Do not allow OPEN when current members >= maxMembers
     if (cleanStatus === 'OPEN' && currentActiveMembers >= validatedMaxMembers) {
@@ -454,8 +499,7 @@ const updateLinkup = async (id, creatorId, data) => {
     if (Array.isArray(requiredSkills)) {
       await client.query('DELETE FROM meld_skills WHERE meld_id = $1', [id]);
       for (const item of requiredSkills) {
-        let skillId = typeof item === 'object' && item.id ? item.id : null;
-        let skillName = typeof item === 'string' ? item.trim() : item.name?.trim();
+        let { skillId, skillName } = parseSkillItem(item);
 
         if (!skillId && skillName) {
           const insertSkill = await client.query(

@@ -164,7 +164,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 
 // Register routes (supported with /api prefix and root aliases)
 app.use('/api', healthRoutes);
-app.use('/health', healthRoutes);
+app.use('/', healthRoutes); // exposes GET /health (mounting at '/health' only served /health/health)
 app.use('/api/auth', authRoutes);
 app.use('/auth', authRoutes);
 app.use('/api', profileRoutes);

@@ -1,4 +1,5 @@
 const { pool, query } = require('../config/db');
+const { httpError } = require('../utils/httpError');
 const { getLinkupById } = require('./meldService');
 const notificationService = require('./notificationService');
 
@@ -8,23 +9,23 @@ const notificationService = require('./notificationService');
 const inviteUserToLinkup = async (linkupId, inviterId, inviteeId) => {
   // Validate linkup
   const linkup = await getLinkupById(linkupId);
-  if (!linkup) throw new Error('Linkup not found.');
+  if (!linkup) throw httpError(404, 'Linkup not found.');
   
   if (linkup.creatorId !== inviterId) {
-    throw new Error('Only the creator of this MELD can invite members.');
+    throw httpError(403, 'Only the creator of this MELD can invite members.');
   }
 
   if (linkup.currentStatus === 'FULL' || linkup.currentStatus === 'CLOSED') {
-    throw new Error('Linkup is not open for new members.');
+    throw httpError(409, 'Linkup is not open for new members.');
   }
 
   // Validate invitee
   const invitee = await query(`SELECT id FROM users WHERE id = $1`, [inviteeId]);
-  if (invitee.rows.length === 0) throw new Error('Invitee not found.');
+  if (invitee.rows.length === 0) throw httpError(404, 'Invitee not found.');
 
   // Check if already an active member
   const memberCheck = await query(`SELECT id FROM meld_members WHERE meld_id = $1 AND user_id = $2 AND status = 'ACTIVE'`, [linkupId, inviteeId]);
-  if (memberCheck.rows.length > 0) throw new Error('User is already a member.');
+  if (memberCheck.rows.length > 0) throw httpError(409, 'User is already a member.');
 
   // Create or update invitation
   const res = await query(
@@ -137,7 +138,7 @@ const getUserInvitations = async (userId) => {
  */
 const respondToInvitation = async (invitationId, userId, action) => {
   if (!['ACCEPTED', 'REJECTED'].includes(action)) {
-    throw new Error('Invalid action.');
+    throw httpError(400, 'Invalid action. Must be ACCEPTED or REJECTED.');
   }
 
   const client = await pool.connect();
@@ -151,7 +152,7 @@ const respondToInvitation = async (invitationId, userId, action) => {
     );
 
     if (invRes.rows.length === 0) {
-      throw new Error('Invitation not found or already processed.');
+      throw httpError(404, 'Invitation not found or already processed.');
     }
 
     const invitation = invRes.rows[0];
@@ -171,7 +172,7 @@ const respondToInvitation = async (invitationId, userId, action) => {
       
       const linkup = lRes.rows[0];
       if (linkup.current_status !== 'OPEN') {
-        throw new Error('Linkup is no longer open.');
+        throw httpError(409, 'Linkup is no longer open.');
       }
 
       const mRes = await client.query(
@@ -181,7 +182,7 @@ const respondToInvitation = async (invitationId, userId, action) => {
       const currentCount = mRes.rows[0].count;
 
       if (currentCount >= linkup.max_members) {
-        throw new Error('Linkup has reached its maximum member capacity.');
+        throw httpError(409, 'Linkup has reached its maximum member capacity.');
       }
 
       // Add to members (or reactivate if existing record)
