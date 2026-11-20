@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { ipAccountKey } = require('./middleware/rateLimitKeys');
 const healthRoutes = require('./routes/healthRoutes');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
@@ -96,11 +97,7 @@ const generalLimiter = rateLimit({
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 15, // Limit each IP + Account to 15 authentication attempts per 15 mins
-  keyGenerator: (req) => {
-    const account = (req.body?.identifier || req.body?.email || req.body?.username || '').trim().toLowerCase();
-    return `${req.ip}_${account}`;
-  },
-  validate: { keyGeneratorIpFallback: false },
+  keyGenerator: ipAccountKey,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many authentication attempts, please try again after 15 minutes.' }
@@ -109,11 +106,7 @@ const authLimiter = rateLimit({
 const otpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // Max 10 OTP generation/verification requests per 15 mins
-  keyGenerator: (req) => {
-    const account = (req.body?.identifier || req.body?.email || '').trim().toLowerCase();
-    return `${req.ip}_${account}`;
-  },
-  validate: { keyGeneratorIpFallback: false },
+  keyGenerator: ipAccountKey,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many OTP requests for this account. Please wait 15 minutes.' }
@@ -122,11 +115,7 @@ const otpLimiter = rateLimit({
 const passwordResetLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // Max 5 reset attempts per 15 mins
-  keyGenerator: (req) => {
-    const account = (req.body?.identifier || req.body?.email || '').trim().toLowerCase();
-    return `${req.ip}_${account}`;
-  },
-  validate: { keyGeneratorIpFallback: false },
+  keyGenerator: ipAccountKey,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many password reset attempts. Please wait 15 minutes.' }
