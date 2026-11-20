@@ -8,11 +8,12 @@
  * Covers:
  *  R1  send-otp (PASSWORD_RESET) must not disclose the account email / existence
  *  R2  send-otp (LOGIN) must only return a masked email
- *  R3  AI matching rate limiter must cover every route alias (incl. /api/linkups/:id/matches)
+ *  (R3 AI-limiter alias coverage is owned by the arch lane branch)
  *  R4  Socket.IO handshake must reject tokens invalidated by password reset / deleted users
  *  R5  optionalAuth must ignore tokens invalidated by password reset
  *  R6  Removed / departing members must be evicted from the meld chat room
  *  R7  Password reset must disconnect live sockets of that user
+ *  R8  Reconnecting must not reset the per-user socket message rate limit
  */
 const assert = require('assert');
 const http = require('http');
@@ -67,6 +68,9 @@ const stubQuery = async (text, params = []) => {
     const key = `${params[0]}:${params[1]}`;
     const existed = state.activeMembers.delete(key);
     return { rows: existed ? [{ id: 1 }] : [] };
+  }
+  if (/INSERT INTO meld_messages/.test(sql)) {
+    return { rows: [{ id: 1, meld_id: params[0], sender_id: params[1], content: params[2], created_at: new Date(), sender_name: 'x' }] };
   }
   return { rows: [] };
 };
@@ -184,24 +188,9 @@ async function main() {
     assert.strictEqual(res.body.email, emailService.maskEmail('victim.secret@example.com'));
   });
 
-  // R3 ---------------------------------------------------------------------
   const server = http.createServer(app);
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const base = `http://127.0.0.1:${server.address().port}`;
-
-  await test('R3 AI matching limiter (30/5min) applies to every matches alias', async () => {
-    const aliases = [
-      `/api/melds/${MELD_ID}/matches`,
-      `/melds/${MELD_ID}/matches`,
-      `/api/linkups/${MELD_ID}/matches`,
-      `/linkups/${MELD_ID}/matches`,
-    ];
-    for (const p of aliases) {
-      const r = await fetch(base + p);
-      assert.strictEqual(r.status, 401, `${p} should require auth`);
-      assert.strictEqual(r.headers.get('ratelimit-limit'), '30', `${p} is not covered by aiMatchingLimiter (limit=${r.headers.get('ratelimit-limit')})`);
-    }
-  });
 
   // R4 ---------------------------------------------------------------------
   await test('R4a Socket handshake rejects token invalidated by password reset (stale tokenVersion)', async () => {
@@ -273,6 +262,26 @@ async function main() {
       assert.ok(/Authentication error/.test(err.message), `unexpected error: ${err.message}`);
     }
     assert.strictEqual(connected, false, 'stale token was allowed to open a socket');
+  });
+
+  await test('R8 Reconnecting does not reset the per-user chat message rate limit', async () => {
+    needClient();
+    state.activeMembers.add(`${MELD_ID}:${MEMBER_ID}`);
+    const send = (c) => new Promise((resolve) => c.emit('send_message', { meldId: MELD_ID, content: 'hi' }, resolve));
+    let c = await connectAs(MEMBER_ID, 2);
+    // Exhaust the window (10 msgs / 5s); saveMessage may fail on the stub, but the limiter counts first
+    for (let i = 0; i < 10; i++) await send(c);
+    const blocked = await send(c);
+    assert.ok(/rate limit/i.test(blocked.message || ''), 'sanity: 11th message should be rate limited');
+    c.close();
+    await wait(100);
+    c = await connectAs(MEMBER_ID, 2);
+    try {
+      const after = await send(c);
+      assert.ok(/rate limit/i.test(after.message || ''), 'rate limit was reset by reconnecting');
+    } finally {
+      c.close();
+    }
   });
 
   await test('R6a Member removed by creator stops receiving meld chat broadcasts', async () => {

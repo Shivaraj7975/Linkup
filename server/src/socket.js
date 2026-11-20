@@ -84,6 +84,22 @@ const authenticateSocket = async (socket, next) => {
   }
 };
 
+const pruneMessageRateEntry = (userId) => {
+  const now = Date.now();
+  const recent = (userMessageRateMap.get(userId) || []).filter((t) => now - t < WINDOW_MS);
+  if (recent.length === 0) {
+    userMessageRateMap.delete(userId);
+  } else {
+    userMessageRateMap.set(userId, recent);
+    // Clean up once the window has passed so the map does not grow unbounded
+    const timer = setTimeout(() => {
+      const left = (userMessageRateMap.get(userId) || []).filter((t) => Date.now() - t < WINDOW_MS);
+      if (left.length === 0) userMessageRateMap.delete(userId);
+    }, WINDOW_MS);
+    if (timer.unref) timer.unref();
+  }
+};
+
 const initSocket = (server) => {
   const rawOrigins = (process.env.CLIENT_ORIGIN || '')
     .split(',')
@@ -241,7 +257,9 @@ const initSocket = (server) => {
           activeMeldUsers.delete(meldId);
         }
       }
-      userMessageRateMap.delete(userId);
+      // Do NOT reset the sliding window on disconnect: reconnecting would otherwise
+      // bypass the per-user message rate limit. Only drop entries that have expired.
+      pruneMessageRateEntry(userId);
     });
   });
 };

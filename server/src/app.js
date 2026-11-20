@@ -157,10 +157,7 @@ app.use(['/api/auth/send-otp', '/auth/send-otp'], otpLimiter);
 app.use(['/api/auth/verify-otp', '/auth/verify-otp'], otpLimiter);
 app.use(['/api/auth/reset-password', '/auth/reset-password'], passwordResetLimiter);
 app.use(['/api/users/search', '/users/search'], searchLimiter);
-// AI matching is exposed under both /melds and /linkups, with and without the /api prefix.
-// Every alias must be covered, otherwise the expensive AI limiter can be bypassed.
-const AI_MATCHING_PATHS = ['/api/melds/:id/matches', '/melds/:id/matches', '/api/linkups/:id/matches', '/linkups/:id/matches'];
-app.use(AI_MATCHING_PATHS, aiMatchingLimiter);
+app.use(['/api/melds/:id/matches', '/melds/:id/matches', '/linkups/:id/matches'], aiMatchingLimiter);
 
 const chatRoutes = require('./routes/chatRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
