@@ -310,6 +310,8 @@ const sendOtpEmail = async ({ toEmail, otpCode, type = 'REGISTRATION' }) => {
         host: smtpHost,
         port: smtpPort,
         secure: false,
+        // Refuse to send credentials/OTPs if the server does not offer STARTTLS (prevents TLS stripping)
+        requireTLS: true,
         auth: {
           user: smtpLogin,
           pass: apiKey,
