@@ -5,7 +5,7 @@
  * Evaluates component scores (0-100) and role fit without calculating the final percentage.
  */
 
-const analyzeMatchesWithNvidia = async (compactPayload) => {
+const analyzeMatchesWithNvidia = async (compactPayload, { timeoutMs = 7000 } = {}) => {
   const apiKey = process.env.NVIDIA_API_KEY;
   const modelName = process.env.NEMOTRON_MODEL || 'nvidia/nemotron-3.5-lightning-30b-a3b';
 
@@ -76,18 +76,30 @@ Respond with JSON adhering to this exact schema:
     response_format: { type: 'json_object' },
   };
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(requestBody),
-  });
+  // Bound the request: without a timeout a stalled upstream hangs the whole matching waterfall.
+  let response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (error) {
+    if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+      throw new Error(`Timeout: NVIDIA_NEMOTRON request took longer than ${timeoutMs}ms.`);
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`NVIDIA API HTTP ${response.status}: ${errorText.slice(0, 150)}`);
+    const err = new Error(`NVIDIA API HTTP ${response.status}: ${errorText.slice(0, 150)}`);
+    err.isRateLimited = response.status === 429;
+    throw err;
   }
 
   const data = await response.json();

@@ -66,7 +66,7 @@ const matchCandidates = async (compactPayload, candidateIdsSet, candidateLookupM
     },
     nvidia_nemotron: {
       name: 'NVIDIA_NEMOTRON',
-      fn: () => analyzeMatchesWithNvidia(compactPayload)
+      fn: () => analyzeMatchesWithNvidia(compactPayload, { timeoutMs })
     },
     gemini: {
       name: 'GEMINI',
