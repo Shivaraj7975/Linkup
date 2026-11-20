@@ -120,11 +120,34 @@ const sendOtp = async (req, res, next) => {
       }
     }
 
+    const devOtp = process.env.NODE_ENV === 'development' ? otpCode : undefined;
+
+    // PASSWORD_RESET: identical response whether or not the account exists (no enumeration,
+    // and never reveal the email address resolved from a username).
+    if (purpose === 'PASSWORD_RESET') {
+      return res.json({
+        success: true,
+        message: 'If an account exists with this email or username, a verification code has been sent.',
+        devOtp,
+      });
+    }
+
+    // LOGIN: identifier may be a public username, so only ever disclose a masked address.
+    if (purpose === 'LOGIN') {
+      const masked = maskEmail(cleanEmail);
+      return res.json({
+        success: true,
+        email: masked,
+        message: `OTP verification code sent to ${masked}.`,
+        devOtp,
+      });
+    }
+
     return res.json({
       success: true,
       email: cleanEmail,
       message: `OTP verification code sent to ${cleanEmail}.`,
-      devOtp: process.env.NODE_ENV === 'development' ? otpCode : undefined,
+      devOtp,
     });
   } catch (error) {
     next(error);
