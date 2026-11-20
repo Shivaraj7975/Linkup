@@ -5,7 +5,10 @@
  * Evaluates component scores (0-100) and role fit without calculating the final percentage.
  */
 
-const analyzeMatchesWithNvidia = async (compactPayload) => {
+const analyzeMatchesWithNvidia = async (compactPayload, { timeoutMs } = {}) => {
+  // Previously had no timeout at all: a hung NVIDIA endpoint stalled the whole
+  // provider waterfall (and the user's match request) indefinitely.
+  const effectiveTimeoutMs = timeoutMs || parseInt(process.env.AI_PROVIDER_TIMEOUT_MS, 10) || 7000;
   const apiKey = process.env.NVIDIA_API_KEY;
   const modelName = process.env.NEMOTRON_MODEL || 'nvidia/nemotron-3.5-lightning-30b-a3b';
 
@@ -76,21 +79,34 @@ Respond with JSON adhering to this exact schema:
     response_format: { type: 'json_object' },
   };
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(requestBody),
-  });
+  // The signal covers both the request and reading the body.
+  const signal = AbortSignal.timeout(effectiveTimeoutMs);
+  let data;
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(requestBody),
+      signal,
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`NVIDIA API HTTP ${response.status}: ${errorText.slice(0, 150)}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      const err = new Error(`NVIDIA API HTTP ${response.status}: ${errorText.slice(0, 150)}`);
+      err.isRateLimited = response.status === 429;
+      throw err;
+    }
+
+    data = await response.json();
+  } catch (error) {
+    if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+      throw new Error(`Timeout: NVIDIA request took longer than ${effectiveTimeoutMs}ms.`);
+    }
+    throw error;
   }
-
-  const data = await response.json();
   const rawContent = data?.choices?.[0]?.message?.content;
   if (!rawContent) {
     throw new Error('Empty payload returned from NVIDIA API.');

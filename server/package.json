@@ -8,7 +8,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "db:init": "node src/db/initDb.js",
-    "test": "node test/audit_integration_test.js && node test/security_hardening_test.js && node test/backend_reliability_test.js && node test/server_lifecycle_test.js",
+    "test": "node test/audit_integration_test.js && node test/security_hardening_test.js && node test/backend_reliability_test.js && node test/server_lifecycle_test.js && node test/external_timeouts_test.js",
     "test:security": "node test/security_hardening_test.js"
   },
   "keywords": [
