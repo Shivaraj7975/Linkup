@@ -24,9 +24,11 @@ const resolveStatusAndMessage = (err) => {
     return PG_CLIENT_ERRORS[err.code];
   }
 
-  // pg-pool could not hand out a connection in time: the service is overloaded,
-  // not broken. 503 lets clients and load balancers retry.
-  if (err && typeof err.message === 'string' && err.message.includes('timeout exceeded when trying to connect')) {
+  // Database unreachable / pg-pool could not hand out a connection in time:
+  // a transient outage, not a client error. 503 lets clients and load balancers retry.
+  const DB_UNAVAILABLE_CODES = ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN', '57P01', '57P03', '53300'];
+  if (err && (DB_UNAVAILABLE_CODES.includes(err.code)
+    || (typeof err.message === 'string' && (err.message.includes('timeout exceeded when trying to connect') || err.message.includes('Connection terminated'))))) {
     return [503, 'Service temporarily unavailable. Please try again shortly.'];
   }
 

@@ -6,6 +6,8 @@
  *     with in-flight requests and pool connections dropped).
  *  2. GET /api/health returns 503 when the database is unreachable
  *     (previously 200 "running", so health probes never took it out of rotation).
+ *  3. A valid token gets 503 (not 401) when the DB is down: auth middleware
+ *     answered 401 on any error, so a DB blip logged every user out.
  *
  * Does not need a database: test 2 deliberately points at a closed port, and
  * test 1 only needs the process to start.
@@ -101,6 +103,15 @@ async function testHealthWhenDbDown() {
     const json = await res.json().catch(() => ({}));
     assert(res.status === 503, `GET /api/health -> 503 when DB is down (got ${res.status})`);
     assert(json.database === 'disconnected' && json.success === false, 'health body reports database: disconnected, success: false');
+
+    // A valid token must not be answered with 401 just because the DB is down
+    // (the client logs users out on 401).
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign({ id: '00000000-0000-0000-0000-000000000001', tokenVersion: 1 }, process.env.JWT_SECRET || 'localtestsecret', { expiresIn: '5m' });
+    const authed = await fetch(`http://127.0.0.1:${port}/api/profile`, { headers: { Authorization: `Bearer ${token}` } });
+    assert(authed.status === 503, `authenticated request with valid token while DB is down -> 503, not 401 (got ${authed.status})`);
+    const bad = await fetch(`http://127.0.0.1:${port}/api/profile`, { headers: { Authorization: 'Bearer not.a.jwt' } });
+    assert(bad.status === 401, `invalid token still -> 401 while DB is down (got ${bad.status})`);
   } finally {
     child.kill('SIGKILL');
     await withTimeout(exited, 3000);
