@@ -65,6 +65,7 @@ const createLinkup = async (creatorId, data) => {
     throw new Error('Maximum members must be a number greater than or equal to 2.');
   }
 
+  let linkupId;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -78,8 +79,7 @@ const createLinkup = async (creatorId, data) => {
       [creatorId, title.trim(), description.trim(), category.trim(), parsedMaxMembers, projectDuration.trim()]
     );
 
-    const linkup = linkupInsert.rows[0];
-    const linkupId = linkup.id;
+    linkupId = linkupInsert.rows[0].id;
 
     // 2. Process & Insert required skills
     if (Array.isArray(requiredSkills) && requiredSkills.length > 0) {
@@ -111,13 +111,17 @@ const createLinkup = async (creatorId, data) => {
     );
 
     await client.query('COMMIT');
-    return await getLinkupById(linkupId, creatorId);
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();
   }
+
+  // Read back via the pool only after the transaction client has been released.
+  // Fetching while still holding the client needs a second pool connection and
+  // deadlocks the pool under concurrent writes (all clients held, all waiting).
+  return getLinkupById(linkupId, creatorId);
 };
 
 /**
@@ -471,13 +475,15 @@ const updateLinkup = async (id, creatorId, data) => {
     }
 
     await client.query('COMMIT');
-    return await getLinkupById(id, creatorId);
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();
   }
+
+  // See createLinkup: never re-read through the pool while holding a transaction client.
+  return getLinkupById(id, creatorId);
 };
 
 /**
