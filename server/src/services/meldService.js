@@ -8,6 +8,15 @@ const { httpError } = require('../utils/httpError');
 
 const inFlightLocks = new Map();
 
+// Lazy-load socket helpers (socket.js -> services -> socket.js would be circular)
+const evictFromMeldChat = (meldId, userId) => {
+  try {
+    require('../socket').removeUserFromMeldRoom(meldId, userId);
+  } catch (err) {
+    console.error('Failed to evict user from meld chat room:', err.message);
+  }
+};
+
 /**
  * Helper to fetch skills associated with a set of Linkup IDs
  */
@@ -845,6 +854,7 @@ const removeTeamMember = async (linkupId, memberUserId, creatorId) => {
   if (delRes.rows.length === 0) {
     throw new Error('Team member not found.');
   }
+  evictFromMeldChat(linkupId, memberUserId);
 
   // Clean up join requests and invitations for the removed member
   await query(
@@ -1219,6 +1229,7 @@ const leaveLinkup = async (linkupId, userId) => {
     `DELETE FROM meld_members WHERE meld_id = $1 AND user_id = $2`,
     [linkupId, userId]
   );
+  evictFromMeldChat(linkupId, userId);
 
   // Clean up any existing join requests or invitations for this user & linkup
   await query(

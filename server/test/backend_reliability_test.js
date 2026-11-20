@@ -11,6 +11,9 @@
  *     non-string fields, duplicate join-request race (unique violation),
  *     invalid chat "before" cursor. Partial PUT wiped requiredSkills.
  *  3. GET /health alias only answered at /health/health.
+ *  4. Socket.IO: a member removed from (or leaving) a meld stayed in the chat
+ *     room and kept receiving new_message broadcasts; presence was per-user so
+ *     closing one of two tabs marked the user absent.
  *
  * Requires a reachable PostgreSQL database (see README / BRIEF). When the DB is
  * not reachable (CI without a database) the suite skips, like the other suites.
@@ -116,7 +119,9 @@ async function testProfilePoolDeadlock(creator) {
 
 async function startApp() {
   const app = require('../src/app');
+  const { initSocket } = require('../src/socket');
   const server = http.createServer(app);
+  initSocket(server);
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
   return { server, base };
@@ -212,6 +217,81 @@ async function testHttpErrorContracts(base, creator, member, outsider) {
   return meldId;
 }
 
+function loadSocketClient() {
+  // socket.io-client is a client dependency; resolve it from the server or the
+  // sibling client package. Skip (do not fail) when neither is installed.
+  for (const candidate of ['socket.io-client', require('path').join(__dirname, '../../client/node_modules/socket.io-client')]) {
+    try { return require(candidate).io; } catch {}
+  }
+  return null;
+}
+
+async function testSocketEviction(base, creator, member) {
+  console.log('\n🔌 [RELIABILITY 4] Removed/leaving members are evicted from the meld chat room...');
+  const ioClient = loadSocketClient();
+  if (!ioClient) {
+    console.warn('  ⚠️ socket.io-client not installed; skipping socket eviction test.');
+    return;
+  }
+  const meldService = require('../src/services/meldService');
+  const socketModule = require('../src/socket');
+  const { pool: p } = require('../src/config/db');
+
+  const meld = await meldService.createLinkup(creator.id, { ...meldBody('Socket meld'), maxMembers: 4 });
+  const addMember = () => p.query(
+    `INSERT INTO meld_members (meld_id, user_id, role, status) VALUES ($1, $2, 'Member', 'ACTIVE')
+     ON CONFLICT (meld_id, user_id) DO UPDATE SET status = 'ACTIVE'`, [meld.id, member.id]
+  );
+  await addMember();
+
+  const connect = (token) => new Promise((resolve, reject) => {
+    const s = ioClient(base, { auth: { token }, transports: ['websocket'], reconnection: false, forceNew: true });
+    s.on('connect', () => resolve(s));
+    s.on('connect_error', reject);
+  });
+  const emit = (s, ev, d) => new Promise((resolve) => s.emit(ev, d, resolve));
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  const creatorSock = await connect(creator.token);
+  const memberTab1 = await connect(member.token);
+  const memberTab2 = await connect(member.token);
+  try {
+    await emit(creatorSock, 'join_meld', meld.id);
+    await emit(memberTab1, 'join_meld', meld.id);
+    await emit(memberTab2, 'join_meld', meld.id);
+
+    // Presence with two tabs: closing one tab keeps the user active.
+    memberTab2.disconnect();
+    await sleep(200);
+    assert(socketModule.isUserActiveInMeldChat(meld.id, member.id), 'user with another open tab stays present after one tab disconnects');
+
+    const received = [];
+    memberTab1.on('new_message', (m) => received.push(m.content));
+    await emit(creatorSock, 'send_message', { meldId: meld.id, content: 'before removal' });
+    await sleep(200);
+    assert(received.includes('before removal'), 'member receives messages while in the team');
+
+    const r = await api(base, 'DELETE', `/api/melds/${meld.id}/members/${member.id}`, { token: creator.token });
+    assert(r.status === 200, `creator removes member (got ${r.status})`);
+    await emit(creatorSock, 'send_message', { meldId: meld.id, content: 'after removal' });
+    await sleep(300);
+    assert(!received.includes('after removal'), 'removed member no longer receives meld chat messages');
+    assert(!socketModule.isUserActiveInMeldChat(meld.id, member.id), 'removed member is no longer counted as present');
+
+    // Re-add, rejoin, then leave voluntarily.
+    await addMember();
+    await emit(memberTab1, 'join_meld', meld.id);
+    const lr = await api(base, 'POST', `/api/melds/${meld.id}/leave`, { token: member.token });
+    assert(lr.status === 200, `member leaves meld (got ${lr.status})`);
+    await emit(creatorSock, 'send_message', { meldId: meld.id, content: 'after leave' });
+    await sleep(300);
+    assert(!received.includes('after leave'), 'member who left no longer receives meld chat messages');
+  } finally {
+    creatorSock.disconnect();
+    memberTab1.disconnect();
+  }
+}
+
 async function run() {
   console.log('\n======================================================');
   console.log('🧪 RUNNING BACKEND RELIABILITY & DB INTEGRITY TESTS');
@@ -236,7 +316,9 @@ async function run() {
     const { server, base } = await startApp();
     try {
       await testHttpErrorContracts(base, creator, member, outsider);
+      await testSocketEviction(base, creator, member);
     } finally {
+      require('../src/socket').getIo()?.close();
       server.close();
     }
   } catch (err) {
