@@ -46,12 +46,25 @@ const maskEmail = (email) => {
  * Validate if an email address is a valid institutional college email.
  * Checks for suffixes like .edu, .edu.in, .ac.in, .ac.uk, .edu.au, .edu.sg, etc.
  */
+/**
+ * Strict single-address email check.
+ * The previous loose pattern accepted separators such as ',' and ';', so a value like
+ * "me@gmail.com,iit.ac.in" passed the college-domain check while the mailer delivered
+ * the OTP only to me@gmail.com (student-verification bypass).
+ */
+const STRICT_EMAIL_REGEX = /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/i;
+
+const isValidEmailAddress = (email) => {
+  if (!email || typeof email !== 'string') return false;
+  const clean = email.trim();
+  return clean.length <= 254 && STRICT_EMAIL_REGEX.test(clean);
+};
+
 const isCollegeEmail = (email) => {
   if (!email || typeof email !== 'string') return false;
   const clean = email.trim().toLowerCase();
 
-  const basicRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!basicRegex.test(clean)) return false;
+  if (!isValidEmailAddress(clean)) return false;
 
   const domain = clean.split('@')[1] || '';
 
@@ -361,6 +374,7 @@ module.exports = {
   normalizePurpose,
   maskEmail,
   isCollegeEmail,
+  isValidEmailAddress,
   generateOtpCode,
   hashOtp,
   saveOtpToDb,

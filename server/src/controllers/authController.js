@@ -11,6 +11,7 @@ const {
 } = require('../services/authService');
 const {
   isCollegeEmail,
+  isValidEmailAddress,
   generateOtpCode,
   saveOtpToDb,
   verifyOtpInDb,
@@ -19,7 +20,6 @@ const {
   maskEmail,
 } = require('../services/emailService');
 
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Generate JWT Token helper - fails loudly if JWT_SECRET is unset
@@ -75,7 +75,7 @@ const sendOtp = async (req, res, next) => {
       cleanEmail = user.email.toLowerCase();
     } else {
       // For registration or college verification, standard email regex is required
-      if (!emailRegex.test(cleanEmail)) {
+      if (!isValidEmailAddress(cleanEmail)) {
         return res.status(400).json({
           success: false,
           message: 'A valid email address is required.',
@@ -205,7 +205,7 @@ const register = async (req, res, next) => {
       });
     }
 
-    if (!email || !emailRegex.test(email)) {
+    if (!email || !isValidEmailAddress(email)) {
       return res.status(400).json({
         success: false,
         message: 'A valid personal email address is required.',
