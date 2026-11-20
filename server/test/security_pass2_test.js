@@ -156,7 +156,7 @@ async function unitTests() {
 async function httpTests() {
   const { testConnection, query, pool } = require('../src/config/db');
   const conn = await testConnection().catch(() => ({ success: false }));
-  if (!conn || conn.success === false) {
+  if (!conn || !conn.connected) {
     skip('H1-H4 HTTP sections', 'Live DB not connected');
     return;
   }
