@@ -2,6 +2,7 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const chatService = require('./services/chatService');
 const notificationService = require('./services/notificationService');
+const { query } = require('./config/db');
 
 let io;
 // In-memory single-instance presence tracking for active meld chat rooms
@@ -27,6 +28,76 @@ const checkMessageRateLimit = (userId) => {
   timestamps.push(now);
   userMessageRateMap.set(userId, timestamps);
   return true; // Allowed
+};
+
+/**
+ * Socket.IO handshake authentication.
+ * Mirrors the HTTP authenticateToken middleware: verifies the JWT (HS256 only),
+ * confirms the user still exists and rejects tokens whose tokenVersion was
+ * invalidated by a password reset.
+ */
+const authenticateSocket = async (socket, next) => {
+  try {
+    const token = socket.handshake && socket.handshake.auth && socket.handshake.auth.token;
+    if (!token || typeof token !== 'string') {
+      return next(new Error('Authentication error: Token missing'));
+    }
+
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('JWT_SECRET environment variable is required');
+    }
+
+    const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
+
+    let userResult;
+    try {
+      userResult = await query(
+        'SELECT id, COALESCE(token_version, 1) AS token_version FROM users WHERE id = $1',
+        [decoded.id]
+      );
+    } catch (dbErr) {
+      // Legacy schema without token_version column (same fallback as HTTP auth middleware)
+      if (dbErr.message && dbErr.message.includes('token_version')) {
+        userResult = await query('SELECT id FROM users WHERE id = $1', [decoded.id]);
+      } else {
+        throw dbErr;
+      }
+    }
+    if (userResult.rows.length === 0) {
+      return next(new Error('Authentication error: User no longer exists'));
+    }
+
+    const dbUser = userResult.rows[0];
+    if (
+      typeof decoded.tokenVersion === 'number' &&
+      typeof dbUser.token_version === 'number' &&
+      decoded.tokenVersion < dbUser.token_version
+    ) {
+      return next(new Error('Authentication error: Session invalidated'));
+    }
+
+    socket.user = { ...decoded, id: dbUser.id }; // attach user to socket
+    return next();
+  } catch (err) {
+    return next(new Error('Authentication error: Invalid or expired token'));
+  }
+};
+
+const pruneMessageRateEntry = (userId) => {
+  const now = Date.now();
+  const recent = (userMessageRateMap.get(userId) || []).filter((t) => now - t < WINDOW_MS);
+  if (recent.length === 0) {
+    userMessageRateMap.delete(userId);
+  } else {
+    userMessageRateMap.set(userId, recent);
+    // Clean up once the window has passed so the map does not grow unbounded
+    const timer = setTimeout(() => {
+      const left = (userMessageRateMap.get(userId) || []).filter((t) => Date.now() - t < WINDOW_MS);
+      if (left.length === 0) userMessageRateMap.delete(userId);
+    }, WINDOW_MS);
+    if (timer.unref) timer.unref();
+  }
 };
 
 const initSocket = (server) => {
@@ -69,25 +140,7 @@ const initSocket = (server) => {
   });
 
   // Authentication Middleware for Socket.IO
-  io.use((socket, next) => {
-    try {
-      const token = socket.handshake.auth.token;
-      if (!token) {
-        return next(new Error('Authentication error: Token missing'));
-      }
-
-      const secret = process.env.JWT_SECRET;
-      if (!secret) {
-        throw new Error('JWT_SECRET environment variable is required');
-      }
-
-      const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
-      socket.user = decoded; // attach user to socket
-      next();
-    } catch (err) {
-      next(new Error('Authentication error: Invalid or expired token'));
-    }
-  });
+  io.use(authenticateSocket);
 
   io.on('connection', (socket) => {
     const userId = socket.user.id;
@@ -204,7 +257,9 @@ const initSocket = (server) => {
           activeMeldUsers.delete(meldId);
         }
       }
-      userMessageRateMap.delete(userId);
+      // Do NOT reset the sliding window on disconnect: reconnecting would otherwise
+      // bypass the per-user message rate limit. Only drop entries that have expired.
+      pruneMessageRateEntry(userId);
     });
   });
 };
@@ -219,6 +274,32 @@ const emitNotificationToUser = (userId, notificationData) => {
   }
 };
 
+/**
+ * Force every socket of a user out of a meld chat room (after removal / leaving),
+ * so they stop receiving broadcasts for a meld they no longer belong to.
+ */
+const removeUserFromMeldRoom = (meldId, userId) => {
+  if (!meldId || !userId) return;
+  if (activeMeldUsers.has(meldId)) {
+    activeMeldUsers.get(meldId).delete(userId);
+    if (activeMeldUsers.get(meldId).size === 0) {
+      activeMeldUsers.delete(meldId);
+    }
+  }
+  if (io) {
+    io.in(`user:${userId}`).socketsLeave(`meld:${meldId}`);
+  }
+};
+
+/**
+ * Disconnect all live sockets for a user (after password reset or account deletion).
+ */
+const disconnectUserSockets = (userId) => {
+  if (io && userId) {
+    io.in(`user:${userId}`).disconnectSockets(true);
+  }
+};
+
 const isUserActiveInMeldChat = (meldId, userId) => {
   return activeMeldUsers.has(meldId) && activeMeldUsers.get(meldId).has(userId);
 };
@@ -229,4 +310,7 @@ module.exports = {
   emitNotificationToUser,
   isUserActiveInMeldChat,
   checkMessageRateLimit,
+  authenticateSocket,
+  removeUserFromMeldRoom,
+  disconnectUserSockets,
 };

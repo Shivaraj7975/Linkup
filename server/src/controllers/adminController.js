@@ -26,6 +26,11 @@ const deleteUser = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'You cannot delete your own admin account.' });
     }
     const deleted = await adminService.deleteUser(userId);
+    try {
+      require('../socket').disconnectUserSockets(deleted.id);
+    } catch (socketErr) {
+      console.error('Failed to disconnect sockets for deleted user:', socketErr.message);
+    }
     return res.json({ success: true, message: `User "${deleted.name}" (${deleted.email}) deleted successfully.` });
   } catch (error) {
     next(error);
