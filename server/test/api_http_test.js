@@ -88,7 +88,12 @@ async function runNoDbSection() {
   check(!root.headers.get('x-powered-by'), 'x-powered-by header is disabled');
 
   const health = await api('GET', '/api/health');
-  check(health.status === 200 && health.body?.success === true, 'GET /api/health returns 200');
+  // 200 when the DB is reachable; 503 is also correct when it is not (readiness semantics).
+  check(
+    (health.status === 200 && health.body?.success === true) || (health.status === 503 && health.body?.success === false),
+    'GET /api/health returns 200 (or 503 when the DB is unreachable)',
+    `status=${health.status}`
+  );
 
   const nf = await api('GET', '/api/definitely-not-a-route');
   check(nf.status === 404 && nf.body?.success === false, 'Unknown route returns JSON 404 via notFoundHandler', `status=${nf.status}`);
