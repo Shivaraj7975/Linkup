@@ -8,8 +8,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "db:init": "node src/db/initDb.js",
-    "test": "node test/audit_integration_test.js && node test/security_hardening_test.js && node test/security_regression_test.js",
-    "test:security": "node test/security_hardening_test.js"
+    "test": "node test/audit_integration_test.js && node test/security_hardening_test.js && node test/security_regression_test.js && node test/security_pass2_test.js",
+    "test:security": "node test/security_hardening_test.js && node test/security_pass2_test.js"
   },
   "keywords": [
     "meld",
