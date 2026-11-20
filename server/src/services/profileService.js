@@ -158,6 +158,13 @@ const updateStudentProfile = async (userId, data) => {
       );
     }
 
+    // Remember the college email the current verification was granted for
+    const prevProfileRes = await client.query(
+      'SELECT college_email FROM student_profiles WHERE user_id = $1',
+      [userId]
+    );
+    const prevCollegeEmail = (prevProfileRes.rows[0]?.college_email || '').trim().toLowerCase();
+
     // 1. Upsert student_profiles
     const profileUpsertText = `
       INSERT INTO student_profiles (
@@ -203,6 +210,18 @@ const updateStudentProfile = async (userId, data) => {
       is_completed === true,
       parseInt(onboarding_step, 10) || 1,
     ]);
+
+    // A college email changed through this endpoint has not been OTP-verified: drop any
+    // existing VERIFIED status instead of carrying it over to the new address.
+    // (Verification only ever happens through the link-college-email OTP flow.)
+    const nextCollegeEmail = typeof college_email === 'string' ? college_email.trim().toLowerCase() : '';
+    if (nextCollegeEmail && nextCollegeEmail !== prevCollegeEmail) {
+      await client.query(
+        `UPDATE student_verifications SET status = 'UNVERIFIED', method = NULL, verified_at = NULL
+         WHERE user_id = $1 AND status = 'VERIFIED'`,
+        [userId]
+      );
+    }
 
     // 2. Handle skills update
     if (Array.isArray(skills)) {
