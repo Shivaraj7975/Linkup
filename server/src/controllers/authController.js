@@ -11,15 +11,16 @@ const {
 } = require('../services/authService');
 const {
   isCollegeEmail,
+  isValidEmailAddress,
   generateOtpCode,
   saveOtpToDb,
   verifyOtpInDb,
   sendOtpEmail,
   normalizePurpose,
+  isKnownPurpose,
   maskEmail,
 } = require('../services/emailService');
 
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Generate JWT Token helper - fails loudly if JWT_SECRET is unset
@@ -54,6 +55,9 @@ const sendOtp = async (req, res, next) => {
       });
     }
 
+    if (!isKnownPurpose(type)) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP type.' });
+    }
     const purpose = normalizePurpose(type);
     let cleanEmail = target.toLowerCase();
 
@@ -75,7 +79,7 @@ const sendOtp = async (req, res, next) => {
       cleanEmail = user.email.toLowerCase();
     } else {
       // For registration or college verification, standard email regex is required
-      if (!emailRegex.test(cleanEmail)) {
+      if (!isValidEmailAddress(cleanEmail)) {
         return res.status(400).json({
           success: false,
           message: 'A valid email address is required.',
@@ -120,11 +124,34 @@ const sendOtp = async (req, res, next) => {
       }
     }
 
+    const devOtp = process.env.NODE_ENV === 'development' ? otpCode : undefined;
+
+    // PASSWORD_RESET: identical response whether or not the account exists (no enumeration,
+    // and never reveal the email address resolved from a username).
+    if (purpose === 'PASSWORD_RESET') {
+      return res.json({
+        success: true,
+        message: 'If an account exists with this email or username, a verification code has been sent.',
+        devOtp,
+      });
+    }
+
+    // LOGIN: identifier may be a public username, so only ever disclose a masked address.
+    if (purpose === 'LOGIN') {
+      const masked = maskEmail(cleanEmail);
+      return res.json({
+        success: true,
+        email: masked,
+        message: `OTP verification code sent to ${masked}.`,
+        devOtp,
+      });
+    }
+
     return res.json({
       success: true,
       email: cleanEmail,
       message: `OTP verification code sent to ${cleanEmail}.`,
-      devOtp: process.env.NODE_ENV === 'development' ? otpCode : undefined,
+      devOtp,
     });
   } catch (error) {
     next(error);
@@ -148,6 +175,11 @@ const verifyOtp = async (req, res, next) => {
     const cleanEmail = email.trim().toLowerCase();
     const cleanCode = String(otpCode).trim();
     const purpose = normalizePurpose(type);
+    // verify-otp is only for pre-registration checks; LOGIN / PASSWORD_RESET codes are
+    // consumed by their own endpoints and must not be burned (or probed) here.
+    if (!isKnownPurpose(type) || !['REGISTRATION', 'COLLEGE_VERIFICATION'].includes(purpose)) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP type.' });
+    }
 
     const isValid = await verifyOtpInDb(cleanEmail, cleanCode, purpose);
     if (!isValid) {
@@ -182,7 +214,7 @@ const register = async (req, res, next) => {
       });
     }
 
-    if (!email || !emailRegex.test(email)) {
+    if (!email || !isValidEmailAddress(email)) {
       return res.status(400).json({
         success: false,
         message: 'A valid personal email address is required.',
@@ -499,6 +531,13 @@ const resetPassword = async (req, res, next) => {
 
     // Update password
     await updateUserPassword(cleanEmail, passwordHash);
+
+    // Terminate live WebSocket sessions that were authenticated with the old credentials
+    try {
+      require('../socket').disconnectUserSockets(user.id);
+    } catch (socketErr) {
+      console.error('Failed to disconnect sockets after password reset:', socketErr.message);
+    }
 
     return res.status(200).json({
       success: true,

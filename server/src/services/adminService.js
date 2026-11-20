@@ -1,4 +1,5 @@
 const { query } = require('../config/db');
+const { httpError } = require('../utils/httpError');
 
 /**
  * Get aggregate statistics for Admin Dashboard
@@ -66,7 +67,7 @@ const getAllUsers = async (search = '') => {
 const deleteUser = async (userId) => {
   const res = await query('DELETE FROM users WHERE id = $1 RETURNING id, name, email', [userId]);
   if (res.rows.length === 0) {
-    throw new Error('User not found.');
+    throw httpError(404, 'User not found.');
   }
   return res.rows[0];
 };
@@ -76,14 +77,14 @@ const deleteUser = async (userId) => {
  */
 const updateUserRole = async (userId, newRole) => {
   if (!['USER', 'ADMIN'].includes(newRole)) {
-    throw new Error('Invalid role specified. Must be USER or ADMIN.');
+    throw httpError(400, 'Invalid role specified. Must be USER or ADMIN.');
   }
   const res = await query(
     'UPDATE users SET role = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, name, email, role',
     [newRole, userId]
   );
   if (res.rows.length === 0) {
-    throw new Error('User not found.');
+    throw httpError(404, 'User not found.');
   }
   return res.rows[0];
 };
@@ -164,7 +165,7 @@ const getAllMelds = async (search = '', status = '') => {
 const deleteMeld = async (meldId) => {
   const res = await query('DELETE FROM melds WHERE id = $1 RETURNING id, title', [meldId]);
   if (res.rows.length === 0) {
-    throw new Error('MELD project not found.');
+    throw httpError(404, 'MELD project not found.');
   }
   return res.rows[0];
 };
@@ -174,14 +175,14 @@ const deleteMeld = async (meldId) => {
  */
 const updateMeldStatus = async (meldId, newStatus) => {
   if (!['OPEN', 'FULL', 'CLOSED'].includes(newStatus)) {
-    throw new Error('Invalid MELD status.');
+    throw httpError(400, 'Invalid MELD status.');
   }
   const res = await query(
     'UPDATE melds SET current_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, title, current_status AS "currentStatus"',
     [newStatus, meldId]
   );
   if (res.rows.length === 0) {
-    throw new Error('MELD project not found.');
+    throw httpError(404, 'MELD project not found.');
   }
   return res.rows[0];
 };

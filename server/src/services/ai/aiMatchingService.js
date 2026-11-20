@@ -66,7 +66,7 @@ const matchCandidates = async (compactPayload, candidateIdsSet, candidateLookupM
     },
     nvidia_nemotron: {
       name: 'NVIDIA_NEMOTRON',
-      fn: () => analyzeMatchesWithNvidia(compactPayload)
+      fn: () => analyzeMatchesWithNvidia(compactPayload, { timeoutMs })
     },
     gemini: {
       name: 'GEMINI',
@@ -286,6 +286,9 @@ const buildCompactPayload = (linkup, candidateStudents, filters = {}) => {
     unmetNeeds: teamAnalysis.unmetNeeds,
   };
 
+  const MAX_AI_LIST_ITEMS = 50;
+  const clipAiText = (v) => (typeof v === 'string' ? v.slice(0, 100) : v);
+
   const candidateIdsSet = new Set();
   const candidateLookupMap = new Map();
 
@@ -299,8 +302,11 @@ const buildCompactPayload = (linkup, candidateStudents, filters = {}) => {
 
     const compactCand = {
       userId: userIdStr,
-      skills: normalizeSkillArray(p.skills || []),
-      interests: Array.isArray(p.interests) ? p.interests.map((i) => (typeof i === 'object' ? i.name : i)) : [],
+      // Bounded so one skill-stuffed profile cannot inflate the prompt (cost) for every match
+      skills: normalizeSkillArray(p.skills || []).slice(0, MAX_AI_LIST_ITEMS).map(clipAiText),
+      interests: Array.isArray(p.interests)
+        ? p.interests.map((i) => (typeof i === 'object' ? i.name : i)).slice(0, MAX_AI_LIST_ITEMS).map(clipAiText)
+        : [],
       availability: p.availability || 'Flexible',
       degree: p.degree || '',
       college: p.college || '',

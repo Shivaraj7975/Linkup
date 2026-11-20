@@ -156,6 +156,9 @@ async function seed100Candidates() {
   console.log('🌱 Starting 100 Sample Candidate Students Seeding Process...\n');
 
   try {
+    // Creates 100 accounts sharing one known password: local/dev databases only
+    require('./destructiveGuard').assertDestructiveRunAllowed('seed_100_candidates.js');
+
     const passwordHash = await bcrypt.hash('password123', 10);
 
     // 1. Fetch skill ID map from database

@@ -7,7 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint src",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e": "node e2e/smoke.cjs",
+    "test:unit": "node test/safeHref.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
     "lucide-react": "^0.378.0",

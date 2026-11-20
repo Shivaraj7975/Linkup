@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { Client, Pool } = require('pg');
+const { assertDestructiveRunAllowed } = require('./destructiveGuard');
 require('dotenv').config();
 
 const dbHost = process.env.DB_HOST || '127.0.0.1';
@@ -47,6 +48,9 @@ async function ensureDatabaseExists() {
  */
 async function initializeDatabase() {
   try {
+    // schema.sql drops every table: never run against production by accident
+    assertDestructiveRunAllowed('db:init (initDb.js)');
+
     // 1. Ensure target database exists
     await ensureDatabaseExists();
 

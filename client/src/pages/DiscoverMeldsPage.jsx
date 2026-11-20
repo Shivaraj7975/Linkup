@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { getLinkups, getSkills } from '../services/api';
@@ -43,6 +43,7 @@ export const DiscoverMeldsPage = () => {
   const [allSkills, setAllSkills] = useState([]);
 
   const [showFilters, setShowFilters] = useState(false);
+  const latestRequestRef = useRef(0);
 
   const hasActiveFilters = Boolean(
     skillFilter.trim() ||
@@ -70,6 +71,10 @@ export const DiscoverMeldsPage = () => {
   };
 
   const fetchLinkupProjects = async (searchOverride) => {
+    // Rapid filter changes fire overlapping requests; only the latest one may
+    // update state, otherwise a slow earlier response overwrites newer results.
+    const requestId = ++latestRequestRef.current;
+    const isStale = () => requestId !== latestRequestRef.current;
     setLoading(true);
     setError('');
 
@@ -85,15 +90,17 @@ export const DiscoverMeldsPage = () => {
       if (searchToUse.trim()) params.search = searchToUse.trim();
 
       const res = await getLinkups(params);
+      if (isStale()) return;
       if (res.success) {
         setLinkups(res.linkups || []);
       } else {
         setError(res.message || 'Failed to load projects.');
       }
     } catch (err) {
+      if (isStale()) return;
       setError(err.message || 'Failed to fetch Linkups.');
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   };
 

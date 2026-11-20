@@ -2,16 +2,32 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const chatService = require('./services/chatService');
 const notificationService = require('./services/notificationService');
+const { query } = require('./config/db');
 
 let io;
-// In-memory single-instance presence tracking for active meld chat rooms
-// meldId -> Set of userIds currently in the room
-const activeMeldUsers = new Map();
 
 // In-memory per-user sliding window message rate limiter (userId -> Array of timestamps)
 const userMessageRateMap = new Map();
 const MAX_MESSAGES_PER_WINDOW = 10;
 const WINDOW_MS = 5000; // 5 seconds
+
+/**
+ * User ids with at least one socket currently in the meld's chat room.
+ * Derived from Socket.IO's own room membership so it stays correct with several
+ * tabs per user (the old per-user Set dropped a user when any one tab left or
+ * disconnected). Single-instance only, like the previous implementation.
+ */
+const getActiveUserIdsInMeld = (meldId) => {
+  if (!io) return [];
+  const room = io.sockets.adapter.rooms.get(`meld:${meldId}`);
+  if (!room) return [];
+  const ids = new Set();
+  for (const socketId of room) {
+    const s = io.sockets.sockets.get(socketId);
+    if (s && s.user && s.user.id) ids.add(s.user.id);
+  }
+  return Array.from(ids);
+};
 
 const checkMessageRateLimit = (userId) => {
   const now = Date.now();
@@ -27,6 +43,76 @@ const checkMessageRateLimit = (userId) => {
   timestamps.push(now);
   userMessageRateMap.set(userId, timestamps);
   return true; // Allowed
+};
+
+/**
+ * Socket.IO handshake authentication.
+ * Mirrors the HTTP authenticateToken middleware: verifies the JWT (HS256 only),
+ * confirms the user still exists and rejects tokens whose tokenVersion was
+ * invalidated by a password reset.
+ */
+const authenticateSocket = async (socket, next) => {
+  try {
+    const token = socket.handshake && socket.handshake.auth && socket.handshake.auth.token;
+    if (!token || typeof token !== 'string') {
+      return next(new Error('Authentication error: Token missing'));
+    }
+
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('JWT_SECRET environment variable is required');
+    }
+
+    const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
+
+    let userResult;
+    try {
+      userResult = await query(
+        'SELECT id, COALESCE(token_version, 1) AS token_version FROM users WHERE id = $1',
+        [decoded.id]
+      );
+    } catch (dbErr) {
+      // Legacy schema without token_version column (same fallback as HTTP auth middleware)
+      if (dbErr.message && dbErr.message.includes('token_version')) {
+        userResult = await query('SELECT id FROM users WHERE id = $1', [decoded.id]);
+      } else {
+        throw dbErr;
+      }
+    }
+    if (userResult.rows.length === 0) {
+      return next(new Error('Authentication error: User no longer exists'));
+    }
+
+    const dbUser = userResult.rows[0];
+    if (
+      typeof decoded.tokenVersion === 'number' &&
+      typeof dbUser.token_version === 'number' &&
+      decoded.tokenVersion < dbUser.token_version
+    ) {
+      return next(new Error('Authentication error: Session invalidated'));
+    }
+
+    socket.user = { ...decoded, id: dbUser.id }; // attach user to socket
+    return next();
+  } catch (err) {
+    return next(new Error('Authentication error: Invalid or expired token'));
+  }
+};
+
+const pruneMessageRateEntry = (userId) => {
+  const now = Date.now();
+  const recent = (userMessageRateMap.get(userId) || []).filter((t) => now - t < WINDOW_MS);
+  if (recent.length === 0) {
+    userMessageRateMap.delete(userId);
+  } else {
+    userMessageRateMap.set(userId, recent);
+    // Clean up once the window has passed so the map does not grow unbounded
+    const timer = setTimeout(() => {
+      const left = (userMessageRateMap.get(userId) || []).filter((t) => Date.now() - t < WINDOW_MS);
+      if (left.length === 0) userMessageRateMap.delete(userId);
+    }, WINDOW_MS);
+    if (timer.unref) timer.unref();
+  }
 };
 
 const initSocket = (server) => {
@@ -69,25 +155,7 @@ const initSocket = (server) => {
   });
 
   // Authentication Middleware for Socket.IO
-  io.use((socket, next) => {
-    try {
-      const token = socket.handshake.auth.token;
-      if (!token) {
-        return next(new Error('Authentication error: Token missing'));
-      }
-
-      const secret = process.env.JWT_SECRET;
-      if (!secret) {
-        throw new Error('JWT_SECRET environment variable is required');
-      }
-
-      const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
-      socket.user = decoded; // attach user to socket
-      next();
-    } catch (err) {
-      next(new Error('Authentication error: Invalid or expired token'));
-    }
-  });
+  io.use(authenticateSocket);
 
   io.on('connection', (socket) => {
     const userId = socket.user.id;
@@ -109,15 +177,8 @@ const initSocket = (server) => {
           return;
         }
 
-        const roomName = `meld:${meldId}`;
-        socket.join(roomName);
+        socket.join(`meld:${meldId}`);
 
-        // Record user presence in this meld room
-        if (!activeMeldUsers.has(meldId)) {
-          activeMeldUsers.set(meldId, new Set());
-        }
-        activeMeldUsers.get(meldId).add(userId);
-        
         if (callback) callback({ success: true });
       } catch (error) {
         console.error('Error in join_meld event:', error);
@@ -128,14 +189,7 @@ const initSocket = (server) => {
     // Leave a Meld room
     socket.on('leave_meld', (meldId) => {
       if (!meldId || typeof meldId !== 'string') return;
-      const roomName = `meld:${meldId}`;
-      socket.leave(roomName);
-      if (activeMeldUsers.has(meldId)) {
-        activeMeldUsers.get(meldId).delete(userId);
-        if (activeMeldUsers.get(meldId).size === 0) {
-          activeMeldUsers.delete(meldId);
-        }
-      }
+      socket.leave(`meld:${meldId}`);
     });
 
     // Send a message to a Meld room
@@ -179,7 +233,7 @@ const initSocket = (server) => {
         io.to(`meld:${meldId}`).emit('new_message', savedMessage);
 
         // Get currently active user IDs in this chat room to avoid redundant notifications
-        const activeUsersInRoom = activeMeldUsers.has(meldId) ? Array.from(activeMeldUsers.get(meldId)) : [];
+        const activeUsersInRoom = getActiveUserIdsInMeld(meldId);
 
         // Create in-app notifications for team members (without showing chat content)
         notificationService.notifyNewChatMessage({
@@ -197,15 +251,12 @@ const initSocket = (server) => {
     });
 
     socket.on('disconnect', () => {
-      // Remove user from all active meld rooms
-      for (const [meldId, users] of activeMeldUsers.entries()) {
-        users.delete(userId);
-        if (users.size === 0) {
-          activeMeldUsers.delete(meldId);
-        }
-      }
-      userMessageRateMap.delete(userId);
+      // Presence needs no cleanup: Socket.IO removes the socket from its rooms.
+      // Do NOT reset the sliding window on disconnect: reconnecting would otherwise
+      // bypass the per-user message rate limit. Only drop entries that have expired.
+      pruneMessageRateEntry(userId);
     });
+
   });
 };
 
@@ -219,8 +270,28 @@ const emitNotificationToUser = (userId, notificationData) => {
   }
 };
 
+/**
+ * Disconnect all live sockets for a user (after password reset or account deletion).
+ */
+const disconnectUserSockets = (userId) => {
+  if (io && userId) {
+    io.in(`user:${userId}`).disconnectSockets(true);
+  }
+};
+
 const isUserActiveInMeldChat = (meldId, userId) => {
-  return activeMeldUsers.has(meldId) && activeMeldUsers.get(meldId).has(userId);
+  return getActiveUserIdsInMeld(meldId).includes(userId);
+};
+
+/**
+ * Evict all of a user's sockets from a meld chat room. Must be called whenever
+ * the user loses access (removed by creator, left the meld): room membership is
+ * only authorized on join, so without this a removed member kept receiving
+ * every new_message broadcast for that meld.
+ */
+const removeUserFromMeldRoom = (meldId, userId) => {
+  if (!io || !meldId || !userId) return;
+  io.in(`user:${userId}`).socketsLeave(`meld:${meldId}`);
 };
 
 module.exports = {
@@ -228,5 +299,9 @@ module.exports = {
   getIo,
   emitNotificationToUser,
   isUserActiveInMeldChat,
+  getActiveUserIdsInMeld,
+  removeUserFromMeldRoom,
   checkMessageRateLimit,
+  authenticateSocket,
+  disconnectUserSockets,
 };

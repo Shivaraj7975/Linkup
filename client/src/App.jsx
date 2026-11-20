@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -8,22 +8,31 @@ import { RequireCompletedProfile } from './components/RequireCompletedProfile';
 import { AdminRoute } from './components/AdminRoute';
 import { ScrollToTop } from './components/ScrollToTop';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { LandingPage } from './pages/LandingPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { LoginPage } from './pages/LoginPage';
-import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
-import { OnboardingPage } from './pages/OnboardingPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { DiscoverMeldsPage } from './pages/DiscoverMeldsPage';
-import { CreateMeldPage } from './pages/CreateMeldPage';
-import { MeldDetailsPage } from './pages/MeldDetailsPage';
-import { ManageMeldPage } from './pages/ManageMeldPage';
-import { EditMeldPage } from './pages/EditMeldPage';
-import { UserProfilePage } from './pages/UserProfilePage';
-import { InvitationsPage } from './pages/InvitationsPage';
-import NotificationsPage from './pages/NotificationsPage';
-import { AdminPage } from './pages/AdminPage';
+const LandingPage = lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
+const RegisterPage = lazy(() => import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
+const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })));
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage').then((m) => ({ default: m.OnboardingPage })));
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
+const DiscoverMeldsPage = lazy(() => import('./pages/DiscoverMeldsPage').then((m) => ({ default: m.DiscoverMeldsPage })));
+const CreateMeldPage = lazy(() => import('./pages/CreateMeldPage').then((m) => ({ default: m.CreateMeldPage })));
+const MeldDetailsPage = lazy(() => import('./pages/MeldDetailsPage').then((m) => ({ default: m.MeldDetailsPage })));
+const ManageMeldPage = lazy(() => import('./pages/ManageMeldPage').then((m) => ({ default: m.ManageMeldPage })));
+const EditMeldPage = lazy(() => import('./pages/EditMeldPage').then((m) => ({ default: m.EditMeldPage })));
+const UserProfilePage = lazy(() => import('./pages/UserProfilePage').then((m) => ({ default: m.UserProfilePage })));
+const InvitationsPage = lazy(() => import('./pages/InvitationsPage').then((m) => ({ default: m.InvitationsPage })));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
+
+// Route-level code splitting: each page is loaded on demand so the initial
+// bundle only contains the shell (router, auth, theme) plus the visited page.
+const PageFallback = () => (
+  <div className="page-loader" role="status" aria-live="polite">
+    <div className="loader-spinner" />
+    <p>Loading...</p>
+  </div>
+);
 
 function App() {
   return (
@@ -32,6 +41,7 @@ function App() {
       <ThemeProvider>
         <ErrorBoundary>
           <AuthProvider>
+            <Suspense fallback={<PageFallback />}>
             <Routes>
             <Route path="/" element={<PublicOnlyRoute><LandingPage /></PublicOnlyRoute>} />
             <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
@@ -146,6 +156,7 @@ function App() {
             />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+            </Suspense>
           </AuthProvider>
         </ErrorBoundary>
       </ThemeProvider>

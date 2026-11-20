@@ -19,14 +19,23 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Node.js version
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '22.x'
+          cache: npm
+          cache-dependency-path: client/package-lock.json
 
-      - name: npm install, build, and test
+      - name: npm ci, lint, build, and test
         working-directory: client
+        env:
+          # Vite inlines this at build time. Set it as a repository variable
+          # (Settings > Secrets and variables > Actions > Variables) to the API
+          # origin, e.g. https://<api-host>/api. When unset the client falls
+          # back to the relative path /api, exactly as before.
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
         run: |
-          npm install
+          npm ci
+          npm run lint
           npm run build --if-present
           npm run test --if-present
 

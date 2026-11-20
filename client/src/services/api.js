@@ -96,6 +96,20 @@ export const sanitizeErrorMessage = (error, defaultFallback = 'Unable to complet
 /**
  * Universal safe fetch wrapper that performs JSON parsing and error encapsulation
  */
+export const SESSION_EXPIRED_EVENT = 'meld:session-expired';
+
+/**
+ * Notify the app that an authenticated request was rejected with 401
+ * (expired / invalidated token) so AuthContext can clear the session.
+ */
+export const notifySessionExpired = (options = {}) => {
+  const headers = options.headers || {};
+  const sentAuth = headers.Authorization || headers.authorization;
+  if (sentAuth && typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+  }
+};
+
 const safeRequest = async (url, options = {}, defaultErrMsg = 'Request failed.') => {
   try {
     const response = await fetch(url, options);
@@ -107,12 +121,19 @@ const safeRequest = async (url, options = {}, defaultErrMsg = 'Request failed.')
     }
 
     if (!response.ok) {
+      if (response.status === 401) notifySessionExpired(options);
       const serverMsg = data && (data.message || data.error);
-      throw new Error(serverMsg || defaultErrMsg);
+      const httpErr = new Error(serverMsg || defaultErrMsg);
+      httpErr.status = response.status;
+      throw httpErr;
     }
     return data;
   } catch (err) {
-    throw new Error(sanitizeErrorMessage(err, defaultErrMsg));
+    const wrapped = new Error(sanitizeErrorMessage(err, defaultErrMsg));
+    // Preserve HTTP status (undefined for network failures) so callers can
+    // tell "token rejected" apart from "server unreachable".
+    if (err && err.status) wrapped.status = err.status;
+    throw wrapped;
   }
 };
 

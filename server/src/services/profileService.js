@@ -143,13 +143,18 @@ const updateStudentProfile = async (userId, data) => {
 
     // Optional: Update username if provided
     if (username && typeof username === 'string') {
-      const { validateUsername, isUsernameAvailable } = require('./authService');
+      const { validateUsername } = require('./authService');
       const val = validateUsername(username);
       if (!val.valid) {
         throw new Error(val.message);
       }
-      const isAvail = await isUsernameAvailable(val.cleanUsername, userId);
-      if (!isAvail) {
+      // Check on the transaction client: a pool query here would need a second
+      // connection while this one is held (pool self-deadlock under load).
+      const takenRes = await client.query(
+        'SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND id != $2',
+        [val.cleanUsername, userId]
+      );
+      if (takenRes.rows.length > 0) {
         throw new Error('Username is already taken by another user.');
       }
       await client.query(
@@ -157,6 +162,13 @@ const updateStudentProfile = async (userId, data) => {
         [val.cleanUsername, userId]
       );
     }
+
+    // Remember the college email the current verification was granted for
+    const prevProfileRes = await client.query(
+      'SELECT college_email FROM student_profiles WHERE user_id = $1',
+      [userId]
+    );
+    const prevCollegeEmail = (prevProfileRes.rows[0]?.college_email || '').trim().toLowerCase();
 
     // 1. Upsert student_profiles
     const profileUpsertText = `
@@ -203,6 +215,18 @@ const updateStudentProfile = async (userId, data) => {
       is_completed === true,
       parseInt(onboarding_step, 10) || 1,
     ]);
+
+    // A college email changed through this endpoint has not been OTP-verified: drop any
+    // existing VERIFIED status instead of carrying it over to the new address.
+    // (Verification only ever happens through the link-college-email OTP flow.)
+    const nextCollegeEmail = typeof college_email === 'string' ? college_email.trim().toLowerCase() : '';
+    if (nextCollegeEmail && nextCollegeEmail !== prevCollegeEmail) {
+      await client.query(
+        `UPDATE student_verifications SET status = 'UNVERIFIED', method = NULL, verified_at = NULL
+         WHERE user_id = $1 AND status = 'VERIFIED'`,
+        [userId]
+      );
+    }
 
     // 2. Handle skills update
     if (Array.isArray(skills)) {
@@ -268,13 +292,15 @@ const updateStudentProfile = async (userId, data) => {
     }
 
     await client.query('COMMIT');
-    return await getProfileByUserId(userId);
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();
   }
+
+  // Re-read only after releasing the transaction client (avoids pool self-deadlock).
+  return getProfileByUserId(userId);
 };
 
 /**
