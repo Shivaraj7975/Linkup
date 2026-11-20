@@ -51,7 +51,9 @@ const errorHandler = (err, req, res, next) => {
   });
 
   const [statusCode, resolvedMessage] = resolveStatusAndMessage(err);
-  const isProduction = process.env.NODE_ENV === 'production';
+  // Fail closed: only explicit development/test environments get internal details.
+  // (Previously an unset NODE_ENV in production leaked stack traces and raw 500 messages.)
+  const isProduction = !['development', 'test'].includes(process.env.NODE_ENV);
 
   // In production, mask internal server errors with a generic safe message
   let clientMessage = resolvedMessage || 'Internal Server Error';

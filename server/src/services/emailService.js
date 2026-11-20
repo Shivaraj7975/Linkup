@@ -27,6 +27,15 @@ const normalizePurpose = (type) => {
 };
 
 /**
+ * True only for OTP types that map to a canonical purpose (unknown types used to be
+ * stored and emailed as-is, skipping every per-purpose check in send-otp).
+ */
+const isKnownPurpose = (type) => {
+  if (!type) return true; // defaults to REGISTRATION
+  return Object.prototype.hasOwnProperty.call(CANONICAL_PURPOSES, String(type).trim().toUpperCase());
+};
+
+/**
  * Mask email address for privacy in server logs (e.g. u***r@example.com)
  */
 const maskEmail = (email) => {
@@ -46,12 +55,25 @@ const maskEmail = (email) => {
  * Validate if an email address is a valid institutional college email.
  * Checks for suffixes like .edu, .edu.in, .ac.in, .ac.uk, .edu.au, .edu.sg, etc.
  */
+/**
+ * Strict single-address email check.
+ * The previous loose pattern accepted separators such as ',' and ';', so a value like
+ * "me@gmail.com,iit.ac.in" passed the college-domain check while the mailer delivered
+ * the OTP only to me@gmail.com (student-verification bypass).
+ */
+const STRICT_EMAIL_REGEX = /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/i;
+
+const isValidEmailAddress = (email) => {
+  if (!email || typeof email !== 'string') return false;
+  const clean = email.trim();
+  return clean.length <= 254 && STRICT_EMAIL_REGEX.test(clean);
+};
+
 const isCollegeEmail = (email) => {
   if (!email || typeof email !== 'string') return false;
   const clean = email.trim().toLowerCase();
 
-  const basicRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!basicRegex.test(clean)) return false;
+  if (!isValidEmailAddress(clean)) return false;
 
   const domain = clean.split('@')[1] || '';
 
@@ -224,6 +246,8 @@ const sendOtpEmail = async ({ toEmail, otpCode, type = 'REGISTRATION' }) => {
   const emailTimeoutMs = parseInt(process.env.EMAIL_TIMEOUT_MS, 10) || 10000;
 
   const cleanToEmail = toEmail.trim().toLowerCase();
+  // HTML-escaped copy for the email body (the address is user-supplied)
+  const htmlToEmail = cleanToEmail.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const canonicalPurpose = normalizePurpose(type);
   const isCollege = canonicalPurpose === 'COLLEGE_VERIFICATION';
   const isPasswordReset = canonicalPurpose === 'PASSWORD_RESET';
@@ -268,16 +292,16 @@ const sendOtpEmail = async ({ toEmail, otpCode, type = 'REGISTRATION' }) => {
           ${headingText}
         </h2>
         <div style="background: rgba(255, 255, 255, 0.05); padding: 8px 14px; border-radius: 6px; margin: 12px 0; font-size: 13px; color: #cbd5e1;">
-          Verification Target: <strong style="color: #60a5fa;">${cleanToEmail}</strong>
+          Verification Target: <strong style="color: #60a5fa;">${htmlToEmail}</strong>
         </div>
         <p style="color: #94a3b8; font-size: 14px; margin-top: 8px;">
-          Use the 6-digit verification code below for <strong style="color: #f1f5f9;">${cleanToEmail}</strong>:
+          Use the 6-digit verification code below for <strong style="color: #f1f5f9;">${htmlToEmail}</strong>:
         </p>
         <div style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #22d3ee; margin: 20px 0; background: rgba(34, 211, 238, 0.1); padding: 12px; border-radius: 6px;">
           ${otpCode}
         </div>
         <p style="color: #64748b; font-size: 12px; margin-bottom: 0;">
-          This code is valid for 10 minutes. If you did not request this OTP for ${cleanToEmail}, please ignore this email.
+          This code is valid for 10 minutes. If you did not request this OTP for ${htmlToEmail}, please ignore this email.
         </p>
       </div>
     </div>
@@ -303,6 +327,8 @@ const sendOtpEmail = async ({ toEmail, otpCode, type = 'REGISTRATION' }) => {
         connectionTimeout: emailTimeoutMs,
         greetingTimeout: emailTimeoutMs,
         socketTimeout: emailTimeoutMs,
+        // Refuse to send credentials/OTPs if the server does not offer STARTTLS (prevents TLS stripping)
+        requireTLS: true,
         auth: {
           user: smtpLogin,
           pass: apiKey,
@@ -368,6 +394,8 @@ module.exports = {
   normalizePurpose,
   maskEmail,
   isCollegeEmail,
+  isValidEmailAddress,
+  isKnownPurpose,
   generateOtpCode,
   hashOtp,
   saveOtpToDb,

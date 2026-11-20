@@ -19,6 +19,7 @@ import {
   Loader2,
   BookOpen,
 } from 'lucide-react';
+import { safeHref } from '../utils/safeHref';
 
 export const PublicProfileModal = ({ userId, onClose }) => {
   const [profile, setProfile] = useState(null);
@@ -101,27 +102,27 @@ export const PublicProfileModal = ({ userId, onClose }) => {
                     {(profile.githubUrl || profile.linkedinUrl || profile.instagramUrl || profile.youtubeUrl || profile.websiteUrl) && (
                       <div className="social-icons-group">
                         {profile.githubUrl && (
-                          <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer" className="social-symbol-btn" title="GitHub" aria-label="GitHub">
+                          <a href={safeHref(profile.githubUrl)} target="_blank" rel="noopener noreferrer" className="social-symbol-btn" title="GitHub" aria-label="GitHub">
                             <Github size={15} />
                           </a>
                         )}
                         {profile.linkedinUrl && (
-                          <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="social-symbol-btn" title="LinkedIn" aria-label="LinkedIn">
+                          <a href={safeHref(profile.linkedinUrl)} target="_blank" rel="noopener noreferrer" className="social-symbol-btn" title="LinkedIn" aria-label="LinkedIn">
                             <Linkedin size={15} />
                           </a>
                         )}
                         {profile.instagramUrl && (
-                          <a href={profile.instagramUrl} target="_blank" rel="noopener noreferrer" className="social-symbol-btn" title="Instagram" aria-label="Instagram">
+                          <a href={safeHref(profile.instagramUrl)} target="_blank" rel="noopener noreferrer" className="social-symbol-btn" title="Instagram" aria-label="Instagram">
                             <Instagram size={15} />
                           </a>
                         )}
                         {profile.youtubeUrl && (
-                          <a href={profile.youtubeUrl} target="_blank" rel="noopener noreferrer" className="social-symbol-btn" title="YouTube" aria-label="YouTube">
+                          <a href={safeHref(profile.youtubeUrl)} target="_blank" rel="noopener noreferrer" className="social-symbol-btn" title="YouTube" aria-label="YouTube">
                             <Youtube size={15} />
                           </a>
                         )}
                         {profile.websiteUrl && (
-                          <a href={profile.websiteUrl} target="_blank" rel="noopener noreferrer" className="social-symbol-btn" title="Portfolio / Website" aria-label="Portfolio / Website">
+                          <a href={safeHref(profile.websiteUrl)} target="_blank" rel="noopener noreferrer" className="social-symbol-btn" title="Portfolio / Website" aria-label="Portfolio / Website">
                             <Globe size={15} />
                           </a>
                         )}

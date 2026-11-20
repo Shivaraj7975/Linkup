@@ -11,15 +11,16 @@ const {
 } = require('../services/authService');
 const {
   isCollegeEmail,
+  isValidEmailAddress,
   generateOtpCode,
   saveOtpToDb,
   verifyOtpInDb,
   sendOtpEmail,
   normalizePurpose,
+  isKnownPurpose,
   maskEmail,
 } = require('../services/emailService');
 
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Generate JWT Token helper - fails loudly if JWT_SECRET is unset
@@ -54,6 +55,9 @@ const sendOtp = async (req, res, next) => {
       });
     }
 
+    if (!isKnownPurpose(type)) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP type.' });
+    }
     const purpose = normalizePurpose(type);
     let cleanEmail = target.toLowerCase();
 
@@ -75,7 +79,7 @@ const sendOtp = async (req, res, next) => {
       cleanEmail = user.email.toLowerCase();
     } else {
       // For registration or college verification, standard email regex is required
-      if (!emailRegex.test(cleanEmail)) {
+      if (!isValidEmailAddress(cleanEmail)) {
         return res.status(400).json({
           success: false,
           message: 'A valid email address is required.',
@@ -171,6 +175,11 @@ const verifyOtp = async (req, res, next) => {
     const cleanEmail = email.trim().toLowerCase();
     const cleanCode = String(otpCode).trim();
     const purpose = normalizePurpose(type);
+    // verify-otp is only for pre-registration checks; LOGIN / PASSWORD_RESET codes are
+    // consumed by their own endpoints and must not be burned (or probed) here.
+    if (!isKnownPurpose(type) || !['REGISTRATION', 'COLLEGE_VERIFICATION'].includes(purpose)) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP type.' });
+    }
 
     const isValid = await verifyOtpInDb(cleanEmail, cleanCode, purpose);
     if (!isValid) {
@@ -205,7 +214,7 @@ const register = async (req, res, next) => {
       });
     }
 
-    if (!email || !emailRegex.test(email)) {
+    if (!email || !isValidEmailAddress(email)) {
       return res.status(400).json({
         success: false,
         message: 'A valid personal email address is required.',

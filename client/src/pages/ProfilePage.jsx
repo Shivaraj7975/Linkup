@@ -43,6 +43,7 @@ import {
   Plus,
   User,
 } from 'lucide-react';
+import { safeHref } from '../utils/safeHref';
 
 const isCollegeEmailValid = (email) => {
   if (!email || typeof email !== 'string') return false;
@@ -626,27 +627,27 @@ export const ProfilePage = () => {
               {(p.github_url || p.linkedin_url || p.instagram_url || p.youtube_url || p.website_url) && (
                 <div className="social-icons-group">
                   {p.github_url && (
-                    <a href={p.github_url} target="_blank" rel="noreferrer" className="social-symbol-btn" title="GitHub" aria-label="GitHub">
+                    <a href={safeHref(p.github_url)} target="_blank" rel="noreferrer" className="social-symbol-btn" title="GitHub" aria-label="GitHub">
                       <Github size={16} />
                     </a>
                   )}
                   {p.linkedin_url && (
-                    <a href={p.linkedin_url} target="_blank" rel="noreferrer" className="social-symbol-btn" title="LinkedIn" aria-label="LinkedIn">
+                    <a href={safeHref(p.linkedin_url)} target="_blank" rel="noreferrer" className="social-symbol-btn" title="LinkedIn" aria-label="LinkedIn">
                       <Linkedin size={16} />
                     </a>
                   )}
                   {p.instagram_url && (
-                    <a href={p.instagram_url} target="_blank" rel="noreferrer" className="social-symbol-btn" title="Instagram" aria-label="Instagram">
+                    <a href={safeHref(p.instagram_url)} target="_blank" rel="noreferrer" className="social-symbol-btn" title="Instagram" aria-label="Instagram">
                       <Instagram size={16} />
                     </a>
                   )}
                   {p.youtube_url && (
-                    <a href={p.youtube_url} target="_blank" rel="noreferrer" className="social-symbol-btn" title="YouTube" aria-label="YouTube">
+                    <a href={safeHref(p.youtube_url)} target="_blank" rel="noreferrer" className="social-symbol-btn" title="YouTube" aria-label="YouTube">
                       <Youtube size={16} />
                     </a>
                   )}
                   {p.website_url && (
-                    <a href={p.website_url} target="_blank" rel="noreferrer" className="social-symbol-btn" title="Portfolio / Website" aria-label="Portfolio / Website">
+                    <a href={safeHref(p.website_url)} target="_blank" rel="noreferrer" className="social-symbol-btn" title="Portfolio / Website" aria-label="Portfolio / Website">
                       <Globe size={16} />
                     </a>
                   )}

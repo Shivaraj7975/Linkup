@@ -1,4 +1,5 @@
 const linkupService = require('../services/meldService');
+const { findListLimitViolation } = require('../utils/requestLimits');
 
 /**
  * POST /api/linkups
@@ -13,6 +14,11 @@ const createLinkup = async (req, res, next) => {
         success: false,
         message: 'Please provide all required fields: title, description, category, and projectDuration.',
       });
+    }
+
+    const listError = findListLimitViolation(req.body, ['requiredSkills']);
+    if (listError) {
+      return res.status(400).json({ success: false, message: listError });
     }
 
     const createdLinkup = await linkupService.createLinkup(req.user.id, {
@@ -88,6 +94,10 @@ const getLinkupById = async (req, res, next) => {
 const updateLinkup = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const listError = findListLimitViolation(req.body, ['requiredSkills']);
+    if (listError) {
+      return res.status(400).json({ success: false, message: listError });
+    }
     const updatedLinkup = await linkupService.updateLinkup(id, req.user.id, req.body);
     return res.json({
       success: true,

@@ -13,18 +13,14 @@ const {
 } = require('../controllers/authController');
 const { authenticateToken } = require('../middleware/auth');
 
-// Compound key generator for multi-dimensional rate limiting (IP + Account/Email)
-const compoundKey = (req) => {
-  const account = (req.body?.identifier || req.body?.email || req.body?.username || '').trim().toLowerCase();
-  return `${req.ip}_${account}`;
-};
+// Compound key (IP subnet + the account field the handler reads); see middleware/rateLimitKeys.js
+const { ipAccountKey: compoundKey } = require('../middleware/rateLimitKeys');
 
 // Multi-dimensional rate limiters for auth & OTP operations
 const otpSendLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
   max: 6, // Limit each IP + Account to 6 OTP requests per 10 mins
   keyGenerator: compoundKey,
-  validate: { keyGeneratorIpFallback: false },
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many OTP requests. Please wait a few minutes before requesting another code.' },
@@ -34,7 +30,6 @@ const otpVerifyLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
   max: 12, // Limit each IP + Account to 12 verification attempts per 10 mins
   keyGenerator: compoundKey,
-  validate: { keyGeneratorIpFallback: false },
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many verification attempts. Please wait a few minutes before trying again.' },
@@ -44,7 +39,6 @@ const passwordResetLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // Limit password reset attempts to 5 per 15 mins
   keyGenerator: compoundKey,
-  validate: { keyGeneratorIpFallback: false },
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many password reset attempts. Please try again after 15 minutes.' },

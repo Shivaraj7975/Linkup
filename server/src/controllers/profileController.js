@@ -9,6 +9,7 @@ const {
   searchUsersForInvite,
 } = require('../services/profileService');
 const { isCollegeEmail, verifyOtpInDb } = require('../services/emailService');
+const { findListLimitViolation } = require('../utils/requestLimits');
 
 /**
  * GET /api/skills
@@ -69,6 +70,10 @@ const getProfile = async (req, res, next) => {
 const updateProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
+    const listError = findListLimitViolation(req.body, ['skills', 'interests']);
+    if (listError) {
+      return res.status(400).json({ success: false, message: listError });
+    }
     const updatedData = await updateStudentProfile(userId, req.body);
 
     return res.status(200).json({
