@@ -1,4 +1,4 @@
-import { sanitizeErrorMessage } from './api';
+import { sanitizeErrorMessage, notifySessionExpired } from './api';
 
 const getAdminApiBaseUrl = () => {
   let url = (import.meta.env.VITE_API_BASE_URL || '/api').trim().replace(/\/+$/, '');
@@ -28,6 +28,7 @@ const safeAdminRequest = async (url, options = {}, defaultErrMsg = 'Admin operat
       data = null;
     }
 
+    if (response.status === 401) notifySessionExpired(options);
     if (!response.ok || !data?.success) {
       const serverMsg = data && (data.message || data.error);
       throw new Error(serverMsg || defaultErrMsg);
