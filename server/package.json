@@ -12,6 +12,9 @@
     "test": "node test/schema_parity_test.js && node test/ai_provider_timeout_test.js && node test/route_alias_test.js && node test/audit_integration_test.js && node test/security_hardening_test.js",
     "test:security": "node test/security_hardening_test.js"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "keywords": [
     "meld",
     "express",

@@ -1,0 +1,115 @@
+# Pull-request validation. Runs the real server test suites against a throwaway
+# PostgreSQL service container and lints + builds the client.
+# This workflow never deploys and needs no repository secrets.
+
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22.x'
+
+jobs:
+  server:
+    name: Server tests (PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci_only_password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DB_HOST: 127.0.0.1
+      DB_PORT: '5432'
+      DB_USER: postgres
+      DB_PASSWORD: ci_only_password
+      DB_NAME: meld_ci
+      # Dummy, CI-only values (not secrets).
+      JWT_SECRET: ci_only_jwt_secret
+      OTP_PEPPER: ci_only_otp_pepper
+
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Initialise database schema and seed data
+        run: npm run db:init
+
+      - name: Apply master migration
+        run: npm run db:migrate
+
+      - name: Run test suites
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee "$RUNNER_TEMP/server-test.log"
+          # The suites exit 0 and skip their DB assertions when PostgreSQL is
+          # unreachable. In this job the database must be reachable, so treat
+          # a skip as a failure instead of a silent pass.
+          if grep -q "database is not reachable" "$RUNNER_TEMP/server-test.log"; then
+            echo "::error::Server tests skipped their database assertions; PostgreSQL was not reachable."
+            exit 1
+          fi
+
+  client:
+    name: Client lint and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: client
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
