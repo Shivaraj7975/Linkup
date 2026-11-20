@@ -85,11 +85,18 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    console.error('Auth middleware error:', error);
-    return res.status(401).json({
-      success: false,
-      message: 'Authentication failed.',
-    });
+    if (error.name === 'NotBeforeError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid authentication token.',
+      });
+    }
+
+    // Anything else (DB unreachable, pool timeout, missing JWT_SECRET) is a
+    // server problem, not a bad credential. Answering 401 here made clients
+    // log every user out during a database blip; let errorHandler send 5xx.
+    console.error('Auth middleware error:', error?.message || error);
+    return next(error);
   }
 };
 

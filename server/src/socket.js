@@ -5,14 +5,29 @@ const notificationService = require('./services/notificationService');
 const { query } = require('./config/db');
 
 let io;
-// In-memory single-instance presence tracking for active meld chat rooms
-// meldId -> Set of userIds currently in the room
-const activeMeldUsers = new Map();
 
 // In-memory per-user sliding window message rate limiter (userId -> Array of timestamps)
 const userMessageRateMap = new Map();
 const MAX_MESSAGES_PER_WINDOW = 10;
 const WINDOW_MS = 5000; // 5 seconds
+
+/**
+ * User ids with at least one socket currently in the meld's chat room.
+ * Derived from Socket.IO's own room membership so it stays correct with several
+ * tabs per user (the old per-user Set dropped a user when any one tab left or
+ * disconnected). Single-instance only, like the previous implementation.
+ */
+const getActiveUserIdsInMeld = (meldId) => {
+  if (!io) return [];
+  const room = io.sockets.adapter.rooms.get(`meld:${meldId}`);
+  if (!room) return [];
+  const ids = new Set();
+  for (const socketId of room) {
+    const s = io.sockets.sockets.get(socketId);
+    if (s && s.user && s.user.id) ids.add(s.user.id);
+  }
+  return Array.from(ids);
+};
 
 const checkMessageRateLimit = (userId) => {
   const now = Date.now();
@@ -162,15 +177,8 @@ const initSocket = (server) => {
           return;
         }
 
-        const roomName = `meld:${meldId}`;
-        socket.join(roomName);
+        socket.join(`meld:${meldId}`);
 
-        // Record user presence in this meld room
-        if (!activeMeldUsers.has(meldId)) {
-          activeMeldUsers.set(meldId, new Set());
-        }
-        activeMeldUsers.get(meldId).add(userId);
-        
         if (callback) callback({ success: true });
       } catch (error) {
         console.error('Error in join_meld event:', error);
@@ -181,14 +189,7 @@ const initSocket = (server) => {
     // Leave a Meld room
     socket.on('leave_meld', (meldId) => {
       if (!meldId || typeof meldId !== 'string') return;
-      const roomName = `meld:${meldId}`;
-      socket.leave(roomName);
-      if (activeMeldUsers.has(meldId)) {
-        activeMeldUsers.get(meldId).delete(userId);
-        if (activeMeldUsers.get(meldId).size === 0) {
-          activeMeldUsers.delete(meldId);
-        }
-      }
+      socket.leave(`meld:${meldId}`);
     });
 
     // Send a message to a Meld room
@@ -232,7 +233,7 @@ const initSocket = (server) => {
         io.to(`meld:${meldId}`).emit('new_message', savedMessage);
 
         // Get currently active user IDs in this chat room to avoid redundant notifications
-        const activeUsersInRoom = activeMeldUsers.has(meldId) ? Array.from(activeMeldUsers.get(meldId)) : [];
+        const activeUsersInRoom = getActiveUserIdsInMeld(meldId);
 
         // Create in-app notifications for team members (without showing chat content)
         notificationService.notifyNewChatMessage({
@@ -250,17 +251,12 @@ const initSocket = (server) => {
     });
 
     socket.on('disconnect', () => {
-      // Remove user from all active meld rooms
-      for (const [meldId, users] of activeMeldUsers.entries()) {
-        users.delete(userId);
-        if (users.size === 0) {
-          activeMeldUsers.delete(meldId);
-        }
-      }
+      // Presence needs no cleanup: Socket.IO removes the socket from its rooms.
       // Do NOT reset the sliding window on disconnect: reconnecting would otherwise
       // bypass the per-user message rate limit. Only drop entries that have expired.
       pruneMessageRateEntry(userId);
     });
+
   });
 };
 
@@ -275,23 +271,6 @@ const emitNotificationToUser = (userId, notificationData) => {
 };
 
 /**
- * Force every socket of a user out of a meld chat room (after removal / leaving),
- * so they stop receiving broadcasts for a meld they no longer belong to.
- */
-const removeUserFromMeldRoom = (meldId, userId) => {
-  if (!meldId || !userId) return;
-  if (activeMeldUsers.has(meldId)) {
-    activeMeldUsers.get(meldId).delete(userId);
-    if (activeMeldUsers.get(meldId).size === 0) {
-      activeMeldUsers.delete(meldId);
-    }
-  }
-  if (io) {
-    io.in(`user:${userId}`).socketsLeave(`meld:${meldId}`);
-  }
-};
-
-/**
  * Disconnect all live sockets for a user (after password reset or account deletion).
  */
 const disconnectUserSockets = (userId) => {
@@ -301,7 +280,18 @@ const disconnectUserSockets = (userId) => {
 };
 
 const isUserActiveInMeldChat = (meldId, userId) => {
-  return activeMeldUsers.has(meldId) && activeMeldUsers.get(meldId).has(userId);
+  return getActiveUserIdsInMeld(meldId).includes(userId);
+};
+
+/**
+ * Evict all of a user's sockets from a meld chat room. Must be called whenever
+ * the user loses access (removed by creator, left the meld): room membership is
+ * only authorized on join, so without this a removed member kept receiving
+ * every new_message broadcast for that meld.
+ */
+const removeUserFromMeldRoom = (meldId, userId) => {
+  if (!io || !meldId || !userId) return;
+  io.in(`user:${userId}`).socketsLeave(`meld:${meldId}`);
 };
 
 module.exports = {
@@ -309,8 +299,9 @@ module.exports = {
   getIo,
   emitNotificationToUser,
   isUserActiveInMeldChat,
+  getActiveUserIdsInMeld,
+  removeUserFromMeldRoom,
   checkMessageRateLimit,
   authenticateSocket,
-  removeUserFromMeldRoom,
   disconnectUserSockets,
 };

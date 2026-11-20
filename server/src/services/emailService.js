@@ -219,6 +219,9 @@ const sendOtpEmail = async ({ toEmail, otpCode, type = 'REGISTRATION' }) => {
   const smtpPort = parseInt(process.env.BREVO_SMTP_PORT || '587', 10);
   const senderEmail = process.env.SENDER_EMAIL || 'your_sender_email@example.com';
   const senderName = process.env.SENDER_NAME || 'MELD Platform';
+  // Bound every provider call: an unresponsive mail provider must not hang the
+  // OTP request (and its rate-limited client) indefinitely.
+  const emailTimeoutMs = parseInt(process.env.EMAIL_TIMEOUT_MS, 10) || 10000;
 
   const cleanToEmail = toEmail.trim().toLowerCase();
   const canonicalPurpose = normalizePurpose(type);
@@ -297,6 +300,9 @@ const sendOtpEmail = async ({ toEmail, otpCode, type = 'REGISTRATION' }) => {
         host: smtpHost,
         port: smtpPort,
         secure: false,
+        connectionTimeout: emailTimeoutMs,
+        greetingTimeout: emailTimeoutMs,
+        socketTimeout: emailTimeoutMs,
         auth: {
           user: smtpLogin,
           pass: apiKey,
@@ -333,6 +339,7 @@ const sendOtpEmail = async ({ toEmail, otpCode, type = 'REGISTRATION' }) => {
           subject,
           htmlContent,
         }),
+        signal: AbortSignal.timeout(emailTimeoutMs),
       });
 
       const data = await apiRes.json();

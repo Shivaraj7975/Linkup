@@ -143,13 +143,18 @@ const updateStudentProfile = async (userId, data) => {
 
     // Optional: Update username if provided
     if (username && typeof username === 'string') {
-      const { validateUsername, isUsernameAvailable } = require('./authService');
+      const { validateUsername } = require('./authService');
       const val = validateUsername(username);
       if (!val.valid) {
         throw new Error(val.message);
       }
-      const isAvail = await isUsernameAvailable(val.cleanUsername, userId);
-      if (!isAvail) {
+      // Check on the transaction client: a pool query here would need a second
+      // connection while this one is held (pool self-deadlock under load).
+      const takenRes = await client.query(
+        'SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND id != $2',
+        [val.cleanUsername, userId]
+      );
+      if (takenRes.rows.length > 0) {
         throw new Error('Username is already taken by another user.');
       }
       await client.query(
@@ -268,13 +273,15 @@ const updateStudentProfile = async (userId, data) => {
     }
 
     await client.query('COMMIT');
-    return await getProfileByUserId(userId);
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();
   }
+
+  // Re-read only after releasing the transaction client (avoids pool self-deadlock).
+  return getProfileByUserId(userId);
 };
 
 /**

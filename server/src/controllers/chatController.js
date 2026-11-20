@@ -17,6 +17,12 @@ const getMeldMessages = async (req, res) => {
 
     // 2. Fetch messages
     const before = req.query.before;
+    if (before !== undefined && (typeof before !== 'string' || Number.isNaN(Date.parse(before)))) {
+      return res.status(400).json({
+        success: false,
+        message: 'Query parameter "before" must be a valid ISO timestamp.',
+      });
+    }
     const messages = await chatService.getRecentMessages(meldId, 50, before);
     
     return res.status(200).json({
@@ -24,6 +30,9 @@ const getMeldMessages = async (req, res) => {
       messages,
     });
   } catch (error) {
+    if (error && error.code === '22P02') {
+      return res.status(400).json({ success: false, message: 'Invalid meld ID.' });
+    }
     console.error('Error fetching chat messages:', error);
     // Generic error to prevent leaking DB info
     return res.status(500).json({

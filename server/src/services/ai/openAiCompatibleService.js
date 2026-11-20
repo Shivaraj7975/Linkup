@@ -76,9 +76,11 @@ Respond with JSON adhering to this exact schema:
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  let response;
+  // The timeout must also cover reading the body: previously it was cleared as
+  // soon as headers arrived, so a provider that stalled mid-body hung forever.
+  let data;
   try {
-    response = await fetch(endpoint, {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -87,6 +89,17 @@ Respond with JSON adhering to this exact schema:
       body: JSON.stringify(requestBody),
       signal: controller.signal
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      const isRateLimited = response.status === 429;
+      const errorMsg = `${providerName} API HTTP ${response.status}: ${errorText.slice(0, 150)}`;
+      const err = new Error(errorMsg);
+      err.isRateLimited = isRateLimited;
+      throw err;
+    }
+
+    data = await response.json();
   } catch (error) {
     if (error.name === 'AbortError') {
       throw new Error(`Timeout: ${providerName} request took longer than ${timeoutMs}ms.`);
@@ -96,16 +109,6 @@ Respond with JSON adhering to this exact schema:
     clearTimeout(timeoutId);
   }
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    const isRateLimited = response.status === 429;
-    const errorMsg = `${providerName} API HTTP ${response.status}: ${errorText.slice(0, 150)}`;
-    const err = new Error(errorMsg);
-    err.isRateLimited = isRateLimited;
-    throw err;
-  }
-
-  const data = await response.json();
   const rawContent = data?.choices?.[0]?.message?.content;
   if (!rawContent) {
     throw new Error(`Empty payload returned from ${providerName} API.`);
